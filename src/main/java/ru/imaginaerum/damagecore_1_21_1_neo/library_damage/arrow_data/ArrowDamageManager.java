@@ -44,7 +44,6 @@ public class ArrowDamageManager extends SimpleJsonResourceReloadListener {
             }
         }
     }
-
     private String extractItemName(String path) {
         String[] parts = path.split("/");
         String file = parts[parts.length - 1];
