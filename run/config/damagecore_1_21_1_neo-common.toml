@@ -1,10 +1,8 @@
-#Whether to log the dirt block on common setup
-logDirtBlock = true
-#A magic number
-# Default: 42
-# Range: > 0
-magicNumber = 42
-#What you want the introduction message to be for the magic number
-magicNumberIntroduction = "The magic number is... "
-#A list of items to log on common setup.
-items = ["minecraft:iron_ingot"]
+#Whether to show the stamina HUD overlay
+showStaminaHud = true
+#Multiplier for thirst drain rate
+# Default: 1.0
+# Range: 0.0 ~ 10.0
+thirstDrainMultiplier = 1.0
+#Enable/disable thirst system
+enableThirst = true

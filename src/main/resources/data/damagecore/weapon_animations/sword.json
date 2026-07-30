@@ -1,0 +1,21 @@
+{
+  "contexts": {
+    "swing": [
+      "damagecore:sword_fa_1",
+      "damagecore:sword_fa_2",
+      "damagecore:sword_fa_3",
+      "damagecore:sword_fa_4",
+      "damagecore:sword_fa_5"
+    ],
+    "swing_strike_animations": [
+      { "1": "damagecore:sword_p_sa_1"},
+      { "2": "damagecore:sword_p_sa_2"},
+      { "3": "damagecore:sword_p_sa_3"}
+    ],
+    "swing_strike_release_animations": [
+      { "1": "damagecore:sword_sa_1"},
+      { "2": "damagecore:sword_sa_2"},
+      { "3": "damagecore:sword_sa_3"}
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "item.damagecore.birch_leaf": "Берёзовый лист",
+  "item.damagecore.chain_light_arrow": "Стрела цепного заряда",
+
+  "weapon.type.sword":    "Меч",
+  "weapon.type.axe":      "Топор",
+  "weapon.type.trident":  "Трезубец",
+  "weapon.type.spear":    "Копьё",
+  "weapon.type.blunt":    "Дробящее оружие",
+  "weapon.type.bow":      "Лук",
+  "weapon.type.crossbow": "Арбалет"
+}

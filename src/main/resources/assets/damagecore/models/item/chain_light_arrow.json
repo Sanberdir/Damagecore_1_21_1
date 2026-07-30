@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "damagecore:item/chain_light_arrow"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "base_speed": 3.0,
+  "base_range": 30.0,
+  "post_range_damage_scale": -0.5,
+  "post_range_speed_scale": -0.3,
+  "gravity_scale": 1.0,
+
+  "flat_damage": false,
+  "piercing": 2.0
+}

@@ -1,1 +1,31 @@
 /give Dev damagecore_1_21_1_neo:birch_leaf
+/summon minecraft:blaze
+/effect give Dev minecraft:absorption
+/effect give Dev minecraft:absorption 3
+/effect give Dev minecraft:absorption infinite 5
+/effect give Dev minecraft:absorption infinite
+/effect clear
+/effect give Dev minecraft:absorption infinite
+/effect give Dev minecraft:health_boost
+/time set day
+/effect give Dev minecraft:absorption infinite
+/effect give Dev minecraft:health_boost infinite
+/effect clear
+/effect give Dev minecraft:absorption infinite
+/effect give Dev minecraft:health_boost infinite
+/effect clear
+/effect give Dev minecraft:health_boost infinite
+/effect give Dev minecraft:absorption infinite
+/effect clear
+/summon damagecore:chain_lightning_arrow
+/give Dev damagecore:chain_light_arrow 64
+/time set day
+/enchant Dev minecraft:power 5
+/time set day
+/summon minecraft:rabbit
+/summon minecraft:small_fireball
+/summon minecraft:fireball
+/give Dev damagecore:chain_light_arrow 64
+/enchant Dev minecraft:power 5
+/summon minecraft:cow
+/time set day

@@ -1,0 +1,13 @@
+{
+  "base_speed": 2.0,
+  "base_range": 30.0,
+  "post_range_damage_scale": 0.0,
+  "post_range_speed_scale": 0.0,
+  "gravity_scale": 0.0,
+  "trail_particles": false,
+  "on_hit_effects": [
+    { "effect": "minecraft:glowing", "duration": 400, "amplifier": 0 }
+  ],
+  "flat_damage": false,
+  "piercing": 0.0
+}

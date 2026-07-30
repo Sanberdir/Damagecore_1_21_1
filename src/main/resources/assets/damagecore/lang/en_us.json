@@ -1,0 +1,12 @@
+{
+  "item.damagecore.birch_leaf": "Birch Leaf",
+  "item.damagecore.chain_light_arrow": "Chain Light Arrow",
+
+  "weapon.type.sword":    "Sword",
+  "weapon.type.axe":      "Axe",
+  "weapon.type.trident":  "Trident",
+  "weapon.type.spear":    "Spear",
+  "weapon.type.blunt":    "Blunt Weapon",
+  "weapon.type.bow":      "Bow",
+  "weapon.type.crossbow": "Crossbow"
+}

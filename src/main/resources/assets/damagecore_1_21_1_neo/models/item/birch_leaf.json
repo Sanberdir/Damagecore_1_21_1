@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "damagecore_1_21_1_neo:item/birch_leaf"
-  }
-}
