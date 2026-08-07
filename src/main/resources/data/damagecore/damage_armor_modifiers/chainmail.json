@@ -1,0 +1,29 @@
+{
+  "material": "chainmail",
+
+  "helmet_percent": {
+    "slashing": 0.04,
+    "bludgeoning": 0.08,
+    "piercing": 0.01
+  },
+
+  "chestplate_percent": {
+    "slashing": 0.06,
+    "bludgeoning": 0.12,
+    "piercing": 0.03
+  },
+
+
+  "leggings_percent": {
+    "slashing": 0.05,
+    "bludgeoning": 0.1,
+    "piercing": 0.02
+  },
+
+
+  "boots_percent": {
+    "slashing": 0.04,
+    "bludgeoning": 0.08,
+    "piercing": 0.01
+  }
+}

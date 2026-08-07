@@ -8,9 +8,20 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ChainLightningPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.LearnNodePacket;
+import ru.imaginaerum.damagecore.api.skill_tree.RequestFullSyncPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.SyncNodeLevelsPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.implementation_skills.shooting.HundredArmedSyncPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SelectNodeVariantPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SyncNodeVariantsPacket;
+import ru.imaginaerum.damagecore.events_tree.SyncTreeXpPacket;
 import ru.imaginaerum.damagecore.hud.elements.DrainStaminaPacket;
 import ru.imaginaerum.damagecore.hud.elements.NormalAttackPacket;
 import ru.imaginaerum.damagecore.hud.net.ThirstDamagePacket;
+import ru.imaginaerum.damagecore.library_damage.PacketTypedAttack;
+import ru.imaginaerum.damagecore.library_stats.StatChangePacket;
+import ru.imaginaerum.damagecore.library_stats.SyncStatsPacket;
+import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionSyncPacket;
 
 @EventBusSubscriber(modid = "damagecore")
 public final class ModNetwork {
@@ -20,29 +31,27 @@ public final class ModNetwork {
     @SubscribeEvent
     public static void register(final RegisterPayloadHandlersEvent event) {
         final PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
-        registrar.playToClient(
-                ChainLightningPacket.TYPE,
-                ChainLightningPacket.CODEC,
-                ChainLightningPacket::handleClient
-        );
 
-        registrar.playToServer(
-                ThirstDamagePacket.TYPE,
-                ThirstDamagePacket.STREAM_CODEC,
-                ThirstDamagePacket::handle
-        );
+        // ─── Клиент ← Сервер ───
+        registrar.playToClient(SyncNodeLevelsPacket.TYPE,   SyncNodeLevelsPacket.CODEC,   SyncNodeLevelsPacket::handle);
+        registrar.playToClient(SyncNodeVariantsPacket.TYPE, SyncNodeVariantsPacket.CODEC, SyncNodeVariantsPacket::handle);
+        registrar.playToClient(ChainLightningPacket.TYPE,   ChainLightningPacket.CODEC,   ChainLightningPacket::handleClient);
+        registrar.playToClient(FoodProtectionSyncPacket.TYPE, FoodProtectionSyncPacket.STREAM_CODEC, FoodProtectionSyncPacket::handle);
+        registrar.playToClient(SyncTreeXpPacket.TYPE,       SyncTreeXpPacket.STREAM_CODEC, SyncTreeXpPacket::handle);
+        registrar.playToClient(DrainStaminaPacket.TYPE,     DrainStaminaPacket.STREAM_CODEC, DrainStaminaPacket::handle);
+        registrar.playToClient(SyncStatsPacket.TYPE,        SyncStatsPacket.CODEC,          SyncStatsPacket::handle); // или STREAM_CODEC — смотрите по факту в самом файле
+        registrar.playToClient(HundredArmedSyncPacket.TYPE, HundredArmedSyncPacket.CODEC,   HundredArmedSyncPacket::handle);
 
-        registrar.playToClient(
-                DrainStaminaPacket.TYPE,
-                DrainStaminaPacket.STREAM_CODEC,
-                DrainStaminaPacket::handle
-        );
+        // ─── Клиент → Сервер ───
+        registrar.playToServer(ThirstDamagePacket.TYPE,     ThirstDamagePacket.STREAM_CODEC, ThirstDamagePacket::handle);
+        registrar.playToServer(RequestFullSyncPacket.TYPE,  RequestFullSyncPacket.CODEC,    RequestFullSyncPacket::handle);
+        registrar.playToServer(LearnNodePacket.TYPE,        LearnNodePacket.CODEC,          LearnNodePacket::handle);
+        registrar.playToServer(SelectNodeVariantPacket.TYPE, SelectNodeVariantPacket.CODEC, SelectNodeVariantPacket::handle);
+        registrar.playToServer(StatChangePacket.TYPE,       StatChangePacket.CODEC,         StatChangePacket::handle);
+        registrar.playToServer(PacketTypedAttack.TYPE,      PacketTypedAttack.STREAM_CODEC, PacketTypedAttack::handle);
 
-        registrar.playBidirectional(
-                NormalAttackPacket.TYPE,
-                NormalAttackPacket.STREAM_CODEC,
-                NormalAttackPacket::handle
-        );
+        // ─── Двунаправленные ───
+        registrar.playBidirectional(NormalAttackPacket.TYPE, NormalAttackPacket.STREAM_CODEC, NormalAttackPacket::handle);
     }
 
     // ─── Удобные методы отправки, чтобы не разбрасывать PacketDistributor по всему проекту ───
@@ -56,6 +65,10 @@ public final class ModNetwork {
     }
 
     public static void sendToServer(NormalAttackPacket msg) {
+        PacketDistributor.sendToServer(msg);
+    }
+
+    public static void sendToServer(PacketTypedAttack msg) {
         PacketDistributor.sendToServer(msg);
     }
 

@@ -32,10 +32,7 @@ public class PlayerStatsCapability {
 
     // Метод получения данных. Возвращает java.util.Optional, что совместимо со старыми вызовами .map() и .ifPresent()
     public static Optional<PlayerStats> get(Player player) {
-        if (player.hasData(PLAYER_STATS_ATTACHMENT.get())) {
-            return Optional.of(player.getData(PLAYER_STATS_ATTACHMENT.get()));
-        }
-        return Optional.empty();
+        return Optional.of(player.getData(PLAYER_STATS_ATTACHMENT.get()));
     }
 
     // Привязка через AttachCapabilitiesEvent больше НЕ НУЖНА — NeoForge делает это автоматически при вызове PlayerStats::new выше

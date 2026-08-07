@@ -20,8 +20,11 @@ import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.item.ChainLightin
 import ru.imaginaerum.damagecore.Init.items.DCItems;
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ArrowLightningStorm;
 import ru.imaginaerum.damagecore.Init.tab.DCTabs;
+import ru.imaginaerum.damagecore.armor.DamageArmorModifier;
+import ru.imaginaerum.damagecore.library_damage.WeaponDamageManager;
 import ru.imaginaerum.damagecore.library_damage.arrow_data.ArrowDamageManager;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
+import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 @Mod(Damagecore_1_21_1_neo.MODID)
 public class Damagecore_1_21_1_neo {
@@ -36,6 +39,7 @@ public class Damagecore_1_21_1_neo {
         DCItems.ITEMS.register(modEventBus);
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
+        DCSoundEvents.SOUND_EVENTS.register(modEventBus);
         modEventBus.register(DCTabs.class);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 
@@ -43,14 +47,17 @@ public class Damagecore_1_21_1_neo {
         neoForgeEventBus.addListener(this::onAddReloadListeners);
         PlayerStatsCapability.register(modEventBus);
     }
-
+    public static final WeaponDamageManager WEAPON_DAMAGE_MANAGER = new WeaponDamageManager();
     public static final ArrowDamageManager ARROW_DAMAGE_MANAGER = new ArrowDamageManager();
+    public static final DamageArmorModifier ARMOR_MODIFIER = new DamageArmorModifier(); // только здесь, final
 
     private void commonSetup(final FMLCommonSetupEvent event) {
     }
 
     private void onAddReloadListeners(AddReloadListenerEvent event) {
         event.addListener(ARROW_DAMAGE_MANAGER);
+        event.addListener(ARMOR_MODIFIER);
+        event.addListener(WEAPON_DAMAGE_MANAGER);
     }
 
     @SubscribeEvent

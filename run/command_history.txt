@@ -29,3 +29,10 @@
 /enchant Dev minecraft:power 5
 /summon minecraft:cow
 /time set day
+/experience set Dev 555 levels
+/experience set Dev 5 levels
+/experience set Dev 55 levels
+/enchant Dev minecraft:protection 3
+/effect clear
+/time set day
+/enchant Dev minecraft:protection 3

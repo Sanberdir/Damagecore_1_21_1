@@ -2,4 +2,5 @@
 /.gradle/
 /build/
 /run/
+/run/saves
 /build/classes/java/main/

@@ -1,0 +1,8 @@
+{
+  "material": "turtle",
+  "helmet_percent": {
+    "slashing": 0.03,
+    "bludgeoning": 0.05,
+    "piercing": 0.01
+  }
+}

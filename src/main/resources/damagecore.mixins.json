@@ -4,10 +4,32 @@
   "package": "ru.imaginaerum.damagecore.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "arrow_data.AbstractArrowMixin"
+    "BrewingStandBlockEntityAccessor",
+    "DamageSourceMixin",
+    "DiggerItemMixin",
+    "ItemMixin",
+    "LightningBoltMixin",
+    "SwordItemMixin",
+    "TridentItemMixin",
+    "armor.ArmorItemMixin",
+    "arrow_data.AbstractArrowMixin",
+    "damage_bleeding_mixins.LivingEntityBleedingAnimationMixin",
+    "damage_explosion_mixins.ExplosionDamageTrackingMixin",
+    "damage_fire_mixins.FireDamageCampfireMixin",
+    "damage_fire_mixins.FireDamageFireBlockMixin",
+    "damage_fire_mixins.FireDamageMagmaMixin",
+    "damage_fire_mixins.FireDamageMixin",
+    "damage_fire_mixins.FireDamageSmallFireballMixin",
+    "damage_poison_mixins.PoisonEffectsMixin",
+    "damage_poison_mixins.PoisonTickMixin"
   ],
   "client": [
-
+    "AbstractContainerScreenAccessor",
+    "HudNoIconPotionEffectsMixin",
+    "NoIconPotionEffectsMixin",
+    "ScreenInvoker",
+    "inventory_screen.AbstractContainerScreenMixin",
+    "inventory_screen.InventoryScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

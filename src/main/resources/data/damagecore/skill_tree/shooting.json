@@ -1,0 +1,66 @@
+{
+  "tabIcon": "minecraft:bow",
+  "nodes": [
+    {
+      "id": "ranger",
+      "item": "minecraft:bow",
+      "parents": ["start"],
+      "gridX": 0,
+      "gridY": 1
+    },
+    {
+      "id": "hundred_armed",
+      "item": "minecraft:redstone",
+      "parents": ["ranger"],
+      "lock": true,
+      "gridX": 0,
+      "gridY": 3
+    },
+    {
+      "id": "storing_arrows",
+      "item": "minecraft:arrow",
+      "parents": ["hundred_armed"],
+      "lock": true,
+      "gridX": 0,
+      "gridY": 5
+    },
+    {
+      "id": "fatal_shot",
+      "item": "minecraft:crossbow",
+      "parents": ["start"],
+      "gridX": -1,
+      "gridY": -1
+    },
+    {
+      "id": "special_bolts",
+      "item": "minecraft:redstone",
+      "parents": ["fatal_shot"],
+      "lock": true,
+      "gridX": -3,
+      "gridY": -3
+    },
+    {
+      "id": "storing_bolts",
+      "item": "minecraft:arrow",
+      "parents": ["special_bolts"],
+      "lock": true,
+      "gridX": -5,
+      "gridY": -5
+    },
+    {
+      "id": "ramrod_virtuoso",
+      "item": "minecraft:bow",
+      "parents": ["start"],
+      "gridX": 1,
+      "gridY": -1
+    },
+    {
+      "id": "marksman_assortment",
+      "item": "minecraft:redstone",
+      "parents": ["ramrod_virtuoso"],
+      "lock": true,
+      "gridX": 5,
+      "gridY": -5
+    }
+  ]
+}

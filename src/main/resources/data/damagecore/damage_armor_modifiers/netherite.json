@@ -1,0 +1,32 @@
+{
+  "material": "netherite",
+  "helmet_percent": {
+    "slashing": 0.12,
+    "bludgeoning": 0.07,
+    "piercing": 0.12,
+    "fire": 0.1
+  },
+
+  "chestplate_percent": {
+    "slashing": 0.13,
+    "bludgeoning": 0.09,
+    "piercing": 0.15,
+    "fire": 0.25
+  },
+
+
+  "leggings_percent": {
+    "slashing": 0.1,
+    "bludgeoning": 0.08,
+    "piercing": 0.2,
+    "fire": 0.1
+  },
+
+
+  "boots_percent": {
+    "slashing": 0.08,
+    "bludgeoning": 0.06,
+    "piercing": 0.07,
+    "fire": 0.05
+  }
+}

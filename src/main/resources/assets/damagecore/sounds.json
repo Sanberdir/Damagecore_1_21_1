@@ -1,0 +1,10 @@
+{
+  "learning_skill": {
+    "subtitle": "sounds.damagecore.learning_skill",
+    "sounds": [
+      {
+        "name": "damagecore:learning_skill"
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "material": "iron",
+
+  "helmet_percent": {
+    "slashing": 0.08,
+    "bludgeoning": 0.04,
+    "piercing": 0.09
+  },
+
+  "chestplate_percent": {
+    "slashing": 0.1,
+    "bludgeoning": 0.06,
+    "piercing": 0.12
+  },
+
+
+  "leggings_percent": {
+    "slashing": 0.07,
+    "bludgeoning": 0.05,
+    "piercing": 0.07
+  },
+
+
+  "boots_percent": {
+    "slashing": 0.05,
+    "bludgeoning": 0.03,
+    "piercing": 0.04
+  }
+}

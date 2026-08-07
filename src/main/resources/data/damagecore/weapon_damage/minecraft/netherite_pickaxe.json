@@ -1,0 +1,7 @@
+{
+  "piercing": 4.0,
+  "bludgeoning": 1.0,
+  "fire": 3.0,
+  "attack_speed": 0.7,
+  "fire_chance": 10.0
+}

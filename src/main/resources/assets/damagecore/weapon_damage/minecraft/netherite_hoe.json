@@ -1,0 +1,7 @@
+{
+  "slashing": 4.0,
+  "bludgeoning": 3.0,
+  "fire": 3.0,
+  "attack_speed": 0.6,
+  "fire_chance": 10.0
+}

@@ -1,0 +1,28 @@
+{
+  "material": "leather",
+  "helmet_percent": {
+    "slashing": 0.03,
+    "bludgeoning": 0.05,
+    "piercing": 0.01
+  },
+
+  "chestplate_percent": {
+    "slashing": 0.05,
+    "bludgeoning": 0.07,
+    "piercing": 0.03
+  },
+
+
+  "leggings_percent": {
+    "slashing": 0.04,
+    "bludgeoning": 0.06,
+    "piercing": 0.02
+  },
+
+
+  "boots_percent": {
+    "slashing": 0.02,
+    "bludgeoning": 0.04,
+    "piercing": 0.01
+  }
+}
