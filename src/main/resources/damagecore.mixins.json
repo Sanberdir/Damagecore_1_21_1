@@ -21,7 +21,8 @@
     "damage_fire_mixins.FireDamageMixin",
     "damage_fire_mixins.FireDamageSmallFireballMixin",
     "damage_poison_mixins.PoisonEffectsMixin",
-    "damage_poison_mixins.PoisonTickMixin"
+    "damage_poison_mixins.PoisonTickMixin",
+    "tree_mixins.shooting.BowItemServerMixin"
   ],
   "client": [
     "AbstractContainerScreenAccessor",
@@ -29,7 +30,8 @@
     "NoIconPotionEffectsMixin",
     "ScreenInvoker",
     "inventory_screen.AbstractContainerScreenMixin",
-    "inventory_screen.InventoryScreenMixin"
+    "inventory_screen.InventoryScreenMixin",
+    "tree_mixins.shooting.ItemPropertiesMixin"
   ],
   "injectors": {
     "defaultRequire": 1

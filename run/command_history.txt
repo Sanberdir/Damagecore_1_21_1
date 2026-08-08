@@ -1,16 +1,3 @@
-/give Dev damagecore_1_21_1_neo:birch_leaf
-/summon minecraft:blaze
-/effect give Dev minecraft:absorption
-/effect give Dev minecraft:absorption 3
-/effect give Dev minecraft:absorption infinite 5
-/effect give Dev minecraft:absorption infinite
-/effect clear
-/effect give Dev minecraft:absorption infinite
-/effect give Dev minecraft:health_boost
-/time set day
-/effect give Dev minecraft:absorption infinite
-/effect give Dev minecraft:health_boost infinite
-/effect clear
 /effect give Dev minecraft:absorption infinite
 /effect give Dev minecraft:health_boost infinite
 /effect clear
@@ -36,3 +23,28 @@
 /effect clear
 /time set day
 /enchant Dev minecraft:protection 3
+/summon minecraft:cave_spider
+/effect give Dev damagecore:bleeding_1
+/effect clear
+/effect give Dev damagecore:bleeding_1 2
+/effect clear
+/effect give Dev damagecore:death_poison 5
+/effect give Dev minecraft:wither
+/effect clear
+/effect give Dev damagecore:death_poison 5
+/effect clear
+/effect give Dev damagecore:drunkenness_2
+/effect clear
+/effect give Dev damagecore:stunning
+/effect clear
+/experience set Dev 55 levels
+/experience set Dev 0 levels
+/experience set Dev 55 levels
+/experience set Dev 0
+/experience set Dev 0 levels
+/experience set Dev 50 levels
+/time set day
+/summon minecraft:skeleton
+/give @p minecraft:shield[minecraft:damage=335] 1
+/experience set Dev 55 levels
+/attribute @s minecraft:generic.movement_speed modifier value get damagecore:ranger_bow_speed_bonus

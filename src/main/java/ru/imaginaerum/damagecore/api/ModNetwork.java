@@ -14,6 +14,7 @@ import ru.imaginaerum.damagecore.api.skill_tree.SyncNodeLevelsPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.implementation_skills.shooting.HundredArmedSyncPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SelectNodeVariantPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SyncNodeVariantsPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.SyncEffectSourcePayload;
 import ru.imaginaerum.damagecore.events_tree.SyncTreeXpPacket;
 import ru.imaginaerum.damagecore.hud.elements.DrainStaminaPacket;
 import ru.imaginaerum.damagecore.hud.elements.NormalAttackPacket;
@@ -41,7 +42,7 @@ public final class ModNetwork {
         registrar.playToClient(DrainStaminaPacket.TYPE,     DrainStaminaPacket.STREAM_CODEC, DrainStaminaPacket::handle);
         registrar.playToClient(SyncStatsPacket.TYPE,        SyncStatsPacket.CODEC,          SyncStatsPacket::handle); // или STREAM_CODEC — смотрите по факту в самом файле
         registrar.playToClient(HundredArmedSyncPacket.TYPE, HundredArmedSyncPacket.CODEC,   HundredArmedSyncPacket::handle);
-
+        registrar.playToClient(SyncEffectSourcePayload.TYPE, SyncEffectSourcePayload.STREAM_CODEC, SyncEffectSourcePayload::handle);
         // ─── Клиент → Сервер ───
         registrar.playToServer(ThirstDamagePacket.TYPE,     ThirstDamagePacket.STREAM_CODEC, ThirstDamagePacket::handle);
         registrar.playToServer(RequestFullSyncPacket.TYPE,  RequestFullSyncPacket.CODEC,    RequestFullSyncPacket::handle);

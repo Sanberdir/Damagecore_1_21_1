@@ -21,18 +21,11 @@ public class RangerAttributeEvent {
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
-        // Проверка стороны: только логический сервер
-        if (event.getEntity().level().isClientSide) {
-            return;
-        }
+        if (event.getEntity().level().isClientSide) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
-        // В 1.21+ вместо event.player используется event.getEntity()
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-
-        // Проверка ноды ranger
-        if (!SkillTreeServerHandler.isNodeLearned(player, "ranger")) {
+        boolean learned = SkillTreeServerHandler.isNodeLearned(player, "ranger");
+        if (!learned) {
             removeSpeedModifier(player);
             return;
         }

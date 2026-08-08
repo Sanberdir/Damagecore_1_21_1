@@ -21,9 +21,11 @@ import ru.imaginaerum.damagecore.Init.items.DCItems;
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ArrowLightningStorm;
 import ru.imaginaerum.damagecore.Init.tab.DCTabs;
 import ru.imaginaerum.damagecore.armor.DamageArmorModifier;
+import ru.imaginaerum.damagecore.effect.DCEffects;
 import ru.imaginaerum.damagecore.library_damage.WeaponDamageManager;
 import ru.imaginaerum.damagecore.library_damage.arrow_data.ArrowDamageManager;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
+import ru.imaginaerum.damagecore.particle.DCParticles;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 @Mod(Damagecore_1_21_1_neo.MODID)
@@ -35,7 +37,8 @@ public class Damagecore_1_21_1_neo {
 
         // Регистрируем этот класс на глобальной шине событий NeoForge (для серверного тика)
         NeoForge.EVENT_BUS.register(this);
-
+        DCEffects.MOB_EFFECTS.register(modEventBus);
+        DCParticles.PARTICLE_TYPES.register(modEventBus);
         DCItems.ITEMS.register(modEventBus);
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
