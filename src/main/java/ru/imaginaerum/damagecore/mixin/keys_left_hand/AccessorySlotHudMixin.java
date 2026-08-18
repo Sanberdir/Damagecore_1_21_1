@@ -8,11 +8,11 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.imaginaerum.damagecore.library_extra_slots.ModAttachments;
 
 @Mixin(Gui.class)
 public abstract class AccessorySlotHudMixin {
@@ -30,11 +30,14 @@ public abstract class AccessorySlotHudMixin {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.options.hideGui) return;
-        if (!ModAttachments.EXTRA_SLOTS.isBound()) return;
-        if (!player.hasData(ModAttachments.EXTRA_SLOTS)) return;
 
-        ModAttachments.ExtraSlotsHandler handler =
-                (ModAttachments.ExtraSlotsHandler) player.getData(ModAttachments.EXTRA_SLOTS);
+        // ИСПРАВЛЕНО: Убраны нерабочие проверки старых ModAttachments.
+        // Запрашиваем хендлер предметов напрямую через интерфейс-утку расширенного инвентаря
+        ItemStackHandler handler =
+                ((ru.imaginaerum.damagecore.library_extra_slots.IExtraSlotsInventory) player.getInventory()).damagecore$getExtraSlots();
+
+        // Если по какой-то причине хендлер не инициализировался (подстраховка)
+        if (handler == null) return;
 
         ItemStack stack0 = handler.getStackInSlot(0); // Пара к щиту (слева)
         ItemStack stack1 = handler.getStackInSlot(1); // Пара к 3-му слоту (крайний справа)
@@ -56,14 +59,11 @@ public abstract class AccessorySlotHudMixin {
         // ==========================================
         // 1. ЛЕВАЯ СТОРОНА: Слот 1 (индекс 0) — пара для щита
         // ==========================================
-        // Ванильный щит прилегает к хотбару слева. Сдвиг для идеальной стыковки встык
-        // с учетом прозрачных полей текстуры составляет ровно -51 пиксель (а не -58).
         if (!stack0.isEmpty()) {
             int leftSlotX = hotbarLeftEdge - 51;
 
             guiGraphics.blitSprite(SLOT_LEFT_SPRITE, leftSlotX, slotY, SLOT_W, SLOT_H);
 
-            // Смещение предмета скорректировано под новую позицию спрайта
             int itemX = leftSlotX + 3;
             int itemY = slotY + 4;
             guiGraphics.renderItem(stack0, itemX, itemY);
@@ -87,15 +87,11 @@ public abstract class AccessorySlotHudMixin {
         // ==========================================
         // 3. КРАЙНЯЯ ПРАВАЯ СТОРОНА: Слот 2 (индекс 1) — пара к Слотоу 3
         // ==========================================
-        // Вместо +29 сдвигаем всего на +22 пикселя.
-        // Это полностью перекроет прозрачные поля и сольет рамки слотов в единую линию.
         if (!stack1.isEmpty()) {
             int rightSlotX1 = hotbarRightEdge + 22;
 
             guiGraphics.blitSprite(SLOT_RIGHT_SPRITE, rightSlotX1, slotY, SLOT_W, SLOT_H);
 
-            // Сдвигаем предмет на ту же разницу (-7 пикселей относительно геометрического центра нового спрайта),
-            // чтобы он остался визуально по центру своей рамки: +10.
             int itemX = rightSlotX1 + 10;
             int itemY = slotY + 4;
             guiGraphics.renderItem(stack1, itemX, itemY);

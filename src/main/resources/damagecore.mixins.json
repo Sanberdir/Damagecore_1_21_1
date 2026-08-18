@@ -23,7 +23,9 @@
     "damage_poison_mixins.PoisonEffectsMixin",
     "damage_poison_mixins.PoisonTickMixin",
     "keys_left_hand.AbstractContainerMenuInvoker",
+    "keys_left_hand.InventoryExtensionMixin",
     "keys_left_hand.InventoryMenuMixin",
+    "keys_left_hand.PlayerStorageMixin",
     "tree_mixins.shooting.BowItemServerMixin"
   ],
   "client": [

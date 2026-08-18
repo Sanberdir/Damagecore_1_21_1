@@ -8,8 +8,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import ru.imaginaerum.damagecore.library_extra_slots.ModAttachments;
+import ru.imaginaerum.damagecore.library_extra_slots.IExtraSlotsInventory;
 
 public record SyncAccessorySlotsPacket(CompoundTag tag) implements CustomPacketPayload {
 
@@ -30,7 +31,6 @@ public record SyncAccessorySlotsPacket(CompoundTag tag) implements CustomPacketP
         return TYPE;
     }
 
-    // Обработчик на стороне КЛИЕНТА
     public static void handle(SyncAccessorySlotsPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (FMLEnvironment.dist == Dist.CLIENT) {
@@ -39,13 +39,15 @@ public record SyncAccessorySlotsPacket(CompoundTag tag) implements CustomPacketP
         });
     }
 
-    // Изолированный класс во избежание сбоев выделения памяти на выделенном сервере
     private static class ClientHandler {
         private static void handleClient(CompoundTag tag) {
             Player player = net.minecraft.client.Minecraft.getInstance().player;
             if (player != null) {
-                ModAttachments.ExtraSlotsHandler handler = player.getData(ModAttachments.EXTRA_SLOTS);
-                handler.deserializeNBT(net.minecraft.client.Minecraft.getInstance().level.registryAccess(), tag);
+                // ИСПРАВЛЕНО: Теперь запрашиваем хендлер напрямую из расширенного инвентаря игрока
+                ItemStackHandler handler = ((IExtraSlotsInventory) player.getInventory()).damagecore$getExtraSlots();
+                if (tag != null && !tag.isEmpty()) {
+                    handler.deserializeNBT(net.minecraft.client.Minecraft.getInstance().level.registryAccess(), tag);
+                }
             }
         }
     }

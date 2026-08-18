@@ -5,8 +5,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import ru.imaginaerum.damagecore.api.ModNetwork;
-import ru.imaginaerum.damagecore.library_extra_slots.ModAttachments;
 
 public final class SwapAccessorySlotsPacketHandler {
 
@@ -14,31 +12,23 @@ public final class SwapAccessorySlotsPacketHandler {
 
     public static void handle(SwapAccessorySlotsPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player)) return;
-            if (!ModAttachments.EXTRA_SLOTS.isBound()) return;
-            if (!player.hasData(ModAttachments.EXTRA_SLOTS)) return;
+            if (!(context.player() instanceof net.minecraft.server.level.ServerPlayer player)) return;
 
-            ModAttachments.ExtraSlotsHandler handler =
-                    (ModAttachments.ExtraSlotsHandler) player.getData(ModAttachments.EXTRA_SLOTS);
+            net.neoforged.neoforge.items.ItemStackHandler handler =
+                    ((ru.imaginaerum.damagecore.library_extra_slots.IExtraSlotsInventory) player.getInventory()).damagecore$getExtraSlots();
 
-            // --- ПЕРВАЯ ПАРА ОБМЕНА: Слот щита <-> Кастомный слот 1 (индекс 0) ---
-            ItemStack offhandStack = player.getItemBySlot(EquipmentSlot.OFFHAND).copy();
+            ItemStack offhandStack = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND).copy();
             ItemStack customSlot0  = handler.getStackInSlot(0).copy();
-
-            player.setItemSlot(EquipmentSlot.OFFHAND, customSlot0); // В щит кладём вещь из 1-го кастомного
-            handler.setStackInSlot(0, offhandStack);                 // В 1-й кастомный кладём вещь из щита
-
-
-            // --- ВТОРАЯ ПАРА ОБМЕНА: Кастомный слот 2 (индекс 1) <-> Кастомный слот 3 (индекс 2) ---
             ItemStack customSlot1 = handler.getStackInSlot(1).copy();
             ItemStack customSlot2 = handler.getStackInSlot(2).copy();
 
-            handler.setStackInSlot(1, customSlot2); // Во 2-й кастомный кладём вещь из 3-го
-            handler.setStackInSlot(2, customSlot1); // В 3-й кастомный кладём вещь из 2-го
+            player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, customSlot0);
+            handler.setStackInSlot(0, offhandStack);
+            handler.setStackInSlot(1, customSlot2);
+            handler.setStackInSlot(2, customSlot1);
 
-
-            CompoundTag tag = handler.serializeNBT(player.registryAccess());
-            ModNetwork.sendToClient(new ru.imaginaerum.damagecore.library_extra_slots.network.SyncAccessorySlotsPacket(tag), player);
+            // Принудительно заставляем ванильный контейнер обновить стейты на клиенте
+            player.containerMenu.broadcastChanges();
         });
     }
 }

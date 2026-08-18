@@ -25,7 +25,6 @@ import ru.imaginaerum.damagecore.armor.DamageArmorModifier;
 import ru.imaginaerum.damagecore.effect.DCEffects;
 import ru.imaginaerum.damagecore.library_damage.WeaponDamageManager;
 import ru.imaginaerum.damagecore.library_damage.arrow_data.ArrowDamageManager;
-import ru.imaginaerum.damagecore.library_extra_slots.ModAttachments;
 import ru.imaginaerum.damagecore.library_extra_slots.ModKeyMappings;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
 import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionAttachments;
@@ -47,7 +46,6 @@ public class Damagecore_1_21_1_neo {
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
         DCSoundEvents.SOUND_EVENTS.register(modEventBus);
-        ModAttachments.register(modEventBus);
         modEventBus.register(DCTabs.class);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         IEventBus neoForgeEventBus = NeoForge.EVENT_BUS;
