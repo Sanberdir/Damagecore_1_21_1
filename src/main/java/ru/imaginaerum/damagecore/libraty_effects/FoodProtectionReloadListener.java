@@ -24,46 +24,65 @@ public class FoodProtectionReloadListener extends SimpleJsonResourceReloadListen
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> jsons, ResourceManager manager, net.minecraft.util.profiling.ProfilerFiller profiler) {
+    protected void apply(Map<ResourceLocation, JsonElement> jsons, ResourceManager manager, ProfilerFiller profiler) {
         EFFECTS.clear();
 
-        for (JsonElement element : jsons.values()) {
-            JsonObject json = element.getAsJsonObject();
+        // ДОБАВЛЕНО: entrySet() вместо values(), чтобы знать id файла для логов
+        for (Map.Entry<ResourceLocation, JsonElement> entry : jsons.entrySet()) {
+            ResourceLocation fileId = entry.getKey();
 
-            // ИСПРАВЛЕНО: Вместо ForgeRegistries используем BuiltInRegistries, вместо new ResourceLocation — ResourceLocation.parse
-            Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                    ResourceLocation.parse(json.get("item").getAsString())
-            );
+            // ДОБАВЛЕНО: try/catch вокруг всего парсинга одного файла —
+            // раньше исключение (например из DamageType.valueOf) могло тихо
+            // прервать обработку остальных файлов или вообще весь reload
+            try {
+                JsonObject json = entry.getValue().getAsJsonObject();
 
-            // В ванильном реестре .get() возвращает AIR, если предмет не найден, а не null
-            if (item == net.minecraft.world.item.Items.AIR) continue;
+                Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                        ResourceLocation.parse(json.get("item").getAsString())
+                );
 
-            List<Effect> effects = new ArrayList<>();
-            JsonArray array = json.getAsJsonArray("effects");
-
-            boolean overrideVanilla = json.has("override_vanilla_effects") && json.get("override_vanilla_effects").getAsBoolean();
-            List<ResourceLocation> removeEffects = new ArrayList<>();
-            if (json.has("remove_effects")) {
-                JsonArray rem = json.getAsJsonArray("remove_effects");
-                for (JsonElement r : rem) {
-                    // ИСПРАВЛЕНО: ResourceLocation.parse вместо конструктора
-                    removeEffects.add(ResourceLocation.parse(r.getAsString()));
+                if (item == net.minecraft.world.item.Items.AIR) {
+                    // ДОБАВЛЕНО: лог, если предмет не найден в реестре (опечатка / неверный namespace)
+                    System.err.println("[FoodProtection] Skipped " + fileId
+                            + ": item '" + json.get("item").getAsString() + "' not found in registry (AIR)");
+                    continue;
                 }
+
+                List<Effect> effects = new ArrayList<>();
+                JsonArray array = json.getAsJsonArray("effects");
+
+                boolean overrideVanilla = json.has("override_vanilla_effects") && json.get("override_vanilla_effects").getAsBoolean();
+                List<ResourceLocation> removeEffects = new ArrayList<>();
+                if (json.has("remove_effects")) {
+                    JsonArray rem = json.getAsJsonArray("remove_effects");
+                    for (JsonElement r : rem) {
+                        removeEffects.add(ResourceLocation.parse(r.getAsString()));
+                    }
+                }
+
+                for (JsonElement e : array) {
+                    JsonObject o = e.getAsJsonObject();
+                    DamageType dtype = DamageType.valueOf(o.get("damage_type").getAsString());
+                    float prot = o.get("protection").getAsFloat();
+                    int duration = o.get("duration").getAsInt();
+
+                    effects.add(new Effect(dtype, prot, duration, overrideVanilla, removeEffects));
+                }
+
+                EFFECTS.put(item, effects);
+
+            } catch (Exception e) {
+                // ДОБАВЛЕНО: лог конкретного битого файла вместо тихого падения
+                System.err.println("[FoodProtection] Failed to parse " + fileId + ": " + e);
             }
-
-            for (JsonElement e : array) {
-                JsonObject o = e.getAsJsonObject();
-                DamageType dtype = DamageType.valueOf(o.get("damage_type").getAsString());
-                float prot = o.get("protection").getAsFloat();
-                int duration = o.get("duration").getAsInt();
-
-                effects.add(new Effect(dtype, prot, duration, overrideVanilla, removeEffects));
-            }
-
-            EFFECTS.put(item, effects);
         }
-    }
 
+        // ДОБАВЛЕНО: итоговая сводка после загрузки — видно, сколько записей реально попало в EFFECTS
+        System.out.println("[FoodProtection] Loaded " + EFFECTS.size() + " entries: "
+                + EFFECTS.keySet().stream()
+                .map(i -> net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(i).toString())
+                .toList());
+    }
 
     public record Effect(
             DamageType damageType,

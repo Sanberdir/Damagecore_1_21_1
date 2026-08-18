@@ -22,6 +22,8 @@
     "damage_fire_mixins.FireDamageSmallFireballMixin",
     "damage_poison_mixins.PoisonEffectsMixin",
     "damage_poison_mixins.PoisonTickMixin",
+    "keys_left_hand.AbstractContainerMenuInvoker",
+    "keys_left_hand.InventoryMenuMixin",
     "tree_mixins.shooting.BowItemServerMixin"
   ],
   "client": [
@@ -31,6 +33,8 @@
     "ScreenInvoker",
     "inventory_screen.AbstractContainerScreenMixin",
     "inventory_screen.InventoryScreenMixin",
+    "keys_left_hand.AccessorySlotHudMixin",
+    "keys_left_hand.SwapOffhandKeyMixin",
     "tree_mixins.shooting.ItemPropertiesMixin"
   ],
   "injectors": {

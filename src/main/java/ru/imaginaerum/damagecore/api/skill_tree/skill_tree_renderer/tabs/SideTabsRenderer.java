@@ -1,10 +1,9 @@
-package ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer;
+package ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.ArmorTabRenderer;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.PotionTabRenderer;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.Render;
 
 public final class SideTabsRenderer {
 

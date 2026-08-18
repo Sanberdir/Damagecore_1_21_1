@@ -18,10 +18,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import ru.imaginaerum.damagecore.api.ModNetwork;
 import ru.imaginaerum.damagecore.api.skill_tree.*;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.Render;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.SideTabsRenderer;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.SideTabsRenderer;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.StatsPanelRenderer;
 import ru.imaginaerum.damagecore.library_stats.StatChangePacket;
 import ru.imaginaerum.damagecore.library_stats.StatsType;
@@ -94,7 +93,26 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
         if (!this.skillTreeVisible) return;
 
         StatsPanelRenderer.renderAll(gui, leftPos, topPos, mouseX, mouseY,
-                damagecore$stripOffsetY, damagecore$activeSideTab);
+                damagecore$stripOffsetY, damagecore$activeSideTab, partialTick);
+
+        // Ручная отрисовка модели игрока, т.к. ванильный renderBg отменён ниже
+        // и стандартный вызов renderEntityInInventoryFollowsMouse (внутри ванильного renderBg) не происходит.
+        if (Minecraft.getInstance().player != null) {
+            int dollX1 = leftPos + 26;   // левая граница области под модель — ПОДСТАВЬТЕ СВОЮ
+            int dollY1 = topPos + 8;     // верхняя граница — ПОДСТАВЬТЕ СВОЮ
+            int dollX2 = leftPos + 76;   // правая граница — ПОДСТАВЬТЕ СВОЮ
+            int dollY2 = topPos + 78;    // нижняя граница — ПОДСТАВЬТЕ СВОЮ
+            int dollSize = 30;           // масштаб модели
+
+            InventoryScreen.renderEntityInInventoryFollowsMouse(
+                    gui,
+                    dollX1, dollY1, dollX2, dollY2,
+                    dollSize,
+                    (float) dollSize,
+                    (float) (dollX1 + (dollX2 - dollX1) / 2) - mouseX,
+                    (float) (dollY1 + (dollY2 - dollY1) / 2 - dollSize) - mouseY,
+                    Minecraft.getInstance().player);
+        }
 
         ci.cancel();
     }

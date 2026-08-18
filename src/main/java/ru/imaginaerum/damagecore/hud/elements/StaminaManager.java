@@ -17,6 +17,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import ru.imaginaerum.damagecore.Config;
+import ru.imaginaerum.damagecore.api.skill_tree.SkillTreeServerHandler;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
 import ru.imaginaerum.damagecore.library_stats.StatsType;
 
@@ -70,9 +71,9 @@ public class StaminaManager {
 
     private static float getShieldStaminaMultiplier(Player player) {
         if (player instanceof ServerPlayer serverPlayer) {
-            // if (SkillTreeServerHandler.isNodeLearned(serverPlayer, "shield_bearer")) {
-            //     return 0.5f;
-            // }
+             if (SkillTreeServerHandler.isNodeLearned(serverPlayer, "shield_bearer")) {
+                 return 0.5f;
+             }
         }
         return 1.0f;
     }

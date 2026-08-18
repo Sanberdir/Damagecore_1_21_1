@@ -10,6 +10,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -24,7 +25,10 @@ import ru.imaginaerum.damagecore.armor.DamageArmorModifier;
 import ru.imaginaerum.damagecore.effect.DCEffects;
 import ru.imaginaerum.damagecore.library_damage.WeaponDamageManager;
 import ru.imaginaerum.damagecore.library_damage.arrow_data.ArrowDamageManager;
+import ru.imaginaerum.damagecore.library_extra_slots.ModAttachments;
+import ru.imaginaerum.damagecore.library_extra_slots.ModKeyMappings;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
+import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionAttachments;
 import ru.imaginaerum.damagecore.particle.DCParticles;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
@@ -34,7 +38,7 @@ public class Damagecore_1_21_1_neo {
 
     public Damagecore_1_21_1_neo(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
-
+        FoodProtectionAttachments.ATTACHMENT_TYPES.register(modEventBus);
         // Регистрируем этот класс на глобальной шине событий NeoForge (для серверного тика)
         NeoForge.EVENT_BUS.register(this);
         DCEffects.MOB_EFFECTS.register(modEventBus);
@@ -43,9 +47,9 @@ public class Damagecore_1_21_1_neo {
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
         DCSoundEvents.SOUND_EVENTS.register(modEventBus);
+        ModAttachments.register(modEventBus);
         modEventBus.register(DCTabs.class);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-
         IEventBus neoForgeEventBus = NeoForge.EVENT_BUS;
         neoForgeEventBus.addListener(this::onAddReloadListeners);
         PlayerStatsCapability.register(modEventBus);
@@ -78,6 +82,10 @@ public class Damagecore_1_21_1_neo {
 
     @EventBusSubscriber(modid = MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
+        @SubscribeEvent
+        public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
+            event.register(ModKeyMappings.USE_ACCESSORY_SLOT);
+        }
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             // Регистрация 3D отображения летящей стрелы в мире

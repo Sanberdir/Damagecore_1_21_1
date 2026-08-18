@@ -43,7 +43,14 @@ public class FoodProtectionCapability {
         event.registerEntity(
                 FOOD_PROTECTION,
                 EntityType.PLAYER,
-                (player, context) -> new FoodProtectionManager(player)
+                (player, context) -> {
+                    // ИСПРАВЛЕНО: получаем ОДИН И ТОТ ЖЕ закешированный объект через attachment,
+                    // а не создаём новый FoodProtectionManager при каждом вызове getCapability()
+                    FoodProtectionManager manager = player.getData(
+                            ru.imaginaerum.damagecore.libraty_effects.FoodProtectionAttachments.FOOD_PROTECTION_MANAGER.get());
+                    manager.bindPlayer(player);
+                    return manager;
+                }
         );
     }
 
@@ -75,11 +82,9 @@ public class FoodProtectionCapability {
 
         List<MobEffectInstance> vanillaMobEffects = new ArrayList<>();
 
-        // В 1.21.1 свойства еды берутся из компонентов ItemStack
         FoodProperties foodProperties = event.getItem().get(DataComponents.FOOD);
         if (foodProperties != null) {
             for (var pair : foodProperties.effects()) {
-                // В ванильном коде теперь используется Holder<MobEffect>
                 MobEffectInstance inst = player.getEffect(pair.effect().getEffect());
                 if (inst != null) {
                     vanillaMobEffects.add(new MobEffectInstance(inst));
@@ -88,52 +93,66 @@ public class FoodProtectionCapability {
         }
 
         FoodProtectionManager manager = player.getCapability(FOOD_PROTECTION);
-        if (manager != null) {
-            Set<ResourceLocation> allRemoved = new HashSet<>();
-            for (var def : defs) {
-                if (def.overrideVanilla()) {
-                    allRemoved.addAll(def.removeEffects());
-                }
-            }
 
-            List<MobEffectInstance> filteredMobEffects = vanillaMobEffects.stream()
-                    .filter(inst -> {
-                        // В 1.21.1 inst.getEffect() возвращает Holder<MobEffect>
-                        ResourceLocation loc = BuiltInRegistries.MOB_EFFECT.getKey(inst.getEffect().value());
-                        return loc == null || !allRemoved.contains(loc);
-                    })
-                    .toList();
-
-            for (var def : defs) {
-                manager.addEffect(new FoodProtectionEffect(
-                        item,
-                        def.damageType(),
-                        def.protection(),
-                        def.duration(),
-                        filteredMobEffects
-                ));
-
-                if (def.overrideVanilla()) {
-                    for (ResourceLocation effLoc : def.removeEffects()) {
-                        try {
-                            MobEffect mob = BuiltInRegistries.MOB_EFFECT.get(effLoc);
-                            if (mob != null) {
-                                // .removeEffect теперь принимает Holder, .wrapOptional оборачивает моб в Holder
-                                player.removeEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(mob));
-                            }
-                        } catch (Exception ignored) {}
-                    }
-                }
-            }
-
-            syncToClient((ServerPlayer) player);
+        // ЛОГ 1: сразу после получения capability — подтверждает что manager не null
+        if (manager == null) {
+            System.err.println("[FoodProtection] FATAL: manager is NULL for player " + player.getName().getString());
+            return;
         }
+
+        Set<ResourceLocation> allRemoved = new HashSet<>();
+        for (var def : defs) {
+            if (def.overrideVanilla()) {
+                allRemoved.addAll(def.removeEffects());
+            }
+        }
+
+        List<MobEffectInstance> filteredMobEffects = vanillaMobEffects.stream()
+                .filter(inst -> {
+                    ResourceLocation loc = BuiltInRegistries.MOB_EFFECT.getKey(inst.getEffect().value());
+                    return loc == null || !allRemoved.contains(loc);
+                })
+                .toList();
+
+        for (var def : defs) {
+            FoodProtectionEffect newEffect = new FoodProtectionEffect(
+                    item,
+                    def.damageType(),
+                    def.protection(),
+                    def.duration(),
+                    filteredMobEffects
+            );
+            manager.addEffect(newEffect);
+
+            // ЛОГ 2: подтверждает каждое добавление по отдельности
+            System.out.println("[FoodProtection] addEffect called: type=" + def.damageType()
+                    + " protection=" + def.protection() + " duration=" + def.duration()
+                    + " -> manager.size now = " + manager.getAllEffects().size());
+
+            if (def.overrideVanilla()) {
+                for (ResourceLocation effLoc : def.removeEffects()) {
+                    try {
+                        MobEffect mob = BuiltInRegistries.MOB_EFFECT.get(effLoc);
+                        if (mob != null) {
+                            player.removeEffect(BuiltInRegistries.MOB_EFFECT.wrapAsHolder(mob));
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+
+        // ЛОГ 3: финальная проверка перед отправкой на клиент
+        System.out.println("[FoodProtection] FINAL manager size before sync = " + manager.getAllEffects().size()
+                + " (same instance? " + (manager == player.getCapability(FOOD_PROTECTION)) + ")");
+
+        syncToClient((ServerPlayer) player);
     }
 
     // 4. Обновленный синтаксис отправки пакетов NeoForge 1.21.1
     public static void syncToClient(ServerPlayer player) {
         FoodProtectionManager manager = player.getCapability(FOOD_PROTECTION);
         if (manager != null) {
+            System.out.println("[FoodProtection] Manager now has " + manager.getAllEffects().size() + " active effects, sending sync");
             // 1.21.1: FoodProtectionManager.save(...) теперь требует HolderLookup.Provider —
             // передаём player.registryAccess() (RegistryAccess реализует HolderLookup.Provider).
             CompoundTag saved = manager.save(player.registryAccess());

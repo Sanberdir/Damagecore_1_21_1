@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.SideTabsRenderer;
 import ru.imaginaerum.damagecore.library_stats.IPlayerStats;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
 import ru.imaginaerum.damagecore.library_stats.StatsType;
@@ -231,8 +232,10 @@ public final class StatsPanelRenderer {
     }
 
     /** Полный набор: фон + полоска + боковые вкладки + строки статов + игрок (entity) в инвентаре. */
+    /** Полный набор: фон + полоска + боковые вкладки + строки статов + игрок (entity) в инвентаре. */
     public static void renderAll(GuiGraphics gui, int leftPos, int topPos,
-                                 int mouseX, int mouseY, int stripOffsetY, int activeSideTab) {
+                                 int mouseX, int mouseY, int stripOffsetY, int activeSideTab,
+                                 float partialTick) {
         renderBackground(gui, leftPos, topPos);
         renderExtraPanel(gui, leftPos, topPos);
         renderScrollStrip(gui, leftPos, topPos, stripOffsetY);
@@ -240,21 +243,21 @@ public final class StatsPanelRenderer {
         renderStatRows(gui, leftPos, topPos, mouseX, mouseY, stripOffsetY);
 
         if (Minecraft.getInstance().player != null) {
-            int posX = leftPos + 51;
-            int posY = topPos + 75;
-            int scale = 30; // Масштаб отображения сущности
+            int x1 = leftPos + 26;
+            int y1 = topPos + 8;
+            int x2 = leftPos + 76;
+            int y2 = topPos + 78;
+            int size = 30;          // масштаб модели
+            float yOffset = 0.0625F; // как в ваниле — небольшое смещение модели по Y
 
             InventoryScreen.renderEntityInInventoryFollowsMouse(
                     gui,
-                    posX,
-                    posY,
-                    scale,
-                    (int)(posX - mouseX), // Разница по X для слежения взгляда
-                    (int)(posY - 50 - mouseY), // Разница по Y для слежения взгляда
-                    0.0F, // Дополнительное смещение по X (обычно 0.0F)
-                    0.0F, // Дополнительное смещение по Y (обычно 0.0F)
-                    0.0F, // Дополнительное смещение по Z (обычно 0.0F)
-                    Minecraft.getInstance().player // Сама сущность игрока
+                    x1, y1, x2, y2,
+                    size,
+                    yOffset,
+                    (float) mouseX,
+                    (float) mouseY,
+                    Minecraft.getInstance().player
             );
         }
     }

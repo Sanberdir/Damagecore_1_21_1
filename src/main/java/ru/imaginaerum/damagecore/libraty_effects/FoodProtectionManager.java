@@ -21,10 +21,14 @@ import java.util.*;
  */
 public class FoodProtectionManager {
     private final Map<DamageType, List<FoodProtectionEffect>> activeEffects = new HashMap<>();
-    private final Player player;
-
+    private Player player;
     public FoodProtectionManager(Player player) {
         this.player = player;
+    }
+    public void bindPlayer(Player player) {
+        if (this.player == null) {
+            this.player = player;
+        }
     }
     public List<ItemStack> getUniqueActiveFoods() {
         Set<ItemStack> uniqueStacks = new HashSet<>();

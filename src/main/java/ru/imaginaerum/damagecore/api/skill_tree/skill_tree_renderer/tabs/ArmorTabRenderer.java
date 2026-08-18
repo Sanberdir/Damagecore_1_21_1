@@ -13,6 +13,8 @@ import ru.imaginaerum.damagecore.armor.DamageResistance;
 import ru.imaginaerum.damagecore.library_damage.DamageType;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
 import ru.imaginaerum.damagecore.library_stats.StatsType;
+import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionCapability;
+import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionManager;
 
 import java.util.*;
 
@@ -58,9 +60,20 @@ public final class ArmorTabRenderer {
         }
 
         Map<DamageType, Float> enchantPercent = new EnumMap<>(DamageType.class);
+
         for (DamageType type : DamageType.values()) {
             float p = getTotalEnchantProtection(player, type);
             if (p > 0) enchantPercent.put(type, p);
+        }
+
+        // ДОБАВЛЕНО: защита от еды (FoodProtectionManager)
+        Map<DamageType, Float> foodPercent = new EnumMap<>(DamageType.class);
+        FoodProtectionManager foodManager = FoodProtectionCapability.get(player);
+        if (foodManager != null) {
+            for (DamageType type : DamageType.values()) {
+                float fp = foodManager.getTotalProtectionPercent(type);
+                if (fp > 0) foodPercent.put(type, fp);
+            }
         }
 
         Map<DamageType, DamageResistance> totals = new EnumMap<>(DamageType.class);
@@ -68,7 +81,8 @@ public final class ArmorTabRenderer {
             float flat = armorFlat.getOrDefault(type, 0f);
             float percent = Math.min(1f,
                     armorPercent.getOrDefault(type, 0f)
-                            + enchantPercent.getOrDefault(type, 0f));
+                            + enchantPercent.getOrDefault(type, 0f)
+                            + foodPercent.getOrDefault(type, 0f)); // ДОБАВЛЕНО
 
             if (flat > 0 || percent > 0) {
                 totals.put(type, new DamageResistance(flat, percent));
@@ -83,7 +97,8 @@ public final class ArmorTabRenderer {
 
         DamageType hovered = null;
 
-        boolean showList = (hasAnyArmor && !totals.isEmpty()) || (previewing && !previewTotals.isEmpty());
+        boolean showList = (hasAnyArmor && !totals.isEmpty()) || (previewing && !previewTotals.isEmpty())
+                || !foodPercent.isEmpty(); // ДОБАВЛЕНО: показывать список, даже если брони нет, но еда что-то даёт
 
         if (showList) {
             gui.drawString(mc.font,
@@ -123,8 +138,12 @@ public final class ArmorTabRenderer {
                     line = Component.translatable(getKey(type))
                             .append(Component.literal(": " + value));
 
+                    // ИЗМЕНЕНО: любой бонус сверх базовой брони (чары ИЛИ еда) — просто жёлтый, без зелёного
                     boolean hasEnchantBonus = enchantPercent.getOrDefault(type, 0f) > 0f;
-                    lineColor = hasEnchantBonus ? ChatFormatting.YELLOW.getColor() : 0xFFFFFF;
+                    boolean hasFoodBonus = foodPercent.getOrDefault(type, 0f) > 0f;
+                    boolean hasAnyBonus = hasEnchantBonus || hasFoodBonus;
+
+                    lineColor = hasAnyBonus ? ChatFormatting.YELLOW.getColor() : 0xFFFFFF;
                 }
 
                 gui.drawString(mc.font, line, textX, y, lineColor, true);
@@ -144,6 +163,7 @@ public final class ArmorTabRenderer {
             float af = armorFlat.getOrDefault(hovered, 0f);
             float ap = armorPercent.getOrDefault(hovered, 0f);
             float ep = enchantPercent.getOrDefault(hovered, 0f);
+            float fp = foodPercent.getOrDefault(hovered, 0f); // ДОБАВЛЕНО
 
             List<Component> tooltip = new ArrayList<>();
             tooltip.add(Component.translatable(getKey(hovered)));
@@ -160,6 +180,14 @@ public final class ArmorTabRenderer {
                 tooltip.add(Component.translatable(
                         "damagecore.tooltip.enchant",
                         pct(ep)
+                ));
+            }
+
+            // ДОБАВЛЕНО: строка про защиту от еды
+            if (fp > 0) {
+                tooltip.add(Component.translatable(
+                        "damagecore.tooltip.food",
+                        pct(fp)
                 ));
             }
 
@@ -226,7 +254,7 @@ public final class ArmorTabRenderer {
 
         for (ItemStack stack : player.getArmorSlots()) {
             if (!(stack.getItem() instanceof ArmorItem armorItem)) continue;
-            if (armorItem.getType() == previewArmor.getType()) continue; // этот слот заменяется превью-предметом
+            if (armorItem.getType() == previewArmor.getType()) continue;
 
             var resistances = DamageArmorModifier.getDamageResistances(
                     armorItem.getMaterial().value(), armorItem.getType());
@@ -235,14 +263,12 @@ public final class ArmorTabRenderer {
                 percent.merge(e.getKey(), e.getValue().getPercent(), Float::sum);
             }
 
-            // чары ОСТАЮЩИХСЯ надетых предметов — по стаку, максимум как в ваниле
             for (DamageType type : DamageType.values()) {
                 float p = getTotalEnchantProtectionForStack(stack, player, type);
                 if (p > 0) enchantMax.merge(type, p, Math::max);
             }
         }
 
-        // базовая броня превью-предмета
         var previewResistances = DamageArmorModifier.getDamageResistances(
                 previewArmor.getMaterial().value(), previewArmor.getType());
         for (var e : previewResistances.entrySet()) {
@@ -250,16 +276,30 @@ public final class ArmorTabRenderer {
             percent.merge(e.getKey(), e.getValue().getPercent(), Float::sum);
         }
 
-        // чары ИМЕННО превью-предмета
         for (DamageType type : DamageType.values()) {
             float p = getTotalEnchantProtectionForStack(previewStack, player, type);
             if (p > 0) enchantMax.merge(type, p, Math::max);
         }
 
+        // ДОБАВЛЕНО: защита от еды не зависит от того, какая броня надета —
+        // она должна одинаково учитываться и в текущем состоянии, и в превью,
+        // иначе сравнение показывает ложное "уменьшение" защиты
+        Map<DamageType, Float> foodMax = new EnumMap<>(DamageType.class);
+        FoodProtectionManager foodManager = FoodProtectionCapability.get(player);
+        if (foodManager != null) {
+            for (DamageType type : DamageType.values()) {
+                float fp = foodManager.getTotalProtectionPercent(type);
+                if (fp > 0) foodMax.put(type, fp);
+            }
+        }
+
         Map<DamageType, DamageResistance> result = new EnumMap<>(DamageType.class);
         for (DamageType type : DamageType.values()) {
             float f = flat.getOrDefault(type, 0f);
-            float p = Math.min(1f, percent.getOrDefault(type, 0f) + enchantMax.getOrDefault(type, 0f));
+            float p = Math.min(1f,
+                    percent.getOrDefault(type, 0f)
+                            + enchantMax.getOrDefault(type, 0f)
+                            + foodMax.getOrDefault(type, 0f)); // ДОБАВЛЕНО
             if (f > 0 || p > 0) result.put(type, new DamageResistance(f, p));
         }
         return result;

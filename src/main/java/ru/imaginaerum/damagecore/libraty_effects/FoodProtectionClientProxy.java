@@ -13,15 +13,20 @@ public class FoodProtectionClientProxy {
         var player = Minecraft.getInstance().player;
         if (player == null) return;
 
-        // ✅ ИСПРАВЛЕНО ДЛЯ 1.21.1: Получаем провайдер реестров из клиентского мира
-        net.minecraft.core.HolderLookup.Provider provider = player.level().registryAccess();
+        // ДОБАВЛЕНО: подтверждаем что пакет вообще дошёл до клиента
+        System.out.println("[FoodProtection] Client received sync packet, data=" + data);
 
-        // ✅ ИСПРАВЛЕНО ДЛЯ 1.21.1: Используем статический метод get() вместо удаленного getCapability
+        net.minecraft.core.HolderLookup.Provider provider = player.level().registryAccess();
         FoodProtectionManager manager = FoodProtectionCapability.get(player);
 
         if (manager != null) {
-            // ✅ ИСПРАВЛЕНО: Передаем полученный провайдер в метод load()
             manager.load(data, provider);
+            // ДОБАВЛЕНО: сколько эффектов распарсилось на клиенте после load()
+            System.out.println("[FoodProtection] Client manager loaded, now has "
+                    + manager.getAllEffects().size() + " effects");
+        } else {
+            // ДОБАВЛЕНО: если capability на клиенте вообще не найдена
+            System.err.println("[FoodProtection] Client manager is NULL!");
         }
     }
 

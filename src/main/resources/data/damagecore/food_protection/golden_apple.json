@@ -1,0 +1,21 @@
+{
+  "item": "minecraft:golden_apple",
+  "override_vanilla_effects": true,
+  "effects": [
+    {
+      "damage_type": "SLASHING",
+      "protection": 0.3,
+      "duration": 2400
+    },
+    {
+      "damage_type": "BLUDGEONING",
+      "protection": 0.3,
+      "duration": 2400
+    },
+    {
+      "damage_type": "PIERCING",
+      "protection": 0.3,
+      "duration": 2400
+    }
+  ]
+}

@@ -44,6 +44,7 @@
   "damagecore.tooltip.armor": "Armor: %s",
   "damagecore.tooltip.enchant": "Enchantments: %s",
   "damagecore.tooltip.damage_line": "%s: %s",
+  "damagecore.tooltip.food": "Eat: +%s",
 
   "damagecore.stat.live_forge": "Live Force",
   "damagecore.stat.endurance": "Endurance",

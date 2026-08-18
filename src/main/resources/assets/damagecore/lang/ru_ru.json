@@ -42,7 +42,7 @@
   "damagecore.tooltip.armor": "Броня: %s",
   "damagecore.tooltip.enchant": "Чары: %s",
   "damagecore.tooltip.damage_line": "%s: %s",
-
+  "damagecore.tooltip.food": "Еда: +%s",
   "damagecore.stat.live_forge": "Живучесть",
   "damagecore.stat.endurance": "Выносливость",
   "damagecore.stat.mind": "Разум",
