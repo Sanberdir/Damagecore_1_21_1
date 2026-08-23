@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.library_extra_slots;
+package ru.imaginaerum.damagecore.library_extra_slots.network;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -7,7 +7,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import ru.imaginaerum.damagecore.api.ModNetwork;
-import ru.imaginaerum.damagecore.library_extra_slots.network.SyncAccessorySlotsPacket;
+import ru.imaginaerum.damagecore.library_extra_slots.IExtraSlotsInventory;
 
 @EventBusSubscriber(modid = "damagecore")
 public final class ExtraSlotsJoinHandler {

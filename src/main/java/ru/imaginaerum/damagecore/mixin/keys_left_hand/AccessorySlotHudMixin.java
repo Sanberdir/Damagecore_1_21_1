@@ -31,25 +31,24 @@ public abstract class AccessorySlotHudMixin {
         LocalPlayer player = mc.player;
         if (player == null || mc.options.hideGui) return;
 
-        // ИСПРАВЛЕНО: Убраны нерабочие проверки старых ModAttachments.
-        // Запрашиваем хендлер предметов напрямую через интерфейс-утку расширенного инвентаря
+        // Получаем состояние режима боя
+        boolean combatMode = ((ru.imaginaerum.damagecore.library_extra_slots.ICombatModeEntity) player).damagecore$isCombatMode();
+        if (!combatMode) return; // Скрываем абсолютно всё, если не в боевом режиме
+
         ItemStackHandler handler =
                 ((ru.imaginaerum.damagecore.library_extra_slots.IExtraSlotsInventory) player.getInventory()).damagecore$getExtraSlots();
-
-        // Если по какой-то причине хендлер не инициализировался (подстраховка)
         if (handler == null) return;
 
-        ItemStack stack0 = handler.getStackInSlot(0); // Пара к щиту (слева)
-        ItemStack stack1 = handler.getStackInSlot(1); // Пара к 3-му слоту (крайний справа)
-        ItemStack stack2 = handler.getStackInSlot(2); // 3-й слот (справа, встык к хотбару)
+        // Предметы из кастомных слотов
+        ItemStack stack0 = handler.getStackInSlot(0); // Слот 0 (Левее щита)
+        ItemStack stack1 = handler.getStackInSlot(1); // Слот 1 (Правее хотбара, первый)
+        ItemStack stack2 = handler.getStackInSlot(2); // Слот 2 (Теперь крайний справа)
 
         int screenWidth  = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
-        // Базовые опорные точки ванильного хотбара
         int hotbarLeftEdge  = screenWidth / 2 - 91;
         int hotbarRightEdge = screenWidth / 2 + 91;
-
         int slotY = screenHeight - SLOT_H + 1;
 
         RenderSystem.enableBlend();
@@ -57,47 +56,51 @@ public abstract class AccessorySlotHudMixin {
         guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
 
         // ==========================================
-        // 1. ЛЕВАЯ СТОРОНА: Слот 1 (индекс 0) — пара для щита
+        // ЛЕВАЯ СТОРОНА (Слот 0 и Ванильный Offhand)
         // ==========================================
+
+        // 1. Слот 0 (Левее слота щита)
+        int slot0X = hotbarLeftEdge - 51;
+        guiGraphics.blitSprite(SLOT_LEFT_SPRITE, slot0X, slotY, SLOT_W, SLOT_H);
         if (!stack0.isEmpty()) {
-            int leftSlotX = hotbarLeftEdge - 51;
-
-            guiGraphics.blitSprite(SLOT_LEFT_SPRITE, leftSlotX, slotY, SLOT_W, SLOT_H);
-
-            int itemX = leftSlotX + 3;
+            int itemX = slot0X + 3;
             int itemY = slotY + 4;
             guiGraphics.renderItem(stack0, itemX, itemY);
             guiGraphics.renderItemDecorations(mc.font, stack0, itemX, itemY);
         }
 
-        // ==========================================
-        // 2. ПРАВАЯ СТОРОНА: Слот 3 (индекс 2) — прилегает к хотбару
-        // ==========================================
-        if (!stack2.isEmpty()) {
-            int rightSlotX2 = hotbarRightEdge;
-
-            guiGraphics.blitSprite(SLOT_RIGHT_SPRITE, rightSlotX2, slotY, SLOT_W, SLOT_H);
-
-            int itemX = rightSlotX2 + 10;
-            int itemY = slotY + 4;
-            guiGraphics.renderItem(stack2, itemX, itemY);
-            guiGraphics.renderItemDecorations(mc.font, stack2, itemX, itemY);
+        // 2. Ванильный слот щита (Показывается ВСЕГДА в боевом режиме)
+        if (player.getOffhandItem().isEmpty()) {
+            int offhandX = hotbarLeftEdge - 29;
+            guiGraphics.blitSprite(SLOT_LEFT_SPRITE, offhandX, slotY, SLOT_W, SLOT_H);
         }
 
+
         // ==========================================
-        // 3. КРАЙНЯЯ ПРАВАЯ СТОРОНА: Слот 2 (индекс 1) — пара к Слотоу 3
+        // ПРАВАЯ СТОРОНА (Слот 1, Слот 2, Слот 3)
         // ==========================================
+
+        // 3. Слот 1 (Правее хотбара, первый по счету)
+        int slot1X = hotbarRightEdge + 22;
+        guiGraphics.blitSprite(SLOT_RIGHT_SPRITE, slot1X, slotY, SLOT_W, SLOT_H);
         if (!stack1.isEmpty()) {
-            int rightSlotX1 = hotbarRightEdge + 22;
-
-            guiGraphics.blitSprite(SLOT_RIGHT_SPRITE, rightSlotX1, slotY, SLOT_W, SLOT_H);
-
-            int itemX = rightSlotX1 + 10;
+            int itemX = slot1X + 10;
             int itemY = slotY + 4;
             guiGraphics.renderItem(stack1, itemX, itemY);
             guiGraphics.renderItemDecorations(mc.font, stack1, itemX, itemY);
         }
 
-        RenderSystem.disableBlend();
+        // 4. Слот 2 (Логический Слот 3 — индекс 2 в handler. Выводим его ПЕРЕД вторым)
+        int slot2X = hotbarRightEdge;
+        guiGraphics.blitSprite(SLOT_RIGHT_SPRITE, slot2X, slotY, SLOT_W, SLOT_H);
+        if (!stack2.isEmpty()) {
+            int itemX = slot2X + 10;
+            int itemY = slotY + 4;
+            guiGraphics.renderItem(stack2, itemX, itemY);
+            guiGraphics.renderItemDecorations(mc.font, stack2, itemX, itemY);
+        }
+
+        // ПРИМЕЧАНИЕ: Если у тебя в ItemStackHandler всего 3 слота (0, 1, 2), то
+        // этот блок кода меняет местами отображение индексов 1 и 2 на экране.
     }
 }

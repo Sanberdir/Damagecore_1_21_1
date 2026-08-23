@@ -18,16 +18,17 @@ public class WeaponTypeTooltipHandler {
     public static void onTooltip(ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
 
-        // Получаем ID предмета через ванильный BuiltInRegistries, актуальный для NeoForge
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-
-        // Проверка на случай, если предмет не зарегистрирован (возвращает "minecraft:air")
         if (itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) return;
 
         WeaponType type = WeaponTypeManager.INSTANCE.getType(itemId);
         if (type == null) return;
 
-        // Вставляем тип первой строкой (индекс 1 — сразу после названия предмета)
-        event.getToolTip().add(1, type.getDisplayName());
+        // Защита: если список тултипа ещё пуст (нет даже названия предмета),
+        // вставка по индексу 1 упадёт с IndexOutOfBoundsException.
+        // В таком случае просто добавляем строку в конец.
+        var tooltip = event.getToolTip();
+        int insertIndex = Math.min(1, tooltip.size());
+        tooltip.add(insertIndex, type.getDisplayName());
     }
 }

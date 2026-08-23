@@ -1,8 +1,3 @@
-/effect clear
-/summon damagecore:chain_lightning_arrow
-/give Dev damagecore:chain_light_arrow 64
-/time set day
-/enchant Dev minecraft:power 5
 /time set day
 /summon minecraft:rabbit
 /summon minecraft:small_fireball
@@ -48,3 +43,8 @@
 /experience set Dev 5 levels
 /give @s minecraft:shield[minecraft:damage=335]
 /give @s minecraft:shield[minecraft:damage=334]
+/time set day
+/effect give Dev minecraft:hunger
+/effect clear
+/effect give Dev minecraft:wither
+/effect clear

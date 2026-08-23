@@ -12,7 +12,7 @@ public final class ModKeyMappings {
     // Клавиша по умолчанию — F. Если конфликтует, смените на свободную,
     // либо оставьте InputConstants.UNKNOWN.getValue() (тогда клавиша будет "не привязана").
     public static final KeyMapping USE_ACCESSORY_SLOT = new KeyMapping(
-            "key.damagecore.use_accessory_slot3",
+            "key.damagecore.combat_mode",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F,
             CATEGORY

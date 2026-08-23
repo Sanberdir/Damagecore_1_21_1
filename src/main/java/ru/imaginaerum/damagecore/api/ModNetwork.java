@@ -21,9 +21,9 @@ import ru.imaginaerum.damagecore.hud.elements.NormalAttackPacket;
 import ru.imaginaerum.damagecore.hud.net.ThirstDamagePacket;
 import ru.imaginaerum.damagecore.library_damage.PacketTypedAttack;
 // ЗАМЕНЕНО: Импортируем новые классы вместо старого UseAccessorySlot
-import ru.imaginaerum.damagecore.library_extra_slots.network.SwapAccessorySlotsPacket;
-import ru.imaginaerum.damagecore.library_extra_slots.network.SwapAccessorySlotsPacketHandler;
-import ru.imaginaerum.damagecore.library_extra_slots.network.SyncAccessorySlotsPacket;
+import ru.imaginaerum.damagecore.library_extra_slots.SwapTwoSlotsPacket;
+import ru.imaginaerum.damagecore.library_extra_slots.SwapTwoSlotsPacketHandler;
+import ru.imaginaerum.damagecore.library_extra_slots.network.*;
 import ru.imaginaerum.damagecore.library_stats.StatChangePacket;
 import ru.imaginaerum.damagecore.library_stats.SyncStatsPacket;
 import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionSyncPacket;
@@ -49,11 +49,13 @@ public final class ModNetwork {
         registrar.playToClient(SyncStatsPacket.TYPE,        SyncStatsPacket.CODEC,          SyncStatsPacket::handle);
         registrar.playToClient(HundredArmedSyncPacket.TYPE, HundredArmedSyncPacket.CODEC,   HundredArmedSyncPacket::handle);
         registrar.playToClient(SyncEffectSourcePayload.TYPE, SyncEffectSourcePayload.STREAM_CODEC, SyncEffectSourcePayload::handle);
+        registrar.playToClient(SyncCombatModePacket.TYPE, SyncCombatModePacket.STREAM_CODEC, SyncCombatModePacket::handle); // ДОБАВЛЕНО
 
         // ─── Клиент → Сервер ───
         // ИСПРАВЛЕНО: Зарегистрирован новый пакет парного обмена предметов
         registrar.playToServer(SwapAccessorySlotsPacket.TYPE, SwapAccessorySlotsPacket.STREAM_CODEC, SwapAccessorySlotsPacketHandler::handle);
-
+        registrar.playToServer(SwapTwoSlotsPacket.TYPE, SwapTwoSlotsPacket.STREAM_CODEC, SwapTwoSlotsPacketHandler::handle);
+        registrar.playToServer(SwapOffhandWithSlotZeroPacket.TYPE, SwapOffhandWithSlotZeroPacket.STREAM_CODEC, SwapOffhandWithSlotZeroPacketHandler::handle);
         registrar.playToServer(ThirstDamagePacket.TYPE,     ThirstDamagePacket.STREAM_CODEC, ThirstDamagePacket::handle);
         registrar.playToServer(RequestFullSyncPacket.TYPE,  RequestFullSyncPacket.CODEC,    RequestFullSyncPacket::handle);
         registrar.playToServer(LearnNodePacket.TYPE,        LearnNodePacket.CODEC,          LearnNodePacket::handle);

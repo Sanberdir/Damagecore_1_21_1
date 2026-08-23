@@ -42,7 +42,6 @@ public class ThirstEventHandler {
             }
             if (drinkTicks >= DRINK_DURATION) {
                 drinkTicks = 0;
-                ThirstBarElement.drink(4f);
                 mc.level.playSound(mc.player, mc.player.blockPosition(), SoundEvents.GENERIC_DRINK, SoundSource.PLAYERS, 1f, 1f);
             }
         } else {
@@ -70,27 +69,4 @@ public class ThirstEventHandler {
         return mc.level.getFluidState(hit.getBlockPos()).is(FluidTags.WATER);
     }
 
-    // Окончание использования предмета (бутылка воды, зелья)
-    @SubscribeEvent
-    public static void onItemUseFinish(LivingEntityUseItemEvent.Finish event) {
-        if (!event.getEntity().level().isClientSide()) return;
-
-        ItemStack stack = event.getItem();
-
-        // Water Bottle / любое зелье
-        if (stack.is(Items.POTION)) {
-            PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
-            if (contents != null && contents.is(Potions.WATER)) {
-                ThirstBarElement.drink(6f);
-                return;
-            }
-            ThirstBarElement.drink(3f); // любое другое зелье считается питьём (меньше воды)
-            return;
-        }
-
-        // Молоко тоже жидкость
-        if (stack.is(Items.MILK_BUCKET)) {
-            ThirstBarElement.drink(4f);
-        }
-    }
 }
