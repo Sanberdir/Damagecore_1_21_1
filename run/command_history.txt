@@ -1,5 +1,3 @@
-/time set day
-/summon minecraft:rabbit
 /summon minecraft:small_fireball
 /summon minecraft:fireball
 /give Dev damagecore:chain_light_arrow 64
@@ -48,3 +46,5 @@
 /effect clear
 /effect give Dev minecraft:wither
 /effect clear
+/summon cow
+/summon minecraft:iron_golem

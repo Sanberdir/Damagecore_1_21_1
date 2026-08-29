@@ -8,8 +8,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -17,6 +21,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager.AnimEntry;
+import ru.imaginaerum.damagecore.api.ModNetwork;
+import ru.imaginaerum.damagecore.library_damage.PacketTypedAttack;
 
 import java.util.List;
 import java.util.Map;
@@ -46,7 +53,8 @@ public class WeaponAttackAnimationHandler {
     @SubscribeEvent
     public static void onAttackEntity(AttackEntityEvent event) {
         if (event.getEntity().level().isClientSide()) {
-            if (!handleInputEvents(event.getEntity())) {
+            LivingEntity target = event.getTarget() instanceof LivingEntity living ? living : null;
+            if (!handleInputEvents(event.getEntity(), target)) {
                 event.setCanceled(true);
             }
         }
@@ -54,10 +62,14 @@ public class WeaponAttackAnimationHandler {
 
     @SubscribeEvent
     public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
-        handleInputEvents(event.getEntity());
+        handleInputEvents(event.getEntity(), null);
     }
 
-    private static boolean handleInputEvents(Player player) {
+    /**
+     * @param target цель под прицелом (для реального нанесения урона). Может быть null (клик по воздуху).
+     * @return true — пропустить ванильную обработку атаки; false — событие уже отменено/обработано нами.
+     */
+    private static boolean handleInputEvents(Player player, LivingEntity target) {
         if (!(player instanceof AbstractClientPlayer clientPlayer)) return true;
 
         ComboState state = COMBO_STATES.computeIfAbsent(player.getUUID(), id -> new ComboState());
@@ -90,7 +102,7 @@ public class WeaponAttackAnimationHandler {
             }
         } else {
             // Обычная комба
-            List<ResourceLocation> regularAnims = WeaponAnimationManager.INSTANCE.getRegularSwings(itemId);
+            List<AnimEntry> regularAnims = WeaponAnimationManager.INSTANCE.getRegularSwings(itemId);
             if (regularAnims.isEmpty()) return true;
 
             var animation = PlayerAnimationAccess.getPlayerAnimationLayer(clientPlayer, WeaponAnimationSetup.ATTACK_LAYER_ID);
@@ -100,16 +112,26 @@ public class WeaponAttackAnimationHandler {
                 state.nextIndex = 0;
             }
 
-            ResourceLocation chosen = regularAnims.get(state.nextIndex);
-            long duration = getAnimationDurationMs(chosen);
+            AnimEntry chosen = regularAnims.get(state.nextIndex);
+            long duration = getAnimationDurationMs(chosen.animation());
 
-            controller.triggerAnimation(chosen);
+            controller.triggerAnimation(chosen.animation());
 
             state.lastAttackTime = now;
             state.attackLockedUntil = now + duration;
             state.nextIndex = (state.nextIndex + 1) % regularAnims.size();
             state.comboActive = true;
-            return false;
+
+            if (chosen.damageType() != null) {
+                // У анимации есть свой тип урона — наносим урон сами, ванильный отменяем.
+                if (target != null) {
+                    ModNetwork.sendToServer(new PacketTypedAttack(target.getId(), chosen.damageType()));
+                }
+                return false;
+            }
+
+            // damage_type не задан в JSON — отдаём удар ванильной обработке как раньше.
+            return true;
         }
 
         return true;
@@ -159,19 +181,27 @@ public class WeaponAttackAnimationHandler {
                     // Игрок отпустил ЛКМ И анимация замаха ПОЛНОСТЬЮ проигралась -> Срабатывает УДАР!
                     if (!keys.isEmpty()) {
                         String currentKey = keys.get(state.nextIndex % keys.size());
-                        ResourceLocation releaseAnim = WeaponAnimationManager.INSTANCE.getReleaseAnimation(itemId, currentKey);
+                        AnimEntry releaseEntry = WeaponAnimationManager.INSTANCE.getReleaseAnimation(itemId, currentKey);
 
-                        if (releaseAnim != null) {
+                        if (releaseEntry != null) {
                             var animation = PlayerAnimationAccess.getPlayerAnimationLayer(player, WeaponAnimationSetup.ATTACK_LAYER_ID);
                             if (animation instanceof PlayerAnimationController controller) {
-                                controller.triggerAnimation(releaseAnim);
+                                controller.triggerAnimation(releaseEntry.animation());
 
-                                long duration = getAnimationDurationMs(releaseAnim);
+                                long duration = getAnimationDurationMs(releaseEntry.animation());
                                 state.lastAttackTime = now;
                                 state.attackLockedUntil = now + duration;
 
                                 state.nextIndex = (state.nextIndex + 1) % keys.size();
                                 state.comboActive = true;
+
+                                if (releaseEntry.damageType() != null) {
+                                    LivingEntity target = resolveCrosshairTarget(player);
+                                    if (target != null) {
+                                        ModNetwork.sendToServer(
+                                                new PacketTypedAttack(target.getId(), releaseEntry.damageType()));
+                                    }
+                                }
                             }
                         }
                     }
@@ -187,23 +217,37 @@ public class WeaponAttackAnimationHandler {
         }
     }
 
+    /**
+     * Определяет живую сущность под прицелом игрока (та же цель, что использует ванильная атака).
+     */
+    private static LivingEntity resolveCrosshairTarget(AbstractClientPlayer player) {
+        HitResult hitResult = Minecraft.getInstance().hitResult;
+        if (hitResult instanceof EntityHitResult entityHitResult) {
+            Entity entity = entityHitResult.getEntity();
+            if (entity instanceof LivingEntity living) {
+                return living;
+            }
+        }
+        return null;
+    }
+
     private static void playChargeSegment(AbstractClientPlayer player, ComboState state, List<String> keys, long now) {
         ItemStack heldItem = player.getMainHandItem();
         if (heldItem.isEmpty()) return;
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(heldItem.getItem());
 
         String currentKey = keys.get(state.nextIndex % keys.size());
-        ResourceLocation chargeAnim = WeaponAnimationManager.INSTANCE.getChargeAnimation(itemId, currentKey);
+        AnimEntry chargeEntry = WeaponAnimationManager.INSTANCE.getChargeAnimation(itemId, currentKey);
 
-        if (chargeAnim != null) {
+        if (chargeEntry != null) {
             var animation = PlayerAnimationAccess.getPlayerAnimationLayer(player, WeaponAnimationSetup.ATTACK_LAYER_ID);
             if (animation instanceof PlayerAnimationController controller) {
 
-                controller.triggerAnimation(chargeAnim);
+                controller.triggerAnimation(chargeEntry.animation());
 
-                long duration = getAnimationDurationMs(chargeAnim);
+                long duration = getAnimationDurationMs(chargeEntry.animation());
 
-                System.out.println("[Charge] anim=" + chargeAnim
+                System.out.println("[Charge] anim=" + chargeEntry.animation()
                         + " key=" + currentKey
                         + " duration=" + duration
                         + "ms");
