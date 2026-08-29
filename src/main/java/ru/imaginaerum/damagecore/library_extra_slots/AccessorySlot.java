@@ -1,5 +1,7 @@
 package ru.imaginaerum.damagecore.library_extra_slots;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -50,8 +52,8 @@ public class AccessorySlot extends SlotItemHandler {
     // в classloading на dedicated-сервере до проверки FMLEnvironment.dist.
     private static final class ClientScreenCheck {
         static boolean isCreativeInventoryOpen() {
-            return net.minecraft.client.Minecraft.getInstance().screen
-                    instanceof net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+            return Minecraft.getInstance().screen
+                    instanceof CreativeModeInventoryScreen;
         }
     }
 }

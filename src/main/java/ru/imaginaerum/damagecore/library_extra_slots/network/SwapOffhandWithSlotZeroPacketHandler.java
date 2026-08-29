@@ -18,10 +18,6 @@ public final class SwapOffhandWithSlotZeroPacketHandler {
             ItemStackHandler handler = extra.damagecore$getExtraSlots();
             if (handler == null) return;
 
-            // Читаем/пишем реальный ванильный оффхенд напрямую через список Inventory#offhand,
-            // в обход CombatModeHandMixin#getItemBySlot/setItemSlot — эти методы подменяют
-            // результат в зависимости от combatMode и иначе ломают своп (теряют предмет
-            // вне боя, зацикливаются на слоте 0 в бою).
             ItemStack offhandItem = player.getInventory().offhand.get(0).copy();
             ItemStack slotZeroItem = handler.getStackInSlot(0).copy();
 

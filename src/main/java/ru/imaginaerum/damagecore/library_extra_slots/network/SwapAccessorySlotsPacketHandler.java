@@ -17,9 +17,6 @@ public final class SwapAccessorySlotsPacketHandler {
             // Инвертируем текущее состояние: если был false, станет true
             boolean newState = !combatEntity.damagecore$isCombatMode();
             combatEntity.damagecore$setCombatMode(newState);
-
-            System.out.println("[DamageCore] CombatMode toggled to " + newState + " for " + player.getName().getString());
-
             // Отправляем пакет синхронизации ВСЕМ, кто видит игрока, и самому игроку (на клиент)
             PacketDistributor.sendToPlayersTrackingEntityAndSelf(
                     player, new SyncCombatModePacket(player.getId(), newState));

@@ -100,7 +100,5 @@ public abstract class AccessorySlotHudMixin {
             guiGraphics.renderItemDecorations(mc.font, stack2, itemX, itemY);
         }
 
-        // ПРИМЕЧАНИЕ: Если у тебя в ItemStackHandler всего 3 слота (0, 1, 2), то
-        // этот блок кода меняет местами отображение индексов 1 и 2 на экране.
     }
 }

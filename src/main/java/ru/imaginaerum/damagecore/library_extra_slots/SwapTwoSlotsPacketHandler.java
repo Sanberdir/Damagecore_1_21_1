@@ -25,8 +25,6 @@ public final class SwapTwoSlotsPacketHandler {
                     handler.setStackInSlot(1, slot3Item);
                     handler.setStackInSlot(2, slot2Item);
 
-                    System.out.println("[DamageCore] Swapped Slot 2 and Slot 3 for " + player.getName().getString());
-
                     // Принудительно обновляем контейнер, чтобы подмена мгновенно отобразилась в HUD и GUI
                     player.containerMenu.broadcastChanges();
                 }

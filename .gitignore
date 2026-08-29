@@ -2,5 +2,6 @@
 /.gradle/
 /build/
 /run/
+/run/usercache.json
 /run/saves
 /build/classes/java/main/
