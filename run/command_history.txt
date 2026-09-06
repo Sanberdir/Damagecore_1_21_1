@@ -1,36 +1,3 @@
-/summon minecraft:small_fireball
-/summon minecraft:fireball
-/give Dev damagecore:chain_light_arrow 64
-/enchant Dev minecraft:power 5
-/summon minecraft:cow
-/time set day
-/experience set Dev 555 levels
-/experience set Dev 5 levels
-/experience set Dev 55 levels
-/enchant Dev minecraft:protection 3
-/effect clear
-/time set day
-/enchant Dev minecraft:protection 3
-/summon minecraft:cave_spider
-/effect give Dev damagecore:bleeding_1
-/effect clear
-/effect give Dev damagecore:bleeding_1 2
-/effect clear
-/effect give Dev damagecore:death_poison 5
-/effect give Dev minecraft:wither
-/effect clear
-/effect give Dev damagecore:death_poison 5
-/effect clear
-/effect give Dev damagecore:drunkenness_2
-/effect clear
-/effect give Dev damagecore:stunning
-/effect clear
-/experience set Dev 55 levels
-/experience set Dev 0 levels
-/experience set Dev 55 levels
-/experience set Dev 0
-/experience set Dev 0 levels
-/experience set Dev 50 levels
 /time set day
 /summon minecraft:skeleton
 /give @p minecraft:shield[minecraft:damage=335] 1
@@ -48,3 +15,36 @@
 /effect clear
 /summon cow
 /summon minecraft:iron_golem
+/experience set Dev 1000 levels
+/experience set Dev 30000 levels
+/experience set Dev 3000 levels
+/effect give Dev damagecore:bleeding_2
+/effect clear
+/effect give Dev damagecore:bleeding_2 infinite
+/effect clear
+/effect give Dev damagecore:bleeding_1
+/effect clear
+/effect give Dev damagecore:bleeding_1
+/effect clear
+/effect give Dev damagecore:bleeding_2
+/effect clear
+/effect give Dev damagecore:bleeding_2 infinite
+/effect clear
+/effect give Dev damagecore:bleeding_2
+/effect clear
+/effect give Dev damagecore:bleeding_2
+/effect clear
+/effect give Dev minecraft:poison infinite
+/effect clear
+/summon minecraft:iron_golem
+/summon minecraft:rabbit
+/summon minecraft:iron_golem
+/summon minecraft:warden
+/summon minecraft:iron_golem
+/summon minecraft:wither
+/effect give Dev minecraft:fire_resistance
+/effect give Dev minecraft:fire_resistance infinite
+/effect give Dev minecraft:glowing infinite
+/effect give Dev minecraft:absorption infinite
+/effect clear
+/kill

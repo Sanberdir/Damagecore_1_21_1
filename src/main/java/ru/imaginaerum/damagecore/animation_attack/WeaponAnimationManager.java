@@ -31,7 +31,13 @@ public class WeaponAnimationManager implements PreparableReloadListener {
     /**
      * Одна анимация + опциональный тип урона, который она наносит.
      */
-    public record AnimEntry(ResourceLocation animation, DamageType damageType) {}
+    public record AnimEntry(ResourceLocation animation, DamageType damageType, double damageMultiplier) {
+
+        // Удобный конструктор для случаев без явного множителя (старый формат)
+        public AnimEntry(ResourceLocation animation, DamageType damageType) {
+            this(animation, damageType, 1.0);
+        }
+    }
 
     private static class WeaponAnimContexts {
         final List<AnimEntry> regularSwings = new ArrayList<>();
@@ -151,7 +157,7 @@ public class WeaponAnimationManager implements PreparableReloadListener {
      */
     private static AnimEntry parseAnimEntry(JsonElement el, ResourceLocation source) {
         if (el.isJsonPrimitive()) {
-            return new AnimEntry(ResourceLocation.parse(el.getAsString()), null);
+            return new AnimEntry(ResourceLocation.parse(el.getAsString()), null, 1.0);
         }
         if (el.isJsonObject()) {
             JsonObject obj = el.getAsJsonObject();
@@ -161,7 +167,8 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             }
             ResourceLocation anim = ResourceLocation.parse(obj.get("animation").getAsString());
             DamageType damageType = parseDamageType(obj, source);
-            return new AnimEntry(anim, damageType);
+            double multiplier = parseDamageMultiplier(obj, source);
+            return new AnimEntry(anim, damageType, multiplier);
         }
         return null;
     }
@@ -179,16 +186,17 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             String key = obj.get("key").getAsString();
             ResourceLocation anim = ResourceLocation.parse(obj.get("animation").getAsString());
             DamageType damageType = parseDamageType(obj, source);
-            consumer.accept(key, new AnimEntry(anim, damageType));
+            double multiplier = parseDamageMultiplier(obj, source);
+            consumer.accept(key, new AnimEntry(anim, damageType, multiplier));
             return;
         }
 
-        // Старый формат: произвольные поля key -> animation (строка)
+        // Старый формат: произвольные поля key -> animation (строка), множитель недоступен -> 1.0
         for (Map.Entry<String, JsonElement> field : obj.entrySet()) {
-            if ("damage_type".equals(field.getKey())) continue;
+            if ("damage_type".equals(field.getKey()) || "damage_multiplier".equals(field.getKey())) continue;
             String key = field.getKey();
             ResourceLocation anim = ResourceLocation.parse(field.getValue().getAsString());
-            consumer.accept(key, new AnimEntry(anim, null));
+            consumer.accept(key, new AnimEntry(anim, null, 1.0));
         }
     }
 
@@ -200,6 +208,20 @@ public class WeaponAnimationManager implements PreparableReloadListener {
         } catch (IllegalArgumentException e) {
             System.err.println("[WeaponAnimations] Unknown damage_type '" + raw + "' in " + source);
             return null;
+        }
+    }
+    private static double parseDamageMultiplier(JsonObject obj, ResourceLocation source) {
+        if (!obj.has("damage_multiplier")) return 1.0;
+        try {
+            double value = obj.get("damage_multiplier").getAsDouble();
+            if (value <= 0.0) {
+                System.err.println("[WeaponAnimations] Invalid damage_multiplier '" + value + "' in " + source + ", falling back to 1.0");
+                return 1.0;
+            }
+            return value;
+        } catch (Exception e) {
+            System.err.println("[WeaponAnimations] Malformed damage_multiplier in " + source + ", falling back to 1.0");
+            return 1.0;
         }
     }
 }

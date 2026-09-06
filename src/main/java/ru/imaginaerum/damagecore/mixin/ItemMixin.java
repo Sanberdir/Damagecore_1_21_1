@@ -36,7 +36,7 @@ public abstract class ItemMixin {
 
                 ChatFormatting color = switch (damageType) {
                     case PIERCING, SLASHING, BLUDGEONING -> ChatFormatting.GREEN;
-                    case FIRE, BLEEDING -> ChatFormatting.RED;
+                    case FIRE, BLEEDING, TEMPERATURE -> ChatFormatting.RED;
                     case COLD -> ChatFormatting.AQUA;
                     case LIGHTNING -> ChatFormatting.YELLOW;
                     case NECROTIC -> ChatFormatting.DARK_PURPLE;

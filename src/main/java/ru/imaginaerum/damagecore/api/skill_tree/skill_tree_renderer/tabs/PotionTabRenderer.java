@@ -574,6 +574,7 @@ public final class PotionTabRenderer {
             case SUFFOCATION -> "damagecore.damage_type.suffocation";
             case BLEEDING -> "damagecore.damage_type.bleeding";
             case LUMINOUS_RADIANT -> "damagecore.damage_type.luminous_radiant";
+            case TEMPERATURE -> "damagecore.damage_type.temperature";
             case NECROTIC -> "damagecore.damage_type.necrotic";
             case LIGHTNING -> "damagecore.damage_type.lightning";
             case POISON -> "damagecore.damage_type.poison";

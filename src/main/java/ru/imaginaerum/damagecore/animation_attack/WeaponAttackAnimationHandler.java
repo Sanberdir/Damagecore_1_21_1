@@ -123,10 +123,23 @@ public class WeaponAttackAnimationHandler {
             state.comboActive = true;
 
             if (chosen.damageType() != null) {
-                // У анимации есть свой тип урона — наносим урон сами, ванильный отменяем.
                 if (target != null) {
-                    ModNetwork.sendToServer(new PacketTypedAttack(target.getId(), chosen.damageType()));
+
+                    System.out.println(
+                            "[Attack] animation=" + chosen.animation()
+                                    + " type=" + chosen.damageType()
+                                    + " multiplier=" + chosen.damageMultiplier()
+                    );
+
+                    ModNetwork.sendToServer(
+                            new PacketTypedAttack(
+                                    target.getId(),
+                                    chosen.damageType(),
+                                    chosen.damageMultiplier()
+                            )
+                    );
                 }
+
                 return false;
             }
 
@@ -199,7 +212,7 @@ public class WeaponAttackAnimationHandler {
                                     LivingEntity target = resolveCrosshairTarget(player);
                                     if (target != null) {
                                         ModNetwork.sendToServer(
-                                                new PacketTypedAttack(target.getId(), releaseEntry.damageType()));
+                                                new PacketTypedAttack(target.getId(), releaseEntry.damageType(), releaseEntry.damageMultiplier()));
                                     }
                                 }
                             }

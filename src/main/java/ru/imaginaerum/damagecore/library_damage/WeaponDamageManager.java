@@ -10,6 +10,7 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.Item;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,8 +19,24 @@ public class WeaponDamageManager extends SimpleJsonResourceReloadListener {
     private static final Gson GSON = new Gson();
     private final Map<Item, WeaponDamageData> weaponData = new HashMap<>();
 
+    // Синглтон-ссылка на актуальный экземпляр менеджера, обновляется при apply().
+    // Нужен, чтобы обработчики урона (StrengthDamageHandler и т.д.) могли получить
+    // данные оружия без прямого доступа к DataPack-реестрам.
+    private static WeaponDamageManager instance;
+
     public WeaponDamageManager() {
         super(GSON, "weapon_damage");
+        instance = this;
+    }
+
+    /**
+     * Возвращает текущий (актуальный после последнего /reload) экземпляр менеджера.
+     * Может вернуть null, если datapack ещё не был загружен ни разу (крайне маловероятно
+     * после старта сервера, но проверка на null всё равно обязательна у вызывающей стороны).
+     */
+    @Nullable
+    public static WeaponDamageManager getInstance() {
+        return instance;
     }
 
     @Override
@@ -31,18 +48,15 @@ public class WeaponDamageManager extends SimpleJsonResourceReloadListener {
                 ResourceLocation id = entry.getKey();
                 String path = id.getPath();
 
-
                 // ПРАВИЛЬНОЕ извлечение имени предмета из пути
                 // Файл: weapon_damage/iron_sword.json
                 // path = "weapon_damage/iron_sword.json"
                 String itemName = extractItemNameFromPath(path);
 
-
                 // Ищем предмет
                 Item item = findItem(itemName);
 
                 if (item != null) {
-                    ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
                     JsonObject json = entry.getValue().getAsJsonObject();
                     WeaponDamageData data = WeaponDamageData.fromJson(json);
                     weaponData.put(item, data);
@@ -52,21 +66,17 @@ public class WeaponDamageManager extends SimpleJsonResourceReloadListener {
             }
         }
 
-
-
         weaponData.forEach((item, data) -> {
             System.out.println("  " + BuiltInRegistries.ITEM.getKey(item) + " -> " + data.getDamageMap());
         });
     }
 
     private String extractItemNameFromPath(String path) {
-        // path = "weapon_damage/iron_sword.json"
         String[] parts = path.split("/");
         if (parts.length > 1) {
-            String fileName = parts[parts.length - 1]; // "iron_sword.json"
-            // Убираем .json
+            String fileName = parts[parts.length - 1];
             if (fileName.endsWith(".json")) {
-                return fileName.substring(0, fileName.length() - 5); // "iron_sword"
+                return fileName.substring(0, fileName.length() - 5);
             }
             return fileName;
         }
@@ -74,14 +84,11 @@ public class WeaponDamageManager extends SimpleJsonResourceReloadListener {
     }
 
     private Item findItem(String itemName) {
-        // Пробуем minecraft неймспейс
         ResourceLocation minecraftId = ResourceLocation.fromNamespaceAndPath("minecraft", itemName);
         Item item = BuiltInRegistries.ITEM.get(minecraftId);
         if (item != null) {
-
             return item;
         }
-
         return null;
     }
 

@@ -23,6 +23,7 @@ import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ArrowLightningS
 import ru.imaginaerum.damagecore.Init.tab.DCTabs;
 import ru.imaginaerum.damagecore.armor.DamageArmorModifier;
 import ru.imaginaerum.damagecore.effect.DCEffects;
+import ru.imaginaerum.damagecore.hud.heat.ModAttachmentsHeat;
 import ru.imaginaerum.damagecore.library_damage.WeaponDamageManager;
 import ru.imaginaerum.damagecore.library_damage.arrow_data.ArrowDamageManager;
 import ru.imaginaerum.damagecore.library_extra_slots.ModKeyMappings;
@@ -46,6 +47,7 @@ public class Damagecore_1_21_1_neo {
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
         DCSoundEvents.SOUND_EVENTS.register(modEventBus);
+        ModAttachmentsHeat.ATTACHMENT_TYPES.register(modEventBus);
         modEventBus.register(DCTabs.class);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         IEventBus neoForgeEventBus = NeoForge.EVENT_BUS;

@@ -198,6 +198,10 @@ public final class ArmorTabRenderer {
         // ✔ ВОЗВРАТ РАБОЧЕГО ИММУНИТЕТА
         // =========================
 
+        // =========================
+        // ✔ ВОЗВРАТ РАБОЧЕГО ИММУНИТЕТА
+        // =========================
+
         int lf = PlayerStatsCapability.get(player)
                 .map(s -> s.getStat(StatsType.LIVE_FORCE))
                 .orElse(0);
@@ -206,7 +210,11 @@ public final class ArmorTabRenderer {
                 .map(s -> s.getStat(StatsType.ENDURANCE))
                 .orElse(0);
 
-        boolean hasImmunity = lf > 0 || en > 0;
+        // 1% иммунитета за каждые 5 очков стата — согласовано с PlayerDamageEventHandler
+        int lfImmunityPercent = lf / 5;
+        int enImmunityPercent = en / 3;
+
+        boolean hasImmunity = lfImmunityPercent > 0 || enImmunityPercent > 0;
 
         if (hasImmunity) {
             y += 6;
@@ -217,7 +225,7 @@ public final class ArmorTabRenderer {
 
             y += lineHeight + 2;
 
-            if (lf > 0) {
+            if (lfImmunityPercent > 0) {
                 for (DamageType type : new DamageType[]{
                         DamageType.BLEEDING,
                         DamageType.FIRE,
@@ -225,16 +233,16 @@ public final class ArmorTabRenderer {
                         DamageType.POISON
                 }) {
                     Component line = Component.translatable(getKey(type))
-                            .append(Component.literal(": " + lf));
+                            .append(Component.literal(": " + lfImmunityPercent + "%"));
 
                     gui.drawString(mc.font, line, textX, y, 0xEEEEEE, true);
                     y += lineHeight;
                 }
             }
 
-            if (en > 0) {
+            if (enImmunityPercent > 0) {
                 Component line = Component.translatable(getKey(DamageType.SUFFOCATION))
-                        .append(Component.literal(": " + en));
+                        .append(Component.literal(": " + enImmunityPercent + "%"));
 
                 gui.drawString(mc.font, line, textX, y, 0xEEEEEE, true);
                 y += lineHeight;
@@ -368,6 +376,7 @@ public final class ArmorTabRenderer {
             case LUMINOUS_RADIANT -> "damagecore.damage_type.luminous_radiant";
             case NECROTIC -> "damagecore.damage_type.necrotic";
             case LIGHTNING -> "damagecore.damage_type.lightning";
+            case TEMPERATURE -> "damagecore.damage_type.temperature";
             case POISON -> "damagecore.damage_type.poison";
             case SOUNDER -> "damagecore.damage_type.sounder";
             case PSY -> "damagecore.damage_type.psy";

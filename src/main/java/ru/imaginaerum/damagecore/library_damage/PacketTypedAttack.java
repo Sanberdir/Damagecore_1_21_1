@@ -9,7 +9,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record PacketTypedAttack(int targetId, DamageType attackType) implements CustomPacketPayload {
+public record PacketTypedAttack(
+        int targetId,
+        DamageType attackType,
+        double damageMultiplier
+) implements CustomPacketPayload {
 
     public static final Type<PacketTypedAttack> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath("damagecore", "typed_attack"));
@@ -18,8 +22,13 @@ public record PacketTypedAttack(int targetId, DamageType attackType) implements 
             (buf, packet) -> {
                 buf.writeVarInt(packet.targetId());
                 buf.writeEnum(packet.attackType());
+                buf.writeDouble(packet.damageMultiplier());
             },
-            buf -> new PacketTypedAttack(buf.readVarInt(), buf.readEnum(DamageType.class))
+            buf -> new PacketTypedAttack(
+                    buf.readVarInt(),
+                    buf.readEnum(DamageType.class),
+                    buf.readDouble()
+            )
     );
 
     @Override
@@ -36,7 +45,15 @@ public record PacketTypedAttack(int targetId, DamageType attackType) implements 
             Entity target = sender.level().getEntity(payload.targetId());
             if (!(target instanceof LivingEntity living)) return;
 
-            double damage = weapon.damagecore$getDamageMap().getOrDefault(payload.attackType(), 0.0);
+            // Базовый урон оружия для данного типа
+            double baseDamage = weapon.damagecore$getDamageMap()
+                    .getOrDefault(payload.attackType(), 0.0);
+
+            if (baseDamage <= 0) return;
+
+            // Применяем множитель из анимации
+            double damage = baseDamage * payload.damageMultiplier();
+
             if (damage <= 0) return;
 
             TypedDamageSource source = new TypedDamageSource(

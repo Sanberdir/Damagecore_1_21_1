@@ -14,13 +14,16 @@ public enum DamageType {
     NECROTIC("necrotic"),
     LIGHTNING("lightning"),
     POISON("poison"),
+    TEMPERATURE("temperature"),
     // Звуковой урон
     SOUNDER("sounder"),
     PSY("psy"),
     BLUDGEONING("bludgeoning");
 
     private final String damageName;
-
+    public boolean isPhysical() {
+        return this == PIERCING || this == SLASHING || this == BLUDGEONING;
+    }
     DamageType(String damageName) {
         this.damageName = damageName;
     }

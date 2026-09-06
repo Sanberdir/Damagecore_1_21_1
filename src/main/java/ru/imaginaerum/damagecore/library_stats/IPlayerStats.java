@@ -21,6 +21,18 @@ public interface IPlayerStats {
         return total;
     }
 
+    // 1% иммунитета за каждые 5 очков жизненной силы (общее снижение урона)
+    default int getImmunityPercent() {
+        int immunity = getStat(StatsType.LIVE_FORCE) / 5;
+        return Math.min(immunity, 80); // защитный кап, чтобы урон не обнулялся полностью
+    }
+
+    // 1% иммунитета к удушью за каждые 3 очка выносливости
+    default int getEnduranceImmunityPercent() {
+        int immunity = getStat(StatsType.ENDURANCE) / 3;
+        return Math.min(immunity, 80); // тот же защитный кап
+    }
+
     // ✅ Стоимость зависит от общего числа вложений, а не от конкретного стата
     default int getNextCost(StatsType type) {
         return (int) Math.round(BASE_COST * Math.pow(COST_MULTIPLIER, getTotalPressCount()));

@@ -131,6 +131,7 @@ public class TooltipEventHandler {
             case FIRE -> "Огненный";
             case COLD -> "Холодный";
             case BLEEDING -> "Кровотечение";
+            case TEMPERATURE -> "Температурный";
             case SUFFOCATION -> "Удушье";
             case LUMINOUS_RADIANT -> "Лучистый";
             case NECROTIC -> "Некротический";
