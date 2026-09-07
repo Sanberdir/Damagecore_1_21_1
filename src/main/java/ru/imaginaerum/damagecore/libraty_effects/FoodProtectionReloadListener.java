@@ -42,9 +42,6 @@ public class FoodProtectionReloadListener extends SimpleJsonResourceReloadListen
                 );
 
                 if (item == net.minecraft.world.item.Items.AIR) {
-                    // ДОБАВЛЕНО: лог, если предмет не найден в реестре (опечатка / неверный namespace)
-                    System.err.println("[FoodProtection] Skipped " + fileId
-                            + ": item '" + json.get("item").getAsString() + "' not found in registry (AIR)");
                     continue;
                 }
 
@@ -77,11 +74,6 @@ public class FoodProtectionReloadListener extends SimpleJsonResourceReloadListen
             }
         }
 
-        // ДОБАВЛЕНО: итоговая сводка после загрузки — видно, сколько записей реально попало в EFFECTS
-        System.out.println("[FoodProtection] Loaded " + EFFECTS.size() + " entries: "
-                + EFFECTS.keySet().stream()
-                .map(i -> net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(i).toString())
-                .toList());
     }
 
     public record Effect(

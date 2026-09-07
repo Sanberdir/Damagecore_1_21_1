@@ -1,0 +1,69 @@
+// MobEffectIconRenderer.java
+package ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.EntityType;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.DurationBarTooltip;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionTrackingClient;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
+/** Значок "источник — моб" (общая иконка категории), полоска и тултип со всеми эффектами от этого моба. */
+public final class MobEffectIconRenderer {
+
+    private static final int ICON_U = 51;
+    private static final int ICON_V = 4;
+    private static final int ICON_REGION = 10;
+
+    private MobEffectIconRenderer() {}
+
+    public static void renderIcon(GuiGraphics gui, int x, int y) {
+        StatusIconSheet.blit(gui, x, y, ICON_U, ICON_V, ICON_REGION);
+    }
+
+    public static void renderBar(GuiGraphics gui, int x, int y, List<MobEffectInstance> effects) {
+        MobEffectInstance longest = longestOf(effects);
+        float fraction = longest != null
+                ? PotionTrackingClient.getRemainingFraction(longest.getEffect().value(), longest.getDuration())
+                : 1f;
+        DurationBarRenderer.render(gui, x, y, EffectIconLayout.ICON_SIZE, fraction);
+    }
+
+    public static void renderTooltip(GuiGraphics gui, Minecraft mc, EntityType<?> sourceType,
+                                     List<MobEffectInstance> effects, int mouseX, int mouseY) {
+        List<Component> lines = new ArrayList<>();
+
+        if (sourceType != null) {
+            lines.add(Component.translatable(sourceType.getDescriptionId())
+                    .copy().withStyle(s -> s.withColor(0xFFFF55)));
+        }
+
+        for (MobEffectInstance inst : effects) {
+            lines.add(Component.translatable(inst.getEffect().value().getDescriptionId())
+                    .append(Component.literal(" " + EffectTextUtils.toRoman(inst.getAmplifier() + 1))));
+        }
+
+        MobEffectInstance longest = longestOf(effects);
+        float progress = longest != null
+                ? PotionTrackingClient.getRemainingFraction(longest.getEffect().value(), longest.getDuration())
+                : 1f;
+        Component effectName = longest != null
+                ? Component.translatable(longest.getEffect().value().getDescriptionId())
+                : Component.empty();
+        int amplifier = longest != null ? longest.getAmplifier() + 1 : 1;
+
+        gui.renderTooltip(mc.font, lines,
+                Optional.of(new DurationBarTooltip(progress, effectName, amplifier)),
+                mouseX, mouseY);
+    }
+
+    private static MobEffectInstance longestOf(List<MobEffectInstance> effects) {
+        return effects.stream().max(Comparator.comparingInt(MobEffectInstance::getDuration)).orElse(null);
+    }
+}

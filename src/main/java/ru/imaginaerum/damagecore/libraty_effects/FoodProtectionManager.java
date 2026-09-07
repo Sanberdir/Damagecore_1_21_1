@@ -46,8 +46,12 @@ public class FoodProtectionManager {
      */
     public void addEffect(FoodProtectionEffect effect) {
         Objects.requireNonNull(effect, "effect");
+
         activeEffects
-                .computeIfAbsent(effect.getDamageType(), k -> new ArrayList<>())
+                .computeIfAbsent(
+                        effect.getDamageType(),
+                        k -> new ArrayList<>()
+                )
                 .add(effect);
     }
 
@@ -114,13 +118,24 @@ public class FoodProtectionManager {
      * Тик менеджера — уменьшаем таймеры и удаляем истёкшие эффекты.
      */
     public void tick() {
-        Iterator<Map.Entry<DamageType, List<FoodProtectionEffect>>> it = activeEffects.entrySet().iterator();
+        Iterator<Map.Entry<DamageType, List<FoodProtectionEffect>>> it =
+                activeEffects.entrySet().iterator();
+
         while (it.hasNext()) {
             Map.Entry<DamageType, List<FoodProtectionEffect>> entry = it.next();
             List<FoodProtectionEffect> list = entry.getValue();
 
-            // уменьшаем тики и удаляем истёкшие
             list.removeIf(effect -> {
+                if (player != null && !effect.getMobEffects().isEmpty()) {
+                    boolean hasLiveEffect = effect.getMobEffects().stream()
+                            .anyMatch(saved ->
+                                    player.getEffect(saved.getEffect()) != null);
+
+                    if (!hasLiveEffect) {
+                        return true;
+                    }
+                }
+
                 effect.tick();
                 return effect.isExpired();
             });
