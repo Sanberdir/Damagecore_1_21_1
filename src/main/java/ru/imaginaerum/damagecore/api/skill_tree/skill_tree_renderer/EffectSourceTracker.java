@@ -30,50 +30,29 @@ public final class EffectSourceTracker {
     private EffectSourceTracker() {}
 
     @Nullable
-    private static Entity resolveOwnerFromEffectInstance(
-            net.minecraft.world.effect.MobEffectInstance effectInstance,
-            ServerLevel level
-    ) {
+    private static Entity resolveOwnerFromEffectInstance(net.minecraft.world.effect.MobEffectInstance effectInstance, ServerLevel level) {
         // 1. Сначала попробуем int ID полей (sourceEntityId и аналоги)
-        String[] intFieldCandidates = {
-                "sourceEntityId",
-                "effectSourceId",
-                "ownerId",
-                "f_19554_",
-                "c_5184_",
-        };
+        String[] intFieldCandidates = {"sourceEntityId", "effectSourceId", "ownerId", "f_19554_", "c_5184_"};
         for (String fieldName : intFieldCandidates) {
             try {
-                Field f = net.minecraft.world.effect.MobEffectInstance.class
-                        .getDeclaredField(fieldName);
+                Field f = net.minecraft.world.effect.MobEffectInstance.class.getDeclaredField(fieldName);
                 f.setAccessible(true);
                 Object value = f.get(effectInstance);
                 if (value instanceof Number num && num.intValue() != 0) {
-                    Entity e = level.getEntity(num.intValue());
-
-                    return e;
+                    return level.getEntity(num.intValue());
                 }
             } catch (Throwable ignored) {}
         }
 
         // 2. Попробуем UUID-поле owner (в новых маппингах он так и может называться)
-        String[] uuidFieldCandidates = {
-                "owner",
-                "ownerUUID",
-                "sourceUUID",
-                "effectSourceUUID",
-                "f_19553_", // SRG для UUID поля owner
-        };
+        String[] uuidFieldCandidates = {"owner", "ownerUUID", "sourceUUID", "effectSourceUUID", "f_19553_"}; // SRG для UUID поля owner
         for (String fieldName : uuidFieldCandidates) {
             try {
-                Field f = net.minecraft.world.effect.MobEffectInstance.class
-                        .getDeclaredField(fieldName);
+                Field f = net.minecraft.world.effect.MobEffectInstance.class.getDeclaredField(fieldName);
                 f.setAccessible(true);
                 Object value = f.get(effectInstance);
                 if (value instanceof UUID uuid) {
-                    Entity e = level.getEntity(uuid);
-
-                    return e;
+                    return level.getEntity(uuid);
                 }
             } catch (Throwable ignored) {}
         }
@@ -84,16 +63,13 @@ public final class EffectSourceTracker {
             Tag rawTag = effectInstance.save();
             if (rawTag instanceof CompoundTag tag) {
                 if (tag.hasUUID("Owner")) {
-                    UUID uuid = tag.getUUID("Owner");
-                    Entity e = level.getEntity(uuid);
-
+                    Entity e = level.getEntity(tag.getUUID("Owner"));
                     if (e != null) return e;
                 }
                 if (tag.contains("SourceEntityId", 99)) {
                     int id = tag.getInt("SourceEntityId");
                     if (id != 0) {
                         Entity e = level.getEntity(id);
-
                         if (e != null) return e;
                     }
                 }
@@ -102,29 +78,20 @@ public final class EffectSourceTracker {
 
         // 4. Попробуем публичные методы-геттеры
         String[] methodCandidates = {
-                "getSourceEntityId",
-                "getEffectSourceId",
-                "getOwnerId",
-                "getOwnerUUID",
-                "getSourceUUID",
-                "getSource",
-                "getEffectSource",
-                "getOwner",
+                "getSourceEntityId", "getEffectSourceId", "getOwnerId",
+                "getOwnerUUID", "getSourceUUID", "getSource", "getEffectSource", "getOwner"
         };
         for (String methodName : methodCandidates) {
             try {
-                Method m = net.minecraft.world.effect.MobEffectInstance.class
-                        .getDeclaredMethod(methodName);
+                Method m = net.minecraft.world.effect.MobEffectInstance.class.getDeclaredMethod(methodName);
                 m.setAccessible(true);
                 Object value = m.invoke(effectInstance);
                 if (value instanceof Number num && num.intValue() != 0) {
                     Entity e = level.getEntity(num.intValue());
-
                     if (e != null) return e;
                 }
                 if (value instanceof UUID uuid) {
                     Entity e = level.getEntity(uuid);
-
                     if (e != null) return e;
                 }
             } catch (Throwable ignored) {}
@@ -140,19 +107,15 @@ public final class EffectSourceTracker {
             for (Method m : MobEffectEvent.class.getMethods()) {
                 try {
                     if (m.getParameterCount() == 0
-                            && (m.getName().contains("Source")
-                            || m.getName().contains("Caus")
-                            || m.getName().contains("Owner")
-                            || m.getName().contains("Entity")
+                            && (m.getName().contains("Source") || m.getName().contains("Caus")
+                            || m.getName().contains("Owner") || m.getName().contains("Entity")
                             || m.getName().contains("Attack"))) {
-
                     }
                 } catch (Throwable ignored) {}
             }
             for (Field f : MobEffectEvent.class.getDeclaredFields()) {
                 try {
                     f.setAccessible(true);
-
                 } catch (Throwable ignored) {}
             }
             net.minecraft.world.effect.MobEffectInstance inst = null;
@@ -168,8 +131,7 @@ public final class EffectSourceTracker {
                             String extra = "";
                             if (val instanceof UUID) extra = " [UUID]";
                             else if (val instanceof Number) extra = " [num=" + val + "]";
-                            else if (val instanceof Entity) extra = " [entity=" + ((Entity)val).getType().getDescription().getString() + "]";
-
+                            else if (val instanceof Entity) extra = " [entity=" + ((Entity) val).getType().getDescription().getString() + "]";
                         }
                     } catch (Throwable ignored) {}
                 }
@@ -179,40 +141,27 @@ public final class EffectSourceTracker {
         try {
             Method getEffectSource = MobEffectEvent.class.getMethod("getEffectSource");
             Object value = getEffectSource.invoke(event);
-            if (value instanceof Entity entity) {
-
-                return entity;
-            }
-        } catch (Throwable t) {
-
-        }
+            if (value instanceof Entity entity) return entity;
+        } catch (Throwable t) {}
 
         try {
             Method m = MobEffectEvent.class.getMethod("getCausingEntity");
             Object value = m.invoke(event);
-            if (value instanceof Entity entity) {
-
-                return entity;
-            }
-        } catch (Throwable t) {
-
-        }
+            if (value instanceof Entity entity) return entity;
+        } catch (Throwable t) {}
 
         return null;
     }
 
     @Nullable
-    private static EntityType<?> resolveViaNearbyMobs(
-            ServerLevel level,
-            ServerPlayer player,
-            MobEffect effect
-    ) {
+    private static EntityType<?> resolveViaNearbyMobs(ServerLevel level, ServerPlayer player, MobEffect effect) {
         // Ванильные мобы, которые накладывают эффекты БЕЗ урона и не передают owner:
         // WARDEN -> DARKNESS (радиус 30 блоков — его дальность обнаружения)
         // ELDER_GUARDIAN -> MINING_FATIGUE (радиус 50 блоков)
         // EVOKER -> BAD_OMEN не накладывает, но вдруг будет нужен
         double radius;
         EntityType<?> targetType;
+
         if (effect == MobEffects.DARKNESS.value()) {
             radius = 32.0;
             targetType = EntityType.WARDEN;
@@ -228,26 +177,20 @@ public final class EffectSourceTracker {
         AABB aabb = player.getBoundingBox().inflate(radius);
 
         if (targetType != null) {
-            List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, aabb,
-                    e -> e.getType() == targetType);
-            if (nearby.isEmpty()) {
+            List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getType() == targetType);
+            if (nearby.isEmpty()) return null;
 
-                return null;
-            }
             // Ближайший
             nearby.sort((a, b) -> Double.compare(a.distanceTo(player), b.distanceTo(player)));
-            LivingEntity nearest = nearby.get(0);
-            return nearest.getType();
+            return nearby.get(0).getType();
         }
 
         // Общий случай — неспецифичный эффект, берём ближайшую не-игрока живую сущность
-        List<LivingEntity> any = level.getEntitiesOfClass(LivingEntity.class, aabb,
-                e -> e != player && e.getType() != EntityType.PLAYER);
+        List<LivingEntity> any = level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e != player && e.getType() != EntityType.PLAYER);
         if (any.isEmpty()) return null;
-        any.sort((a, b) -> Double.compare(a.distanceTo(player), b.distanceTo(player)));
-        LivingEntity nearest = any.get(0);
 
-        return nearest.getType();
+        any.sort((a, b) -> Double.compare(a.distanceTo(player), b.distanceTo(player)));
+        return any.get(0).getType();
     }
 
     @SubscribeEvent
@@ -256,7 +199,6 @@ public final class EffectSourceTracker {
         if (!(entity instanceof ServerPlayer player)) return;
 
         MobEffect effect = event.getEffectInstance().getEffect().value();
-
 
         EntityType<?> sourceType = null;
         ServerLevel serverLevel = player.serverLevel();
@@ -270,7 +212,6 @@ public final class EffectSourceTracker {
             Entity owner = resolveOwnerFromEffectInstance(event.getEffectInstance(), serverLevel);
             if (owner instanceof LivingEntity livingOwner && owner.getType() != EntityType.PLAYER) {
                 sourceType = livingOwner.getType();
-
             }
         }
 
@@ -278,25 +219,15 @@ public final class EffectSourceTracker {
             LivingEntity lastHurtBy = player.getLastHurtByMob();
             if (lastHurtBy != null) {
                 EntityType<?> hurtByType = lastHurtBy.getType();
-                if (hurtByType != EntityType.PLAYER) {
-                    sourceType = hurtByType;
-
-                }
+                if (hurtByType != EntityType.PLAYER) sourceType = hurtByType;
             }
         }
 
         // Финальный fallback: поиск ближайших мобов (для Warden/Darkness и других спецэффектов без owner)
         if (sourceType == null) {
             sourceType = resolveViaNearbyMobs(serverLevel, player, effect);
-
         }
 
-        PacketDistributor.sendToPlayer(
-                player,
-                new SyncEffectSourcePayload(effect, sourceType)
-        );
+        PacketDistributor.sendToPlayer(player, new SyncEffectSourcePayload(effect, sourceType));
     }
-
-
-
 }
