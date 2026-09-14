@@ -26,20 +26,25 @@ public record SyncEffectSourcePayload(MobEffect effect, EntityType<?> sourceType
     );
 
     private static void encode(RegistryFriendlyByteBuf buf, SyncEffectSourcePayload msg) {
-        // Получаем Holder для эффекта и пишем его через реестр
         Holder<MobEffect> holder = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(msg.effect);
         ByteBufCodecs.holderRegistry(Registries.MOB_EFFECT).encode(buf, holder);
 
-        // Пишем EntityType через ID ресурса
-        buf.writeResourceLocation(BuiltInRegistries.ENTITY_TYPE.getKey(msg.sourceType));
+        boolean hasSource = msg.sourceType() != null;
+        buf.writeBoolean(hasSource);
+        if (hasSource) {
+            buf.writeResourceLocation(BuiltInRegistries.ENTITY_TYPE.getKey(msg.sourceType()));
+        }
     }
 
     private static SyncEffectSourcePayload decode(RegistryFriendlyByteBuf buf) {
-        // Читаем Holder и сразу достаем из него чистый MobEffect (.value())
         MobEffect effect = ByteBufCodecs.holderRegistry(Registries.MOB_EFFECT).decode(buf).value();
 
-        EntityType<?> sourceType = BuiltInRegistries.ENTITY_TYPE
-                .getOptional(buf.readResourceLocation()).orElse(EntityType.PIG);
+        EntityType<?> sourceType = null;
+        if (buf.readBoolean()) {
+            sourceType = BuiltInRegistries.ENTITY_TYPE
+                    .getOptional(buf.readResourceLocation())
+                    .orElse(null);   // без фейкового PIG
+        }
 
         return new SyncEffectSourcePayload(effect, sourceType);
     }
@@ -51,7 +56,7 @@ public record SyncEffectSourcePayload(MobEffect effect, EntityType<?> sourceType
 
     public static void handle(final SyncEffectSourcePayload msg, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (msg.effect() == null || msg.sourceType() == null) return;
+            if (msg.effect() == null) return;   // sourceType == null теперь ОК — это TRAP
 
             if (context.flow().isClientbound()) {
                 SyncEffectSourceClientProxy.apply(msg.effect(), msg.sourceType());

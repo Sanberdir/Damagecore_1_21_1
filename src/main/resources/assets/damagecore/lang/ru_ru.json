@@ -37,6 +37,9 @@
   "damagecore.potion_application.drink": "Выпито",
   "damagecore.potion_application.splash": "Брошено",
   "damagecore.potion_application.lingering": "Туман",
+  "damagecore.potion_tab.players_header": "Игроки",
+  "damagecore.potion_tab.source_player":  "Игрок",
+  "damagecore.potion_tab.traps_header":  "Ловушки",
 
   "damagecore.tooltip.damage_type": "Тип: %s",
   "damagecore.tooltip.armor": "Броня: %s",

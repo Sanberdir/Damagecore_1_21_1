@@ -155,10 +155,6 @@ public final class EffectSourceTracker {
 
     @Nullable
     private static EntityType<?> resolveViaNearbyMobs(ServerLevel level, ServerPlayer player, MobEffect effect) {
-        // Ванильные мобы, которые накладывают эффекты БЕЗ урона и не передают owner:
-        // WARDEN -> DARKNESS (радиус 30 блоков — его дальность обнаружения)
-        // ELDER_GUARDIAN -> MINING_FATIGUE (радиус 50 блоков)
-        // EVOKER -> BAD_OMEN не накладывает, но вдруг будет нужен
         double radius;
         EntityType<?> targetType;
 
@@ -169,28 +165,36 @@ public final class EffectSourceTracker {
             radius = 60.0;
             targetType = EntityType.ELDER_GUARDIAN;
         } else {
-            // Для любых других эффектов — радиус 10 блоков, ищем ближайшую живую сущность не-игрока
-            radius = 10.0;
-            targetType = null;
+            return null;
         }
 
         AABB aabb = player.getBoundingBox().inflate(radius);
 
-        if (targetType != null) {
-            List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getType() == targetType);
-            if (nearby.isEmpty()) return null;
-
-            // Ближайший
-            nearby.sort((a, b) -> Double.compare(a.distanceTo(player), b.distanceTo(player)));
-            return nearby.get(0).getType();
+        List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getType() == targetType);
+        if (nearby.isEmpty()) {
+            return null;
         }
 
-        // Общий случай — неспецифичный эффект, берём ближайшую не-игрока живую сущность
-        List<LivingEntity> any = level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e != player && e.getType() != EntityType.PLAYER);
-        if (any.isEmpty()) return null;
+        nearby.sort((a, b) -> Double.compare(a.distanceTo(player), b.distanceTo(player)));
+        EntityType<?> found = nearby.get(0).getType();
+        return found;
+    }
 
-        any.sort((a, b) -> Double.compare(a.distanceTo(player), b.distanceTo(player)));
-        return any.get(0).getType();
+    private static EntityType<?> resolveEntityToSourceType(@Nullable Entity source, ServerPlayer targetPlayer) {
+        if (source == null) return null;
+
+        if (source.getType() == EntityType.PLAYER) {
+            // И self-hit, и попадание от другого игрока — это "источник игрок",
+            // не ловушка. Раньше self-hit намеренно скрывался под null,
+            // но теперь null зарезервирован под TRAP (источник вообще не найден).
+            return EntityType.PLAYER;
+        }
+
+        if (source instanceof LivingEntity) {
+            return source.getType();
+        }
+
+        return null;
     }
 
     @SubscribeEvent
@@ -199,31 +203,34 @@ public final class EffectSourceTracker {
         if (!(entity instanceof ServerPlayer player)) return;
 
         MobEffect effect = event.getEffectInstance().getEffect().value();
+        int duration = event.getEffectInstance().getDuration();
+
 
         EntityType<?> sourceType = null;
         ServerLevel serverLevel = player.serverLevel();
 
+        // 1. resolveViaEventApi
         Entity viaEvent = resolveViaEventApi(event);
-        if (viaEvent instanceof LivingEntity livingViaEvent && viaEvent.getType() != EntityType.PLAYER) {
-            sourceType = livingViaEvent.getType();
+        if (sourceType == null) {
+            sourceType = resolveEntityToSourceType(viaEvent, player);
         }
 
+        // 2. resolveOwnerFromEffectInstance (из MobEffectInstance owner)
         if (sourceType == null) {
             Entity owner = resolveOwnerFromEffectInstance(event.getEffectInstance(), serverLevel);
-            if (owner instanceof LivingEntity livingOwner && owner.getType() != EntityType.PLAYER) {
-                sourceType = livingOwner.getType();
-            }
+            sourceType = resolveEntityToSourceType(owner, player);
         }
 
+        // 3. player.getLastHurtByMob()
         if (sourceType == null) {
             LivingEntity lastHurtBy = player.getLastHurtByMob();
-            if (lastHurtBy != null) {
-                EntityType<?> hurtByType = lastHurtBy.getType();
-                if (hurtByType != EntityType.PLAYER) sourceType = hurtByType;
+            EntityType<?> hurtByType = resolveEntityToSourceType(lastHurtBy, player);
+            if (hurtByType != null) {
+                sourceType = hurtByType;
             }
         }
 
-        // Финальный fallback: поиск ближайших мобов (для Warden/Darkness и других спецэффектов без owner)
+        // 4. resolveViaNearbyMobs (ТОЛЬКО для Darkness/Darkness Warden, ElderGuardian->MiningFatigue
         if (sourceType == null) {
             sourceType = resolveViaNearbyMobs(serverLevel, player, effect);
         }

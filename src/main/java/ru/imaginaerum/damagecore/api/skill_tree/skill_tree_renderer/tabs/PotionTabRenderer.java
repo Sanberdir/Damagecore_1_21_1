@@ -11,11 +11,14 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionApplicationType;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionEffectEntry;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionTrackingClient;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.FoodEffectIconRenderer;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.MobEffectIconRenderer;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.PlayerEffectIconRenderer;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.PotionEffectIconRenderer;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.TrapEffectIconRenderer;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.UnknownEffectIconRenderer;
 import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionCapability;
 import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionEffect;
@@ -28,7 +31,8 @@ import static ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.
  * Компоновка вкладки "Эффекты": заголовки, ряды и группировка данных.
  * Отрисовку конкретных значков + их тултипов делегирует:
  * {@link FoodEffectIconRenderer}, {@link PotionEffectIconRenderer},
- * {@link MobEffectIconRenderer}, {@link UnknownEffectIconRenderer}.
+ * {@link MobEffectIconRenderer}, {@link PlayerEffectIconRenderer},
+ * {@link TrapEffectIconRenderer}, {@link UnknownEffectIconRenderer}.
  */
 public final class PotionTabRenderer {
 
@@ -62,7 +66,7 @@ public final class PotionTabRenderer {
         int x = areaX + padL;
         int y = areaY + padT;
 
-        // ===== FOOD ===== (заголовок и ряд рисуются, только если есть активные эффекты еды)
+        // ===== FOOD =====
         if (!allActive.isEmpty()) {
             gui.drawString(mc.font, Component.translatable("damagecore.potion_tab.food_header"), x, y, 0xFFFFFF, true);
             y += mc.font.lineHeight + 4;
@@ -93,13 +97,15 @@ public final class PotionTabRenderer {
                 FoodEffectIconRenderer.renderTooltip(gui, mc, hoveredItem, hoveredEffects, mouseX, mouseY);
             }
 
-            y += ICON_SIZE + 6;
+            y += ICON_SIZE + ROW_GAP;
         }
 
         // ===== SPLIT PLAYER EFFECTS =====
         Map<PotionEffectEntry, List<MobEffectInstance>> byPotion = new LinkedHashMap<>();
         Map<EntityType<?>, List<MobEffectInstance>> byMobType = new LinkedHashMap<>();
-        List<MobEffectInstance> unknown = new ArrayList<>();
+        List<MobEffectInstance> byPlayer = new ArrayList<>();
+        List<MobEffectInstance> byTrap   = new ArrayList<>();   // <-- NEW
+        List<MobEffectInstance> unknown  = new ArrayList<>();
 
         for (MobEffectInstance inst : playerEffects) {
             MobEffect effect = inst.getEffect().value();
@@ -109,8 +115,20 @@ public final class PotionTabRenderer {
                 unknown.add(inst);
                 continue;
             }
+
+            // TRAP: ловушка/раздатчик — отдельная категория.   // <-- NEW
+            if (entry.getApplicationType() == PotionApplicationType.TRAP) {
+                byTrap.add(inst);
+                continue;
+            }
+
             if (isPlayerSource(entry.getSourceEntityType())) {
-                byPotion.computeIfAbsent(entry, k -> new ArrayList<>()).add(inst);
+                ItemStack stack = entry.getPotionStack();
+                if (stack != null && !stack.isEmpty()) {
+                    byPotion.computeIfAbsent(entry, k -> new ArrayList<>()).add(inst);
+                } else {
+                    byPlayer.add(inst);
+                }
             } else {
                 byMobType.computeIfAbsent(entry.getSourceEntityType(), k -> new ArrayList<>()).add(inst);
             }
@@ -122,6 +140,8 @@ public final class PotionTabRenderer {
         MobEffectInstance hoveredUnknown = null;
         EntityType<?> hoveredMobType = null;
         List<MobEffectInstance> hoveredMobEffects = null;
+        List<MobEffectInstance> hoveredPlayerEffects = null;
+        List<MobEffectInstance> hoveredTrapEffects = null;   // <-- NEW
 
         // ===== POTIONS =====
         boolean hasPotionRow = !byPotion.isEmpty() || !unknown.isEmpty();
@@ -156,6 +176,26 @@ public final class PotionTabRenderer {
                 }
                 iconX += ICON_SIZE + GAP;
             }
+
+            y += ICON_SIZE + ROW_GAP;
+        }
+
+        // ===== PLAYERS (не зелье: стрелы, удары и т.п.) =====
+        if (!byPlayer.isEmpty()) {
+            gui.drawString(mc.font, Component.translatable("damagecore.potion_tab.players_header"), x, y, 0xFFFFFF, true);
+            y += mc.font.lineHeight + 4;
+
+            int pX = x;
+            int pRowY = y;
+
+            PlayerEffectIconRenderer.renderIcon(gui, pX, pRowY);
+            PlayerEffectIconRenderer.renderBar(gui, pX, pRowY + ICON_SIZE + BAR_GAP, byPlayer);
+
+            if (mouseX >= pX && mouseX < pX + ICON_SIZE && mouseY >= pRowY && mouseY < pRowY + ICON_SIZE) {
+                hoveredPlayerEffects = byPlayer;
+            }
+
+            y += ICON_SIZE + ROW_GAP;
         }
 
         // ===== MOBS =====
@@ -178,6 +218,26 @@ public final class PotionTabRenderer {
                 }
                 mobX += ICON_SIZE + GAP;
             }
+
+            y += ICON_SIZE + ROW_GAP;
+        }
+
+        // ===== TRAPS (ловушки/раздатчики) =====   // <-- NEW
+        if (!byTrap.isEmpty()) {
+            gui.drawString(mc.font, Component.translatable("damagecore.potion_tab.traps_header"), x, y, 0xFFFFFF, true);
+            y += mc.font.lineHeight + 4;
+
+            int tX = x;
+            int tRowY = y;
+
+            TrapEffectIconRenderer.renderIcon(gui, tX, tRowY);
+            TrapEffectIconRenderer.renderBar(gui, tX, tRowY + ICON_SIZE + BAR_GAP, byTrap);
+
+            if (mouseX >= tX && mouseX < tX + ICON_SIZE && mouseY >= tRowY && mouseY < tRowY + ICON_SIZE) {
+                hoveredTrapEffects = byTrap;
+            }
+
+            y += ICON_SIZE + ROW_GAP;
         }
 
         // ===== TOOLTIPS =====
@@ -187,8 +247,14 @@ public final class PotionTabRenderer {
         if (hoveredUnknown != null) {
             UnknownEffectIconRenderer.renderTooltip(gui, mc, hoveredUnknown, mouseX, mouseY);
         }
+        if (hoveredPlayerEffects != null) {
+            PlayerEffectIconRenderer.renderTooltip(gui, mc, hoveredPlayerEffects, mouseX, mouseY);
+        }
         if (hoveredMobType != null) {
             MobEffectIconRenderer.renderTooltip(gui, mc, hoveredMobType, hoveredMobEffects, mouseX, mouseY);
+        }
+        if (hoveredTrapEffects != null) {
+            TrapEffectIconRenderer.renderTooltip(gui, mc, hoveredTrapEffects, mouseX, mouseY);
         }
     }
 }

@@ -7,19 +7,25 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record ChainLightningPacket(Vec3 start, Vec3 end) implements CustomPacketPayload {
+public record ChainLightningPacket(Vec3 start, Vec3 end, boolean red) implements CustomPacketPayload {
 
     public static final Type<ChainLightningPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath("damagecore", "chain_lightning"));
 
     public static final StreamCodec<FriendlyByteBuf, ChainLightningPacket> CODEC = StreamCodec.of(
             (buf, packet) -> {
-                buf.writeDouble(packet.start.x); buf.writeDouble(packet.start.y); buf.writeDouble(packet.start.z);
-                buf.writeDouble(packet.end.x); buf.writeDouble(packet.end.y); buf.writeDouble(packet.end.z);
+                buf.writeDouble(packet.start.x);
+                buf.writeDouble(packet.start.y);
+                buf.writeDouble(packet.start.z);
+                buf.writeDouble(packet.end.x);
+                buf.writeDouble(packet.end.y);
+                buf.writeDouble(packet.end.z);
+                buf.writeBoolean(packet.red);
             },
             buf -> new ChainLightningPacket(
                     new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble()),
-                    new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble())
+                    new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble()),
+                    buf.readBoolean()
             )
     );
 
@@ -30,8 +36,8 @@ public record ChainLightningPacket(Vec3 start, Vec3 end) implements CustomPacket
 
     public static void handleClient(final ChainLightningPacket payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            // ВМЕСТО ЧАСТИЦ: Отправляем две точки напрямую в 3D-рендерер линий!
-            ClientLightningRenderer.addChainSegment(payload.start(), payload.end());
+            // Отправляем две точки + флаг красной молнии напрямую в 3D-рендерер линий
+            ClientLightningRenderer.addChainSegment(payload.start(), payload.end(), payload.red());
         });
     }
 }

@@ -5,6 +5,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Информация о зелье (или атаке моба), наложившем один или несколько mob-эффектов на игрока.
@@ -60,5 +61,38 @@ public final class PotionEffectEntry {
 
     public boolean grants(MobEffect effect) {
         return grantedEffects.contains(effect);
+    }
+
+    /**
+     * Два entry считаются "тем же источником" (и потому стакаются под одним значком в GUI),
+     * если это одно и то же зелье (тип предмета + компоненты/NBT), тот же способ наложения
+     * и тот же тип сущности-источника. Набор эффектов сравнивается тоже — на случай, если
+     * одно и то же зелье почему-то дало разные эффекты (защита от редких edge-кейсов).
+     * Конкретное время/длительность MobEffectInstance здесь не участвует — этот класс
+     * их вообще не хранит, только сам факт "чем и кто наложил".
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PotionEffectEntry other)) return false;
+
+        return applicationType == other.applicationType
+                && sourceEntityType == other.sourceEntityType
+                && ItemStack.isSameItemSameComponents(potionStack, other.potionStack)
+                && grantedEffects.equals(other.grantedEffects);
+    }
+
+    @Override
+    public int hashCode() {
+        // ItemStack сам по себе не даёт стабильный/осмысленный hashCode для componentов,
+        // поэтому используем связку Item + количество компонентов как приближение.
+        // Основную работу по корректности делает equals (ItemStack.isSameItemSameComponents),
+        // hashCode лишь обязан быть согласован с ним (равные объекты -> равный хэш).
+        return Objects.hash(
+                potionStack.getItem(),
+                applicationType,
+                sourceEntityType,
+                grantedEffects
+        );
     }
 }

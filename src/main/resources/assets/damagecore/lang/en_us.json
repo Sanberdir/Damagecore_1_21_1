@@ -25,6 +25,10 @@
   "damagecore.potion_application.drink": "Drank",
   "damagecore.potion_application.splash": "Thrown",
   "damagecore.potion_application.lingering": "Lingering Cloud",
+  "damagecore.potion_tab.players_header": "Player",
+  "damagecore.potion_tab.source_player":  "Player",
+  "damagecore.potion_tab.traps_header":  "Traps",
+
 
   "damagecore.damage_type.piercing": "Piercing",
   "damagecore.damage_type.bleeding": "Bleeding",
