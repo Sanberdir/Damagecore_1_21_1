@@ -129,6 +129,12 @@ public class TooltipEventHandler {
             case PIERCING -> "Колющий";
             case SLASHING -> "Режущий";
             case FIRE -> "Огненный";
+            case THUNDER -> "Погодный";
+            case THERMAL -> "Термальный";
+            case WITHERING -> "Иссушающий";
+            case EXPLOSIVE -> "Взрывной";
+            case ACID -> "Ядовитый";
+            case ETHEREAL -> "Эфирный";
             case COLD -> "Холодный";
             case BLEEDING -> "Кровотечение";
             case TEMPERATURE -> "Температурный";

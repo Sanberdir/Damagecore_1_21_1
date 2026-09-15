@@ -29,6 +29,12 @@ public final class EffectTextUtils {
             case PIERCING -> "damagecore.damage_type.piercing";
             case SLASHING -> "damagecore.damage_type.slashing";
             case FIRE -> "damagecore.damage_type.fire";
+            case THUNDER -> "damagecore.damage_type.thunder";
+            case THERMAL -> "damagecore.damage_type.thermal";
+            case WITHERING -> "damagecore.damage_type.withering";
+            case EXPLOSIVE -> "damagecore.damage_type.explosive";
+            case ACID -> "damagecore.damage_type.acid";
+            case ETHEREAL -> "damagecore.damage_type.etherial";
             case COLD -> "damagecore.damage_type.cold";
             case SUFFOCATION -> "damagecore.damage_type.suffocation";
             case BLEEDING -> "damagecore.damage_type.bleeding";

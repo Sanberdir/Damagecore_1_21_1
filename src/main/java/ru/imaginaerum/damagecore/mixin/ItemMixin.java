@@ -36,15 +36,15 @@ public abstract class ItemMixin {
 
                 ChatFormatting color = switch (damageType) {
                     case PIERCING, SLASHING, BLUDGEONING -> ChatFormatting.GREEN;
-                    case FIRE, BLEEDING, TEMPERATURE -> ChatFormatting.RED;
-                    case COLD -> ChatFormatting.AQUA;
-                    case LIGHTNING -> ChatFormatting.YELLOW;
+                    case FIRE,EXPLOSIVE, BLEEDING, TEMPERATURE -> ChatFormatting.RED;
+                    case COLD, THERMAL -> ChatFormatting.AQUA;
+                    case LIGHTNING, THUNDER -> ChatFormatting.YELLOW;
                     case NECROTIC -> ChatFormatting.DARK_PURPLE;
-                    case POISON -> ChatFormatting.DARK_GREEN;
+                    case POISON, ACID -> ChatFormatting.DARK_GREEN;
                     case LUMINOUS_RADIANT -> ChatFormatting.WHITE;
-                    case PSY -> ChatFormatting.LIGHT_PURPLE;
+                    case PSY, ETHEREAL -> ChatFormatting.LIGHT_PURPLE;
                     case SOUNDER -> ChatFormatting.BLUE;
-                    case SUFFOCATION -> ChatFormatting.DARK_GRAY;
+                    case SUFFOCATION, WITHERING -> ChatFormatting.DARK_GRAY;
                 };
 
                 tooltip.add(Component.literal(" ").append(
