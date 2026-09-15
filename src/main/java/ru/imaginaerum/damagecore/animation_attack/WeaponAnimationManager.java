@@ -1,7 +1,6 @@
 package ru.imaginaerum.damagecore.animation_attack;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
@@ -9,6 +8,7 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
+import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.AttackShape;
 import ru.imaginaerum.damagecore.library_damage.DamageType;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponType;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponTypeManager;
@@ -31,11 +31,16 @@ public class WeaponAnimationManager implements PreparableReloadListener {
     /**
      * Одна анимация + опциональный тип урона, который она наносит.
      */
-    public record AnimEntry(ResourceLocation animation, DamageType damageType, double damageMultiplier) {
-
-        // Удобный конструктор для случаев без явного множителя (старый формат)
+    public record AnimEntry(
+            ResourceLocation animation,
+            DamageType damageType,
+            double damageMultiplier,
+            AttackShape shape,
+            double coneAngle,
+            double reachBonus
+    ) {
         public AnimEntry(ResourceLocation animation, DamageType damageType) {
-            this(animation, damageType, 1.0);
+            this(animation, damageType, 1.0, AttackShape.SINGLE, 30.0, 0.0);
         }
     }
 
@@ -157,7 +162,7 @@ public class WeaponAnimationManager implements PreparableReloadListener {
      */
     private static AnimEntry parseAnimEntry(JsonElement el, ResourceLocation source) {
         if (el.isJsonPrimitive()) {
-            return new AnimEntry(ResourceLocation.parse(el.getAsString()), null, 1.0);
+            return new AnimEntry(ResourceLocation.parse(el.getAsString()), null);
         }
         if (el.isJsonObject()) {
             JsonObject obj = el.getAsJsonObject();
@@ -168,7 +173,14 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             ResourceLocation anim = ResourceLocation.parse(obj.get("animation").getAsString());
             DamageType damageType = parseDamageType(obj, source);
             double multiplier = parseDamageMultiplier(obj, source);
-            return new AnimEntry(anim, damageType, multiplier);
+            AttackShape shape = obj.has("attack_shape")
+                    ? AttackShape.fromName(obj.get("attack_shape").getAsString())
+                    : AttackShape.SINGLE;
+            double coneAngle = obj.has("cone_angle")
+                    ? obj.get("cone_angle").getAsDouble() : 90.0;
+            double reachBonus = obj.has("reach_bonus")
+                    ? obj.get("reach_bonus").getAsDouble() : 0.0;
+            return new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus);
         }
         return null;
     }
@@ -187,7 +199,14 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             ResourceLocation anim = ResourceLocation.parse(obj.get("animation").getAsString());
             DamageType damageType = parseDamageType(obj, source);
             double multiplier = parseDamageMultiplier(obj, source);
-            consumer.accept(key, new AnimEntry(anim, damageType, multiplier));
+            AttackShape shape = obj.has("attack_shape")
+                    ? AttackShape.fromName(obj.get("attack_shape").getAsString())
+                    : AttackShape.SINGLE;
+            double coneAngle = obj.has("cone_angle")
+                    ? obj.get("cone_angle").getAsDouble() : 90.0;
+            double reachBonus = obj.has("reach_bonus")
+                    ? obj.get("reach_bonus").getAsDouble() : 0.0;
+            consumer.accept(key, new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus));
             return;
         }
 
@@ -196,7 +215,7 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             if ("damage_type".equals(field.getKey()) || "damage_multiplier".equals(field.getKey())) continue;
             String key = field.getKey();
             ResourceLocation anim = ResourceLocation.parse(field.getValue().getAsString());
-            consumer.accept(key, new AnimEntry(anim, null, 1.0));
+            consumer.accept(key, new AnimEntry(anim, null));
         }
     }
 
