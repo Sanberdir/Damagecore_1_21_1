@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.DurationBarTooltip;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionTrackingClient;
-import ru.imaginaerum.damagecore.hud.effect_hud.EffectCountBadgeRenderer;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,9 +25,7 @@ public final class PlayerEffectIconRenderer {
     public static void renderIcon(GuiGraphics gui, int x, int y) {
         StatusIconSheet.blit(gui, x, y, ICON_U, ICON_V, ICON_REGION);
     }
-    public static void renderCount(GuiGraphics gui, net.minecraft.client.gui.Font font, int x, int y, int count) {
-        EffectCountBadgeRenderer.render(gui, font, x, y, EffectIconLayout.ICON_SIZE, count);
-    }
+
     public static void renderBar(GuiGraphics gui, int x, int y, List<MobEffectInstance> effects) {
         MobEffectInstance longest = longestOf(effects);
         float fraction = longest != null

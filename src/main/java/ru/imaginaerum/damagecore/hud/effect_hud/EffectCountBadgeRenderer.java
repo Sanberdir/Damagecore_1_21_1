@@ -30,9 +30,9 @@ public final class EffectCountBadgeRenderer {
         pose.translate(0.0, 0.0, 250.0);
 
         int drawX = (corner == Corner.BOTTOM_LEFT)
-                ? iconX + 1
+                ? iconX - 4                              // было iconX + 1 — сдвинул левее, за край иконки
                 : iconX + iconSize - textWidth - 1;
-        int drawY = iconY + iconSize - font.lineHeight + 1;
+        int drawY = iconY + iconSize - font.lineHeight - 3; // было +1 — сдвинул ниже
 
         gui.drawString(font, text, drawX, drawY, 0xFFFFFF, true);
         pose.popPose();
