@@ -405,7 +405,13 @@ public final class SkillTreeRenderer {
         calculateAndUpdatePositions(tree,panelScreenX,panelScreenY);
         return true;
     }
+    public static Integer getTabIdForFileName(String fileName) {
+        return fileNameToTabId.get(fileName);
+    }
 
+    public static Map<String, Integer> getFileNameToTabId() {
+        return new HashMap<>(fileNameToTabId);
+    }
     // --- Получение информации ---
     public static boolean hasTreeForTab(int tabId) { return trees.containsKey(tabId); }
     public static void resetTreePosition() { SkillTreeData tree = getCurrentTree(); tree.offsetX=0; tree.offsetY=0; tree.scale=1.0f; }

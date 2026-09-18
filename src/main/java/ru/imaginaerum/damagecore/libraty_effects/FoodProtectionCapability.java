@@ -297,7 +297,6 @@ public class FoodProtectionCapability {
     public static void syncToClient(ServerPlayer player) {
         FoodProtectionManager manager = player.getCapability(FOOD_PROTECTION);
         if (manager != null) {
-            System.out.println("[FoodProtection] Manager now has " + manager.getAllEffects().size() + " active effects, sending sync");
             // 1.21.1: FoodProtectionManager.save(...) теперь требует HolderLookup.Provider —
             // передаём player.registryAccess() (RegistryAccess реализует HolderLookup.Provider).
             CompoundTag saved = manager.save(player.registryAccess());

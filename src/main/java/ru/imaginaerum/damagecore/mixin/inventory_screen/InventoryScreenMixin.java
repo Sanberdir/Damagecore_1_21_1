@@ -164,7 +164,7 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
             int tabX         = guiLeft + imageWidth;
             boolean sideTabActive = damagecore$activeSideTab != SideTabsRenderer.TAB_NONE;
 
-            DamageBookRenderer.renderRightInterface(gui, screen, tabX, guiTop, mouseX, mouseY, sideTabActive);
+            DamageBookRenderer.renderRightInterface(gui, screen, tabX, guiTop, mouseX, mouseY, damagecore$activeSideTab);
 
             if (sideTabActive) {
                 ItemStack previewArmorStack = ItemStack.EMPTY;
@@ -192,7 +192,6 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
                 Render.currentHoveredNode = Render.getHoveredNodeUnderMouse(mouseX, mouseY);
             }
 
-            StatsPanelRenderer.renderSideTabIcons(gui, guiLeft, guiTop, damagecore$activeSideTab);
         }
     }
 
@@ -205,43 +204,43 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
         if (!this.skillTreeVisible || button != 0) return;
 
         InventoryScreen screen = (InventoryScreen) (Object) this;
-        int leftPos = ((AbstractContainerScreenAccessor) screen).getLeftPos();
-        int topPos  = ((AbstractContainerScreenAccessor) screen).getTopPos();
+        int leftPos    = ((AbstractContainerScreenAccessor) screen).getLeftPos();
+        int topPos     = ((AbstractContainerScreenAccessor) screen).getTopPos();
+        int imageWidth = ((AbstractContainerScreenAccessor) screen).damagecore$getImageWidth();
 
-        // Вкладка броня
-        if (mouseX >= leftPos + 466 && mouseX < leftPos + 491
-                && mouseY >= topPos + 4 && mouseY < topPos + 32) {
-            if (damagecore$activeSideTab == SideTabsRenderer.TAB_ARMOR) {
-                damagecore$activeSideTab = SideTabsRenderer.TAB_NONE;
-                DamageBookRenderer.setBottomTab(0);
-                SkillTreeRenderer.setActiveTree(0);
-            } else {
-                damagecore$activeSideTab = SideTabsRenderer.TAB_ARMOR;
-                DamageBookRenderer.setBottomTab(Integer.MAX_VALUE);
-                SkillTreeRenderer.resetTreePosition();
-            }
-            Minecraft.getInstance().getSoundManager().play(
-                    SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        int panelLeft = leftPos + imageWidth + 2;
+        int TOP_Y     = topPos - 25;
+        int TAB_W     = 28;
+        int TOP_TAB_GAP = 2;
+
+        int hitY = TOP_Y - 3;
+        int hitH = 35;
+
+        if (mouseX >= panelLeft && mouseX < panelLeft + TAB_W
+                && mouseY >= hitY && mouseY < hitY + hitH) {
+            toggleSideTab(SideTabsRenderer.TAB_ARMOR);
             cir.setReturnValue(true);
             return;
         }
 
-        // Вкладка эффекты
-        if (mouseX >= leftPos + 466 && mouseX < leftPos + 491
-                && mouseY >= topPos + 33 && mouseY < topPos + 61) {
-            if (damagecore$activeSideTab == SideTabsRenderer.TAB_POTION) {
-                damagecore$activeSideTab = SideTabsRenderer.TAB_NONE;
-                DamageBookRenderer.setBottomTab(0);
-                SkillTreeRenderer.setActiveTree(0);
-            } else {
-                damagecore$activeSideTab = SideTabsRenderer.TAB_POTION;
-                DamageBookRenderer.setBottomTab(Integer.MAX_VALUE);
-                SkillTreeRenderer.resetTreePosition();
-            }
-            Minecraft.getInstance().getSoundManager().play(
-                    SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        int potionTabX = panelLeft + TAB_W + TOP_TAB_GAP;
+        if (mouseX >= potionTabX && mouseX < potionTabX + TAB_W
+                && mouseY >= hitY && mouseY < hitY + hitH) {
+            toggleSideTab(SideTabsRenderer.TAB_POTION);
             cir.setReturnValue(true);
         }
+    }
+
+    @Unique
+    private void toggleSideTab(int tab) {
+        if (damagecore$activeSideTab == tab) return; // клик по активной — no-op
+
+        damagecore$activeSideTab = tab;
+        DamageBookRenderer.clearSelectedTree();     // нижний ряд теряет выделение
+        SkillTreeRenderer.resetTreePosition();
+
+        Minecraft.getInstance().getSoundManager().play(
+                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
     // -------------------------------------------------------------------------
@@ -359,16 +358,14 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
         int PANEL_W   = 289;
         int TAB_W     = 28;
         int bottomY   = panelTop + 163;
-        int topY      = panelTop - 25;
 
+        if (DamageBookRenderer.handleCategoryClick(mouseX, mouseY, panelLeft, panelTop, PANEL_W)) {
+            cir.setReturnValue(true); return;
+        }
         if (DamageBookRenderer.handleArrowClick(mouseX, mouseY, panelLeft, panelTop, PANEL_W)) {
             cir.setReturnValue(true); return;
         }
         if (handleRowClick(mouseX, mouseY, panelLeft, PANEL_W, TAB_W, bottomY, true)) {
-            damagecore$activeSideTab = SideTabsRenderer.TAB_NONE;
-            cir.setReturnValue(true); return;
-        }
-        if (handleRowClick(mouseX, mouseY, panelLeft, PANEL_W, TAB_W, topY, false)) {
             damagecore$activeSideTab = SideTabsRenderer.TAB_NONE;
             cir.setReturnValue(true);
         }

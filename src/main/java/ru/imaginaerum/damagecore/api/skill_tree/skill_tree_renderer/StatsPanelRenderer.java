@@ -127,34 +127,6 @@ public final class StatsPanelRenderer {
                 STRIP_U, STRIP_V, STRIP_W, STRIP_H, ATLAS_SIZE, ATLAS_SIZE);
     }
 
-    /**
-     * Боковые вкладки (броня / эффекты) с иконками предметов.
-     * Используется как в renderBg, так и в render(TAIL) поверх правой панели,
-     * поэтому вынесена в один метод, чтобы не дублировать код.
-     */
-    public static void renderSideTabIcons(GuiGraphics gui, int leftPos, int topPos, int activeSideTab) {
-        // Вкладка броня
-        int armorU = (activeSideTab == SideTabsRenderer.TAB_ARMOR) ? 208 : 211;
-        int armorV = (activeSideTab == SideTabsRenderer.TAB_ARMOR) ? 207 : 179;
-        int armorW = (activeSideTab == SideTabsRenderer.TAB_ARMOR) ? 32  : 25;
-        int armorX = leftPos + 466 - (activeSideTab == SideTabsRenderer.TAB_ARMOR ? 3 : 0);
-        gui.blit(DAMAGE_CORE_INTERFACE,
-                armorX, topPos + 4,
-                armorU, armorV, armorW, 28, ATLAS_SIZE, ATLAS_SIZE);
-        gui.renderItem(new ItemStack(Items.NETHERITE_HELMET),
-                armorX + (armorW - 16) / 2, topPos + 4 + 6);
-
-        // Вкладка эффекты
-        int potionU = (activeSideTab == SideTabsRenderer.TAB_POTION) ? 240 : 211;
-        int potionV = (activeSideTab == SideTabsRenderer.TAB_POTION) ? 207 : 179;
-        int potionW = (activeSideTab == SideTabsRenderer.TAB_POTION) ? 32  : 25;
-        int potionX = leftPos + 466 - (activeSideTab == SideTabsRenderer.TAB_POTION ? 3 : 0);
-        gui.blit(DAMAGE_CORE_INTERFACE,
-                potionX, topPos + 33,
-                potionU, potionV, potionW, 28, ATLAS_SIZE, ATLAS_SIZE);
-        gui.renderItem(new ItemStack(Items.GOLDEN_CARROT),
-                potionX + (potionW - 16) / 2, topPos + 33 + 6);
-    }
 
     /**
      * Список строк статов: текст, число, кнопки +/-.
@@ -239,7 +211,6 @@ public final class StatsPanelRenderer {
         renderBackground(gui, leftPos, topPos);
         renderExtraPanel(gui, leftPos, topPos);
         renderScrollStrip(gui, leftPos, topPos, stripOffsetY);
-        renderSideTabIcons(gui, leftPos, topPos, activeSideTab);
         renderStatRows(gui, leftPos, topPos, mouseX, mouseY, stripOffsetY);
 
         if (Minecraft.getInstance().player != null) {
