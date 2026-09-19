@@ -98,9 +98,9 @@ public class FoodProtectionEffect {
                 item.builtInRegistryHolder().key().location().toString()
         );
 
-        // Для обычной еды damageType может отсутствовать.
+        // Для обычной еды damageTypes может отсутствовать.
         if (damageType != null) {
-            tag.putString("damageType", damageType.name());
+            tag.putString("damageTypes", damageType.name());
         }
 
         tag.putFloat("protection", protectionPercent);
@@ -128,8 +128,8 @@ public class FoodProtectionEffect {
 
         DamageType type = null;
 
-        if (tag.contains("damageType")) {
-            type = DamageType.valueOf(tag.getString("damageType"));
+        if (tag.contains("damageTypes")) {
+            type = DamageType.valueOf(tag.getString("damageTypes"));
         }
 
         float protection = tag.getFloat("protection");

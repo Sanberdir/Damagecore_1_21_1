@@ -41,7 +41,7 @@ public class DamageResistanceHandler {
             // Например, если у вас в DamageType есть метод сопоставления, или по имени:
             try {
                 // Если имена ваших типов совпадают с ванильными/старыми:
-                // damageType = ru.imaginaerum.damagecore.library_damage.DamageType.valueOf(vanillaHolder.value().msgId().toUpperCase());
+                // damageTypes = ru.imaginaerum.damagecore.library_damage.DamageType.valueOf(vanillaHolder.value().msgId().toUpperCase());
 
                 // Временная заглушка (замените на ваш метод конвертации ванильного урона в ваш DamageType):
                 damageType = ru.imaginaerum.damagecore.library_damage.DamageType.BLUDGEONING;

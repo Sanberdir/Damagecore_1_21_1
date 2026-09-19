@@ -4,20 +4,22 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 
+import java.util.List;
+
 public class TypedDamageSource extends DamageSource {
 
-    private final DamageType damageCoreType;
+    private final List<DamageType> damageCoreTypes;
 
     public TypedDamageSource(
             Holder<net.minecraft.world.damagesource.DamageType> vanillaType,
-            DamageType damageCoreType,
+            List<DamageType> damageCoreTypes,
             Entity attacker
     ) {
         super(vanillaType, attacker);
-        this.damageCoreType = damageCoreType;
+        this.damageCoreTypes = damageCoreTypes;
     }
 
-    public DamageType getDamageCoreType() {
-        return damageCoreType;
+    public List<DamageType> getDamageCoreTypes() {
+        return damageCoreTypes;
     }
 }

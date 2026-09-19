@@ -11,9 +11,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public record PacketTypedAttack(
         int targetId,
-        DamageType attackType,
+        List<DamageType> attackTypes,
         double damageMultiplier
 ) implements CustomPacketPayload {
 
@@ -23,14 +26,22 @@ public record PacketTypedAttack(
     public static final StreamCodec<FriendlyByteBuf, PacketTypedAttack> STREAM_CODEC = StreamCodec.of(
             (buf, packet) -> {
                 buf.writeVarInt(packet.targetId());
-                buf.writeEnum(packet.attackType());
+                buf.writeVarInt(packet.attackTypes().size());
+                for (DamageType type : packet.attackTypes()) {
+                    buf.writeEnum(type);
+                }
                 buf.writeDouble(packet.damageMultiplier());
             },
-            buf -> new PacketTypedAttack(
-                    buf.readVarInt(),
-                    buf.readEnum(DamageType.class),
-                    buf.readDouble()
-            )
+            buf -> {
+                int targetId = buf.readVarInt();
+                int size = buf.readVarInt();
+                List<DamageType> types = new ArrayList<>(size);
+                for (int i = 0; i < size; i++) {
+                    types.add(buf.readEnum(DamageType.class));
+                }
+                double mult = buf.readDouble();
+                return new PacketTypedAttack(targetId, types, mult);
+            }
     );
 
     @Override
@@ -48,9 +59,10 @@ public record PacketTypedAttack(
             if (!(target instanceof LivingEntity living)) return;
 
             // Базовый урон оружия для данного типа
-            double baseDamage = weapon.damagecore$getDamageMap()
-                    .getOrDefault(payload.attackType(), 0.0);
-
+            double baseDamage = 0.0;
+            for (DamageType type : payload.attackTypes()) {
+                baseDamage += weapon.damagecore$getDamageMap().getOrDefault(type, 0.0);
+            }
             if (baseDamage <= 0) return;
 
             // Применяем множитель из анимации
@@ -62,7 +74,7 @@ public record PacketTypedAttack(
 
             Holder.Reference<net.minecraft.world.damagesource.DamageType> typeHolder = registry.getHolderOrThrow(ModDamageTypes.TYPED_ATTACK);
 
-            TypedDamageSource source = new TypedDamageSource(typeHolder, payload.attackType(), sender);
+            TypedDamageSource source = new TypedDamageSource(typeHolder, payload.attackTypes(), sender);
 
             boolean applied = living.hurt(source, (float) damage);
             if (!applied) {

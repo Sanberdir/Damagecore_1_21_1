@@ -1,6 +1,7 @@
 package ru.imaginaerum.damagecore.animation_attack;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
@@ -33,13 +34,13 @@ public class WeaponAnimationManager implements PreparableReloadListener {
      */
     public record AnimEntry(
             ResourceLocation animation,
-            DamageType damageType,
+            List<DamageType> damageTypes,
             double damageMultiplier,
             AttackShape shape,
             double coneAngle,
             double reachBonus
     ) {
-        public AnimEntry(ResourceLocation animation, DamageType damageType) {
+        public AnimEntry(ResourceLocation animation, List<DamageType> damageType) {
             this(animation, damageType, 1.0, AttackShape.SINGLE, 30.0, 0.0);
         }
     }
@@ -171,7 +172,7 @@ public class WeaponAnimationManager implements PreparableReloadListener {
                 return null;
             }
             ResourceLocation anim = ResourceLocation.parse(obj.get("animation").getAsString());
-            DamageType damageType = parseDamageType(obj, source);
+            List<DamageType> damageType = parseDamageType(obj, source);
             double multiplier = parseDamageMultiplier(obj, source);
             AttackShape shape = obj.has("attack_shape")
                     ? AttackShape.fromName(obj.get("attack_shape").getAsString())
@@ -197,7 +198,7 @@ public class WeaponAnimationManager implements PreparableReloadListener {
         if (obj.has("key") && obj.has("animation")) {
             String key = obj.get("key").getAsString();
             ResourceLocation anim = ResourceLocation.parse(obj.get("animation").getAsString());
-            DamageType damageType = parseDamageType(obj, source);
+            List<DamageType> damageType = parseDamageType(obj, source);
             double multiplier = parseDamageMultiplier(obj, source);
             AttackShape shape = obj.has("attack_shape")
                     ? AttackShape.fromName(obj.get("attack_shape").getAsString())
@@ -219,15 +220,32 @@ public class WeaponAnimationManager implements PreparableReloadListener {
         }
     }
 
-    private static DamageType parseDamageType(JsonObject obj, ResourceLocation source) {
+    private static List<DamageType> parseDamageType(JsonObject obj, ResourceLocation source) {
         if (!obj.has("damage_type")) return null;
-        String raw = obj.get("damage_type").getAsString().toUpperCase();
-        try {
-            return DamageType.valueOf(raw);
-        } catch (IllegalArgumentException e) {
-            System.err.println("[WeaponAnimations] Unknown damage_type '" + raw + "' in " + source);
-            return null;
+        JsonElement types = obj.get("damage_type");
+        List<DamageType> damageTypeList = new ArrayList<>();
+        if (types.isJsonPrimitive()) {
+            String raw = types.getAsString().toUpperCase();
+            try {
+                damageTypeList.add(DamageType.valueOf(raw));
+            } catch (IllegalArgumentException e) {
+                System.err.println("[WeaponAnimations] Unknown damage_type '" + raw + "' in " + source);
+            }
         }
+        else if (types.isJsonArray()) {
+            JsonArray jsonArray = types.getAsJsonArray();
+            int i = 0;
+            String raw = "";
+            try {
+                for (; i < jsonArray.size(); i++) {
+                    raw = String.valueOf(jsonArray.get(i)).replace("\"", "").toUpperCase();
+                    damageTypeList.add(DamageType.valueOf(raw));
+                }
+            } catch (IllegalArgumentException e) {
+                System.err.println("[WeaponAnimations] Unknown damage_type '" + raw + "' in " + source);
+            }
+        }
+        return damageTypeList;
     }
     private static double parseDamageMultiplier(JsonObject obj, ResourceLocation source) {
         if (!obj.has("damage_multiplier")) return 1.0;
