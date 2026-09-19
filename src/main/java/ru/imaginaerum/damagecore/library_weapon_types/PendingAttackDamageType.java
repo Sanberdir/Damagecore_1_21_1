@@ -1,4 +1,6 @@
-package ru.imaginaerum.damagecore.library_damage;
+package ru.imaginaerum.damagecore.library_weapon_types;
+
+import ru.imaginaerum.damagecore.library_damage.DamageType;
 
 import java.util.Map;
 import java.util.UUID;
@@ -16,7 +18,7 @@ public final class PendingAttackDamageType {
 
     public static void set(UUID playerId, DamageType type) {
         if (type == null) {
-            PENDING.remove(playerId);
+            PENDING.remove(playerId); //TODO понять, зачем сбрасывать весь запланированный урон
         } else {
             PENDING.put(playerId, type);
         }
