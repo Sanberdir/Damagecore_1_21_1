@@ -27,6 +27,7 @@
   "damagecore.potion_application.lingering": "Lingering Cloud",
   "damagecore.potion_tab.players_header": "Player",
   "damagecore.potion_tab.source_player":  "Player",
+  "damagecore.potion_tab.source_trap":  "Trap",
   "damagecore.potion_tab.traps_header":  "Traps",
 
 

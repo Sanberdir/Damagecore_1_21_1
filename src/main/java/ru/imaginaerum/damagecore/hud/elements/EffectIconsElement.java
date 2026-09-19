@@ -7,15 +7,12 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionApplicationType;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionEffectEntry;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.PotionTrackingClient;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.MobEffectIconRenderer;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.PlayerEffectIconRenderer;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.PotionEffectIconRenderer;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.TrapEffectIconRenderer;
-import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.UnknownEffectIconRenderer;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.category_potion.*;
 import ru.imaginaerum.damagecore.hud.effect_hud.EffectCountBadgeRenderer;
 import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionCapability;
 import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionEffect;
@@ -39,7 +36,8 @@ public class EffectIconsElement {
 
     private static final int ICON_Y = 4;
     private static final int ICON_START_X = 51;
-
+    int iconDrawX = ICON_START_X;
+    private static final int BAR_Y = EffectIconLayout.ICON_SIZE + EffectIconLayout.BAR_GAP;
     private static boolean isPlayerSource(EntityType<?> sourceEntityType) {
         return sourceEntityType == null || sourceEntityType == EntityType.PLAYER;
     }
@@ -78,7 +76,7 @@ public class EffectIconsElement {
                 .filter(e -> !foodGranted.contains(e.getEffect()))
                 .toList();
 
-        if (playerEffects.isEmpty()) return;
+        if (playerEffects.isEmpty() && allActiveFood.isEmpty()) return;
 
         // ===== Группировка по типу наложения =====
         List<MobEffectInstance> byPotion = new ArrayList<>();
@@ -117,18 +115,42 @@ public class EffectIconsElement {
 
         // ===== Неизвестный источник =====
         for (MobEffectInstance inst : unknown) {
-            renderScaled(gui, iconDrawX, ICON_Y, g -> UnknownEffectIconRenderer.renderIcon(g, mc, 0, 0, inst));
+            renderScaled(gui, iconDrawX, ICON_Y, g -> {
+                UnknownEffectIconRenderer.renderIcon(g, mc, 0, 0, inst);
+                UnknownEffectIconRenderer.renderBar(g, 0, BAR_Y, inst);
+            });
             iconDrawX += ICON_SIZE + ICON_GAP;
         }
 
-        // ===== Зелье =====
+// ===== Зелье =====
         if (!byPotion.isEmpty()) {
             final int count = byPotion.size();
             renderScaled(gui, iconDrawX, ICON_Y, g -> {
                 PotionEffectIconRenderer.renderIcon(g, 0, 0);
+                PotionEffectIconRenderer.renderBar(g, 0, BAR_Y, byPotion);
                 EffectCountBadgeRenderer.render(g, mc.font, 0, 0, BASE_ICON_SIZE, count, EffectCountBadgeRenderer.Corner.BOTTOM_LEFT);
             });
             iconDrawX += ICON_SIZE + ICON_GAP;
+        }
+
+// ===== Еда =====
+        if (!allActiveFood.isEmpty()) {
+            Map<Item, List<FoodProtectionEffect>> byItem = new LinkedHashMap<>();
+            for (FoodProtectionEffect eff : allActiveFood) {
+                byItem.computeIfAbsent(eff.getItem(), k -> new ArrayList<>()).add(eff);
+            }
+
+            for (var entry : byItem.entrySet()) {
+                final Item item = entry.getKey();
+                final List<FoodProtectionEffect> effects = entry.getValue();
+                final int count = effects.size();
+                renderScaled(gui, iconDrawX, ICON_Y, g -> {
+                    FoodEffectIconRenderer.renderIcon(g, 0, 0);
+                    FoodEffectIconRenderer.renderBar(g, 0, BAR_Y, item, effects);
+                    EffectCountBadgeRenderer.render(g, mc.font, 0, 0, BASE_ICON_SIZE, count, EffectCountBadgeRenderer.Corner.BOTTOM_LEFT);
+                });
+                iconDrawX += ICON_SIZE + ICON_GAP;
+            }
         }
 
 // ===== Игрок =====
@@ -136,6 +158,7 @@ public class EffectIconsElement {
             final int count = byPlayer.size();
             renderScaled(gui, iconDrawX, ICON_Y, g -> {
                 PlayerEffectIconRenderer.renderIcon(g, 0, 0);
+                PlayerEffectIconRenderer.renderBar(g, 0, BAR_Y, byPlayer);
                 EffectCountBadgeRenderer.render(g, mc.font, 0, 0, BASE_ICON_SIZE, count, EffectCountBadgeRenderer.Corner.BOTTOM_LEFT);
             });
             iconDrawX += ICON_SIZE + ICON_GAP;
@@ -143,9 +166,11 @@ public class EffectIconsElement {
 
 // ===== Мобы =====
         for (var entry : byMobType.entrySet()) {
-            final int count = entry.getValue().size();
+            final List<MobEffectInstance> effects = entry.getValue();
+            final int count = effects.size();
             renderScaled(gui, iconDrawX, ICON_Y, g -> {
                 MobEffectIconRenderer.renderIcon(g, 0, 0);
+                MobEffectIconRenderer.renderBar(g, 0, BAR_Y, effects);
                 EffectCountBadgeRenderer.render(g, mc.font, 0, 0, BASE_ICON_SIZE, count, EffectCountBadgeRenderer.Corner.BOTTOM_LEFT);
             });
             iconDrawX += ICON_SIZE + ICON_GAP;
@@ -156,6 +181,7 @@ public class EffectIconsElement {
             final int count = byTrap.size();
             renderScaled(gui, iconDrawX, ICON_Y, g -> {
                 TrapEffectIconRenderer.renderIcon(g, 0, 0);
+                TrapEffectIconRenderer.renderBar(g, 0, BAR_Y, byTrap);
                 EffectCountBadgeRenderer.render(g, mc.font, 0, 0, BASE_ICON_SIZE, count, EffectCountBadgeRenderer.Corner.BOTTOM_LEFT);
             });
         }

@@ -40,6 +40,8 @@
   "damagecore.potion_tab.players_header": "Игроки",
   "damagecore.potion_tab.source_player":  "Игрок",
   "damagecore.potion_tab.traps_header":  "Ловушки",
+  "damagecore.potion_tab.source_trap":  "Ловушка",
+
 
   "damagecore.tooltip.damage_type": "Тип: %s",
   "damagecore.tooltip.armor": "Броня: %s",
