@@ -18,6 +18,12 @@ public final class ChargingState implements CombatState {
     private ChargingState() {}
 
     @Override
+    public void onEnter(CombatContext ctx, long now) {
+        ctx.comboIndex = 0;
+        ctx.wantsRelease = false;
+    }
+
+    @Override
     public boolean onPrimaryDown(CombatContext ctx, LivingEntity target) {
         return true; // во время замаха инпут игнорим
     }

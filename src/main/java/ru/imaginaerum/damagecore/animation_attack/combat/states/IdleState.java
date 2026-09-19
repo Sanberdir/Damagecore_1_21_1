@@ -23,11 +23,16 @@ public final class IdleState implements CombatState {
     private IdleState() {}
 
     @Override
+    public void onExit(CombatContext ctx, long now) {
+        ctx.idle = false;
+    }
+
+    @Override
     public boolean onPrimaryDown(CombatContext ctx, LivingEntity target) {
         long now = System.currentTimeMillis();
 
-        if (!AttackCooldownBridge.isReady(ctx.player)) return true;
         if (now < ctx.lockedUntil) return true;
+//        if (!AttackCooldownBridge.isReady(ctx.player)) return true;
 
         ItemStack stack = ctx.player.getMainHandItem();
         if (stack.isEmpty()) return false;
@@ -47,7 +52,6 @@ public final class IdleState implements CombatState {
             if (!keys.isEmpty()) {
                 ctx.setState(ChargingState.INSTANCE, now);
                 ChargingState.playSegment(ctx, keys, now);
-                ctx.idle = false;
                 return true; // ваниль не нужна
             }
             return false;
@@ -56,7 +60,6 @@ public final class IdleState implements CombatState {
         // ---- Обычная комбо-анимация ----
         List<AnimEntry> regulars = WeaponAnimationManager.INSTANCE.getRegularSwings(id);
         if (regulars.isEmpty()) return false;
-        ctx.idle = false;
 
         if (ctx.comboIndex >= regulars.size()) ctx.comboIndex = 0;
         AnimEntry chosen = regulars.get(ctx.comboIndex);

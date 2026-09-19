@@ -11,8 +11,6 @@ public final class ReleasingState implements CombatState {
 
     @Override
     public void onEnter(CombatContext ctx, long now) {
-        ctx.comboIndex = 0;
-        ctx.wantsRelease = false;
         AttackCooldownBridge.reset(ctx.player);
     }
 
