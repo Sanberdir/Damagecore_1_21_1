@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager.AnimEntry;
 import ru.imaginaerum.damagecore.animation_attack.combat.AnimationHelper;
+import ru.imaginaerum.damagecore.animation_attack.combat.AttackCooldownBridge;
 import ru.imaginaerum.damagecore.animation_attack.combat.CombatContext;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.HitTimingResolver;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponTypeManager;
@@ -19,13 +20,14 @@ public final class IdleState implements CombatState {
     public static final IdleState INSTANCE = new IdleState();
     public static final long COMBO_RESET_WINDOW_MS = 1000L;
 
-    private boolean idle = false;
-
     private IdleState() {}
 
     @Override
     public boolean onPrimaryDown(CombatContext ctx, LivingEntity target) {
         long now = System.currentTimeMillis();
+
+        if (!AttackCooldownBridge.isReady(ctx.player)) return true;
+        if (now < ctx.lockedUntil) return true;
 
         ItemStack stack = ctx.player.getMainHandItem();
         if (stack.isEmpty()) return false;
@@ -43,19 +45,18 @@ public final class IdleState implements CombatState {
         if (shiftDown) {
             List<String> keys = WeaponAnimationManager.INSTANCE.getChargeKeysOrder(id);
             if (!keys.isEmpty()) {
-                ctx.comboIndex = 0;
-                ctx.wantsRelease = false;
                 ctx.setState(ChargingState.INSTANCE, now);
                 ChargingState.playSegment(ctx, keys, now);
+                ctx.idle = false;
                 return true; // ваниль не нужна
             }
-            // нет замахов — падаем в обычную ваниль
             return false;
         }
 
         // ---- Обычная комбо-анимация ----
         List<AnimEntry> regulars = WeaponAnimationManager.INSTANCE.getRegularSwings(id);
         if (regulars.isEmpty()) return false;
+        ctx.idle = false;
 
         if (ctx.comboIndex >= regulars.size()) ctx.comboIndex = 0;
         AnimEntry chosen = regulars.get(ctx.comboIndex);
@@ -67,7 +68,7 @@ public final class IdleState implements CombatState {
 
         long delayMs = HitTimingResolver.resolveMs(chosen.animation());
         ctx.scheduleHit(now + delayMs, chosen);
-        idle = false;
+
         // ВАЖНО: даже если damage_type == null, всё равно гасим ваниль,
         // чтобы не было двойного поведения/свинга. Просто без отправки пакета.
         return true;
@@ -75,13 +76,13 @@ public final class IdleState implements CombatState {
 
     @Override
     public void onTick(CombatContext ctx, long now) {
-        if (idle) return;
+        if (ctx.idle) return;
         long time = now - ctx.stateEnteredAt;
         if (time > COMBO_RESET_WINDOW_MS) {
             ctx.comboIndex = 0;
             AnimationHelper.stop(ctx.player);
             ctx.clearPendingHits();
-            idle = true;
+            ctx.idle = true;
         }
     }
 }

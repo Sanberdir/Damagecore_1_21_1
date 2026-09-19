@@ -1,5 +1,7 @@
 package ru.imaginaerum.damagecore.library_damage;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -55,15 +57,18 @@ public record PacketTypedAttack(
             double damage = baseDamage * payload.damageMultiplier();
 
             if (damage <= 0) return;
+            var registry = sender.level().registryAccess()
+                    .registryOrThrow(Registries.DAMAGE_TYPE);
 
-            TypedDamageSource source = new TypedDamageSource(
-                    sender.level().damageSources().playerAttack(sender).typeHolder(),
-                    payload.attackType(),
-                    sender
-            );
+            Holder.Reference<net.minecraft.world.damagesource.DamageType> typeHolder = registry.getHolderOrThrow(ModDamageTypes.TYPED_ATTACK);
 
-            living.hurt(source, (float) damage);
-            sender.resetAttackStrengthTicker();
+            TypedDamageSource source = new TypedDamageSource(typeHolder, payload.attackType(), sender);
+
+            boolean applied = living.hurt(source, (float) damage);
+            if (!applied) {
+                System.out.println("[TypedAttack] hurt() returned false for "
+                        + living.getName().getString() + " dmg=" + damage);
+            }
         });
     }
 }

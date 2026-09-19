@@ -21,6 +21,7 @@ public final class CombatContext {
     public final AbstractClientPlayer player;
     public CombatState state = IdleState.INSTANCE;
     public long stateEnteredAt = 0L;
+    public boolean idle = true;
 
     public ResourceLocation weaponId;
     public int comboIndex = 0;
@@ -37,8 +38,11 @@ public final class CombatContext {
     }
 
     public void setState(CombatState newState, long now) {
+        if (this.state == newState) return;
+        this.state.onExit(this, now);
         this.state = newState;
         this.stateEnteredAt = now;
+        newState.onEnter(this, now);
     }
 
     public void scheduleHit(long at, WeaponAnimationManager.AnimEntry entry) {

@@ -37,5 +37,6 @@ public final class WeaponCombatController {
         ctx.state.onTick(ctx, now);
 
         ctx.drainReady(now, hit -> AttackHitResolver.resolve(ctx.player, hit));
+        AttackCooldownBridge.tick(ctx.player, ctx, now);
     }
 }
