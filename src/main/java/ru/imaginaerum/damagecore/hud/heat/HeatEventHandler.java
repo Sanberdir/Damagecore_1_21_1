@@ -16,10 +16,12 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.library_damage.DamageContext;
+import ru.imaginaerum.damagecore.library_damage.DamageType;
 import ru.imaginaerum.damagecore.library_damage.TypedDamageSource;
 import ru.imaginaerum.damagecore.library_stats.IPlayerStats;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -172,7 +174,7 @@ public class HeatEventHandler {
         // attacker = null, так как это чисто средовой (environmental) урон, без атакующей сущности
         TypedDamageSource overheatSource = new TypedDamageSource(
                 hotFloorHolder,
-                ru.imaginaerum.damagecore.library_damage.DamageType.TEMPERATURE,
+                List.of(DamageType.TEMPERATURE),
                 null
         );
 
