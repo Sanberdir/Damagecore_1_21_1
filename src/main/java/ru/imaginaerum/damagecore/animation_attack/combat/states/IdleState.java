@@ -18,7 +18,7 @@ import java.util.List;
 public final class IdleState implements CombatState {
 
     public static final IdleState INSTANCE = new IdleState();
-    public static final long COMBO_RESET_WINDOW_MS = 1000L;
+    public static final long COMBO_RESET_WINDOW_MS = 600L;
 
     private IdleState() {}
 
