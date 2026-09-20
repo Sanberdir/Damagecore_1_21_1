@@ -2,11 +2,13 @@ package ru.imaginaerum.damagecore.animation_attack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.Input;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
@@ -36,7 +38,23 @@ public class WeaponAttackAnimationHandler {
         if (!(event.getEntity() instanceof AbstractClientPlayer player)) return;
         controller(player).onPrimaryDown(null);
     }
+    @SubscribeEvent
+    public static void onMovementInput(MovementInputUpdateEvent event) {
+        if (!(event.getEntity() instanceof AbstractClientPlayer player)) return;
 
+        WeaponCombatController c = CONTROLLERS.get(player.getUUID());
+        if (c == null || !c.isBusy()) return;
+
+        Input input = event.getInput();
+        input.up = false;
+        input.down = false;
+        input.left = false;
+        input.right = false;
+        input.forwardImpulse = 0f;
+        input.leftImpulse = 0f;
+        input.jumping = false;
+        // shiftKeyDown не трогаем: он нужен для замаха (Shift + ЛКМ)
+    }
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         AbstractClientPlayer player = Minecraft.getInstance().player;

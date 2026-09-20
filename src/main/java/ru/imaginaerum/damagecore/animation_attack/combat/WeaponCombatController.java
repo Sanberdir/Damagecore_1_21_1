@@ -31,8 +31,12 @@ public final class WeaponCombatController {
         ctx.comboIndex = 0;
         ctx.wantsRelease = false;
         ctx.setState(IdleState.INSTANCE, System.currentTimeMillis());
+        ctx.idle = true;
     }
-
+    /** true, пока идёт замах/удар/релиз (т.е. состояние не Idle). */
+    public boolean isBusy() {
+        return !ctx.idle;
+    }
     public void tick(long now) {
         ctx.state.onTick(ctx, now);
 

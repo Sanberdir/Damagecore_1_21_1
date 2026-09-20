@@ -15,7 +15,7 @@
     "swing_strike_release_animations": [
       { "key": "1", "animation": "damagecore:sword_sa_1", "damage_type": "slashing","damage_multiplier": 2.0 },
       { "key": "2", "animation": "damagecore:sword_sa_2", "damage_type": "piercing", "damage_multiplier": 3.0},
-      { "key": "3", "animation": "damagecore:sword_sa_3", "damage_type": "slashing", "damage_multiplier": 4.0}
+      { "key": "3", "animation": "damagecore:sword_sa_3", "damage_type": "slashing", "damage_multiplier": 4.0, "attack_shape": "circle"}
     ]
   }
 }
