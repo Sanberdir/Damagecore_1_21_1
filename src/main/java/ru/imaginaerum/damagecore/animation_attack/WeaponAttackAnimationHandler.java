@@ -67,6 +67,14 @@ public class WeaponAttackAnimationHandler {
             c.onPrimaryUp();
         }
         c.tick(now);
+
+        // Гасим ванильный взмах руки (он стартует в момент клика)
+        if (c.suppressVanillaSwing()) {
+            player.swinging = false;
+            player.swingTime = 0;
+            player.attackAnim = 0f;
+            player.oAttackAnim = 0f;
+        }
     }
 
     private static WeaponCombatController controller(AbstractClientPlayer player) {

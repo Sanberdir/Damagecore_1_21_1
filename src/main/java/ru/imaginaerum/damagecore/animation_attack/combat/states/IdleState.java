@@ -44,17 +44,18 @@ public final class IdleState implements CombatState {
         if (ctx.weaponId != null && !ctx.weaponId.equals(id)) ctx.comboIndex = 0;
         ctx.weaponId = id;
 
-        boolean shiftDown = Minecraft.getInstance().options.keyShift.isDown();
+        boolean strong = ctx.strongMode;
+        ctx.strongMode = false; // сбрасываем сразу, чтобы флаг не «залипал»
 
-        // ---- Замах (Shift + ЛКМ) ----
-        if (shiftDown) {
+// ---- Замах (удержание ЛКМ) ----
+        if (strong) {
             List<String> keys = WeaponAnimationManager.INSTANCE.getChargeKeysOrder(id);
             if (!keys.isEmpty()) {
                 ctx.setState(ChargingState.INSTANCE, now);
                 ChargingState.playSegment(ctx, keys, now);
-                return true; // ваниль не нужна
+                return true;
             }
-            return false;
+            // нет анимаций замаха — падаем в обычный взмах
         }
 
         // ---- Обычная комбо-анимация ----

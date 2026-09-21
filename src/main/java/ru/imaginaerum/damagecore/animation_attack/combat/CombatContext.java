@@ -27,7 +27,7 @@ public final class CombatContext {
     public ResourceLocation weaponId;
     public int comboIndex = 0;
     public long lockedUntil = 0L;
-
+    public boolean strongMode = false;
     /** Выставляется в Charging, когда игрок отпустил ЛКМ. */
     public boolean wantsRelease = false;
 
