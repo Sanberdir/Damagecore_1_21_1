@@ -76,7 +76,10 @@ public class WeaponAttackAnimationHandler {
             player.oAttackAnim = 0f;
         }
     }
-
+    public static boolean isBusy(AbstractClientPlayer player) {
+        WeaponCombatController c = CONTROLLERS.get(player.getUUID());
+        return c != null && (c.isBusy() || c.suppressVanillaSwing());
+    }
     private static WeaponCombatController controller(AbstractClientPlayer player) {
         WeaponCombatController existing = CONTROLLERS.get(player.getUUID());
         if (existing != null && existing.context().player == player) {
