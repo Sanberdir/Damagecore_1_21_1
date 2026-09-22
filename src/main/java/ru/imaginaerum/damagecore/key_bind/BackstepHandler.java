@@ -21,6 +21,7 @@ public class BackstepHandler {
     private static final double HORIZONTAL_SPEED = 0.85;
     private static final double VERTICAL_SPEED = 0.30;
     private static final long COOLDOWN_MS = 800;
+    private static final long INPUT_LOCK_MS = 300;
 
     public static final KeyMapping BACKSTEP_KEY = new KeyMapping(
             "key.damagecore.backstep",
@@ -30,6 +31,7 @@ public class BackstepHandler {
     );
 
     private static long lastUsed = 0;
+    private static long lockedUntil = 0;
 
     @SubscribeEvent
     public static void onRegisterKeys(RegisterKeyMappingsEvent event) {
@@ -41,7 +43,6 @@ public class BackstepHandler {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
 
-        // consumeClick срабатывает один раз на одно нажатие
         while (BACKSTEP_KEY.consumeClick()) {
             tryBackstep(player);
         }
@@ -54,17 +55,39 @@ public class BackstepHandler {
 
         long now = System.currentTimeMillis();
         if (now - lastUsed < COOLDOWN_MS) return;
-
-        // Не отскакиваем во время замаха/удара
         if (WeaponAttackAnimationHandler.isBusy(player)) return;
 
         lastUsed = now;
+        lockedUntil = now + INPUT_LOCK_MS;
 
         float yawRad = player.getYRot() * Mth.DEG_TO_RAD;
-        // Вперёд = (-sin, cos), назад = (sin, -cos)
-        Vec3 back = new Vec3(Mth.sin(yawRad), 0, -Mth.cos(yawRad)).scale(HORIZONTAL_SPEED);
+        Vec3 forward = new Vec3(-Mth.sin(yawRad), 0, Mth.cos(yawRad));
+        Vec3 right   = new Vec3(Mth.cos(yawRad), 0, Mth.sin(yawRad));
 
-        player.setDeltaMovement(back.x, VERTICAL_SPEED, back.z);
+        // Читаем зажатые клавиши напрямую, а не input.forwardImpulse —
+        // тот уже мог быть обнулён нашим же обработчиком на предыдущем тике.
+        var kb = Minecraft.getInstance().options;
+        double fwdAxis = 0;
+        if (kb.keyUp.isDown())   fwdAxis += 3;
+        if (kb.keyDown.isDown()) fwdAxis -= 3;
+        double sideAxis = 0;
+        if (kb.keyRight.isDown()) sideAxis -= 3;
+        if (kb.keyLeft.isDown())  sideAxis += 3;
+
+        Vec3 dir;
+        if (fwdAxis == 0 && sideAxis == 0) {
+            // Ничего не зажато — уворот по умолчанию: назад
+            dir = forward.scale(-1);
+        } else {
+            dir = forward.scale(fwdAxis).add(right.scale(sideAxis)).normalize();
+        }
+
+        Vec3 dash = dir.scale(HORIZONTAL_SPEED);
+        player.setDeltaMovement(dash.x, VERTICAL_SPEED, dash.z);
         player.hasImpulse = true;
+    }
+
+    public static boolean isInputLocked() {
+        return System.currentTimeMillis() < lockedUntil;
     }
 }

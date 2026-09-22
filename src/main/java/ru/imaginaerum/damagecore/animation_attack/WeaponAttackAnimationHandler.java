@@ -43,7 +43,9 @@ public class WeaponAttackAnimationHandler {
         if (!(event.getEntity() instanceof AbstractClientPlayer player)) return;
 
         WeaponCombatController c = CONTROLLERS.get(player.getUUID());
-        if (c == null || !c.isBusy()) return;
+        boolean combatBusy = c != null && c.isBusy();
+
+        if (!combatBusy && !ru.imaginaerum.damagecore.key_bind.BackstepHandler.isInputLocked()) return;
 
         Input input = event.getInput();
         input.up = false;
@@ -53,7 +55,6 @@ public class WeaponAttackAnimationHandler {
         input.forwardImpulse = 0f;
         input.leftImpulse = 0f;
         input.jumping = false;
-        // shiftKeyDown не трогаем: он нужен для замаха (Shift + ЛКМ)
     }
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
