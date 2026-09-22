@@ -6,6 +6,8 @@ import com.zigythebird.playeranimcore.animation.keyframe.BoneAnimation;
 import com.zigythebird.playeranimcore.animation.keyframe.Keyframe;
 import com.zigythebird.playeranimcore.animation.keyframe.KeyframeStack;
 import net.minecraft.resources.ResourceLocation;
+import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager.AnimEntry;
+import ru.imaginaerum.damagecore.animation_attack.combat.AnimationHelper;
 
 import java.util.List;
 import java.util.Map;
@@ -13,16 +15,25 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class HitTimingResolver {
 
-    /** Имя кости-маркера. Добавь её в Blockbench с одной keyframe в момент удара. */
     public static final String HIT_MARKER_BONE = "hit_marker";
 
-    /** Если маркера нет — берём эту долю от длины анимации. */
     private static final float FALLBACK_FRACTION = 0.4f;
     private static final long FALLBACK_MS = 200L;
 
     private static final Map<ResourceLocation, Long> CACHE = new ConcurrentHashMap<>();
 
     private HitTimingResolver() {}
+
+    public static long resolveMs(AnimEntry entry) {
+        if (entry.hitTimeMs() != null) {
+            return Math.max(0L, entry.hitTimeMs());
+        }
+        if (entry.hitTimeFraction() != null) {
+            long duration = AnimationHelper.durationMs(entry.animation());
+            return Math.max(0L, (long) (duration * entry.hitTimeFraction()));
+        }
+        return resolveMs(entry.animation());
+    }
 
     public static long resolveMs(ResourceLocation animationId) {
         return CACHE.computeIfAbsent(animationId, id -> {
@@ -31,14 +42,11 @@ public final class HitTimingResolver {
             float hitSec = readHitMarkerTimeSec(anim);
             if (hitSec < 0f) {
                 hitSec = anim.length() * FALLBACK_FRACTION;
-                System.out.println("[HitTimingResolver]: anim.length()=" + anim.length());
             }
-            System.out.println("[HitTimingResolver]: hitMs=" + hitSec);
             return Math.max(1L, (long) (hitSec * 50));
         });
     }
 
-    /** Вызывать при reload ресурсов, чтобы не держать старый тайминг. */
     public static void clearCache() { CACHE.clear(); }
 
     private static float readHitMarkerTimeSec(Animation anim) {

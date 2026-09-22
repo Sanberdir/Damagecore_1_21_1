@@ -1,6 +1,5 @@
 package ru.imaginaerum.damagecore.animation_attack.combat.states;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
@@ -8,7 +7,6 @@ import net.minecraft.world.item.ItemStack;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager.AnimEntry;
 import ru.imaginaerum.damagecore.animation_attack.combat.AnimationHelper;
-import ru.imaginaerum.damagecore.animation_attack.combat.AttackCooldownBridge;
 import ru.imaginaerum.damagecore.animation_attack.combat.CombatContext;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.HitTimingResolver;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponTypeManager;
@@ -70,7 +68,7 @@ public final class IdleState implements CombatState {
         ctx.lockedUntil = now + AnimationHelper.durationMs(chosen.animation());
         ctx.setState(ComboSwingState.INSTANCE, now);
 
-        long delayMs = HitTimingResolver.resolveMs(chosen.animation());
+        long delayMs = HitTimingResolver.resolveMs(chosen);   // было: HitTimingResolver.resolveMs(chosen.animation())
         ctx.scheduleHit(now + delayMs, chosen);
 
         // ВАЖНО: даже если damage_type == null, всё равно гасим ваниль,

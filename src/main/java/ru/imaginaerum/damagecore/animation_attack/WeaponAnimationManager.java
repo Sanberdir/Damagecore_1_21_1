@@ -38,10 +38,12 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             double damageMultiplier,
             AttackShape shape,
             double coneAngle,
-            double reachBonus
+            double reachBonus,
+            Double hitTimeFraction,   // 0.0–1.0, доля от длины анимации; null = не задано
+            Long hitTimeMs            // абсолютное время в мс от начала анимации; null = не задано
     ) {
         public AnimEntry(ResourceLocation animation, List<DamageType> damageType) {
-            this(animation, damageType, 1.0, AttackShape.SINGLE, 30.0, 0.0);
+            this(animation, damageType, 1.0, AttackShape.SINGLE, 30.0, 0.0, null, null);
         }
     }
 
@@ -155,7 +157,37 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             typeAnimationsMap.putAll(loaded);
         }, applyExecutor);
     }
+    /** "hit_time": 0.0–1.0 — доля от длины анимации. */
+    private static Double parseHitTimeFraction(JsonObject obj, ResourceLocation source) {
+        if (!obj.has("hit_time")) return null;
+        try {
+            double v = obj.get("hit_time").getAsDouble();
+            if (v < 0.0 || v > 1.0) {
+                System.err.println("[WeaponAnimations] hit_time вне диапазона [0,1] в " + source + ", игнорирую");
+                return null;
+            }
+            return v;
+        } catch (Exception e) {
+            System.err.println("[WeaponAnimations] Malformed hit_time в " + source);
+            return null;
+        }
+    }
 
+    /** "hit_time_ms": абсолютное время удара в мс от начала анимации. */
+    private static Long parseHitTimeMs(JsonObject obj, ResourceLocation source) {
+        if (!obj.has("hit_time_ms")) return null;
+        try {
+            long v = obj.get("hit_time_ms").getAsLong();
+            if (v < 0) {
+                System.err.println("[WeaponAnimations] hit_time_ms < 0 в " + source + ", игнорирую");
+                return null;
+            }
+            return v;
+        } catch (Exception e) {
+            System.err.println("[WeaponAnimations] Malformed hit_time_ms в " + source);
+            return null;
+        }
+    }
     /**
      * Парсит элемент вида:
      *   "damagecore:sword_swing_1"                                              (старый формат, без урона)
@@ -181,7 +213,9 @@ public class WeaponAnimationManager implements PreparableReloadListener {
                     ? obj.get("cone_angle").getAsDouble() : 90.0;
             double reachBonus = obj.has("reach_bonus")
                     ? obj.get("reach_bonus").getAsDouble() : 0.0;
-            return new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus);
+            Double hitTimeFraction = parseHitTimeFraction(obj, source);
+            Long hitTimeMs = parseHitTimeMs(obj, source);
+            return new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus, hitTimeFraction, hitTimeMs);
         }
         return null;
     }
@@ -207,11 +241,12 @@ public class WeaponAnimationManager implements PreparableReloadListener {
                     ? obj.get("cone_angle").getAsDouble() : 90.0;
             double reachBonus = obj.has("reach_bonus")
                     ? obj.get("reach_bonus").getAsDouble() : 0.0;
-            consumer.accept(key, new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus));
+            Double hitTimeFraction = parseHitTimeFraction(obj, source);
+            Long hitTimeMs = parseHitTimeMs(obj, source);
+            consumer.accept(key, new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus, hitTimeFraction, hitTimeMs));
             return;
         }
 
-        // Старый формат: произвольные поля key -> animation (строка), множитель недоступен -> 1.0
         for (Map.Entry<String, JsonElement> field : obj.entrySet()) {
             if ("damage_type".equals(field.getKey()) || "damage_multiplier".equals(field.getKey())) continue;
             String key = field.getKey();

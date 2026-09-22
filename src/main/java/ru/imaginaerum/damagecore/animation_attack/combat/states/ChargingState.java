@@ -56,7 +56,7 @@ public final class ChargingState implements CombatState {
                 AnimationHelper.trigger(ctx.player, release.animation());
                 ctx.lockedUntil = now + AnimationHelper.durationMs(release.animation());
                 ctx.comboIndex = (ctx.comboIndex + 1) % keys.size();
-                long delayMs = HitTimingResolver.resolveMs(release.animation());
+                long delayMs = HitTimingResolver.resolveMs(release);   // было: HitTimingResolver.resolveMs(release.animation())
                 ctx.scheduleHit(now + delayMs, release);
                 ctx.setState(ReleasingState.INSTANCE, now);
             } else {
