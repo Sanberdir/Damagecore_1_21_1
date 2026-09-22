@@ -4,6 +4,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.ResourceLocation;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.AttackShape;
+import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.MovementDash;
 import ru.imaginaerum.damagecore.animation_attack.combat.states.CombatState;
 import ru.imaginaerum.damagecore.animation_attack.combat.states.IdleState;
 import ru.imaginaerum.damagecore.library_damage.DamageType;
@@ -23,7 +24,7 @@ public final class CombatContext {
     public CombatState state = IdleState.INSTANCE;
     public long stateEnteredAt = 0L;
     public boolean idle = true;
-
+    public MovementDash.ActiveMove activeMove;
     public ResourceLocation weaponId;
     public int comboIndex = 0;
     public long lockedUntil = 0L;

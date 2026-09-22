@@ -9,6 +9,7 @@ import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager.AnimEnt
 import ru.imaginaerum.damagecore.animation_attack.combat.AnimationHelper;
 import ru.imaginaerum.damagecore.animation_attack.combat.CombatContext;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.HitTimingResolver;
+import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.MovementDash;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponTypeManager;
 
 import java.util.List;
@@ -70,7 +71,7 @@ public final class IdleState implements CombatState {
 
         long delayMs = HitTimingResolver.resolveMs(chosen);   // было: HitTimingResolver.resolveMs(chosen.animation())
         ctx.scheduleHit(now + delayMs, chosen);
-
+        MovementDash.scheduleFromEntry(ctx, chosen, now);
         // ВАЖНО: даже если damage_type == null, всё равно гасим ваниль,
         // чтобы не было двойного поведения/свинга. Просто без отправки пакета.
         return true;

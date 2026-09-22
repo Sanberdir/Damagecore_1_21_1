@@ -9,6 +9,7 @@ import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager.AnimEnt
 import ru.imaginaerum.damagecore.animation_attack.combat.AnimationHelper;
 import ru.imaginaerum.damagecore.animation_attack.combat.CombatContext;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.HitTimingResolver;
+import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.MovementDash;
 
 import java.util.List;
 
@@ -58,6 +59,7 @@ public final class ChargingState implements CombatState {
                 ctx.comboIndex = (ctx.comboIndex + 1) % keys.size();
                 long delayMs = HitTimingResolver.resolveMs(release);   // было: HitTimingResolver.resolveMs(release.animation())
                 ctx.scheduleHit(now + delayMs, release);
+                MovementDash.scheduleFromEntry(ctx, release, now);
                 ctx.setState(ReleasingState.INSTANCE, now);
             } else {
                 ctx.setState(IdleState.INSTANCE, now);

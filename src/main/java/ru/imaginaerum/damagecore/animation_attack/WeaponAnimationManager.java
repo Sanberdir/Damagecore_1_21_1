@@ -10,6 +10,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.AttackShape;
+import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.MoveDirection;
 import ru.imaginaerum.damagecore.library_damage.DamageType;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponType;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponTypeManager;
@@ -39,11 +40,16 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             AttackShape shape,
             double coneAngle,
             double reachBonus,
-            Double hitTimeFraction,   // 0.0–1.0, доля от длины анимации; null = не задано
-            Long hitTimeMs            // абсолютное время в мс от начала анимации; null = не задано
+            Double hitTimeFraction,
+            Long hitTimeMs,
+            Double moveDistance,        // NEW: дистанция рывка в блоках; null = нет рывка
+            MoveDirection moveDirection, // NEW: направление рывка
+            Long moveDelayMs,           // NEW: через сколько мс от старта анимации начать рывок
+            Long moveDurationMs         // NEW: за сколько мс проехать дистанцию
     ) {
         public AnimEntry(ResourceLocation animation, List<DamageType> damageType) {
-            this(animation, damageType, 1.0, AttackShape.SINGLE, 30.0, 0.0, null, null);
+            this(animation, damageType, 1.0, AttackShape.SINGLE, 30.0, 0.0,
+                    null, null, null, null, null, null);
         }
     }
 
@@ -172,7 +178,35 @@ public class WeaponAnimationManager implements PreparableReloadListener {
             return null;
         }
     }
+    private static Double parseMoveDistance(JsonObject obj, ResourceLocation source) {
+        if (!obj.has("move_distance")) return null;
+        try {
+            double v = obj.get("move_distance").getAsDouble();
+            if (v <= 0.0) {
+                System.err.println("[WeaponAnimations] move_distance <= 0 в " + source + ", игнорирую");
+                return null;
+            }
+            return v;
+        } catch (Exception e) {
+            System.err.println("[WeaponAnimations] Malformed move_distance в " + source);
+            return null;
+        }
+    }
 
+    private static Long parseLongField(JsonObject obj, String field, ResourceLocation source) {
+        if (!obj.has(field)) return null;
+        try {
+            long v = obj.get(field).getAsLong();
+            if (v < 0) {
+                System.err.println("[WeaponAnimations] " + field + " < 0 в " + source + ", игнорирую");
+                return null;
+            }
+            return v;
+        } catch (Exception e) {
+            System.err.println("[WeaponAnimations] Malformed " + field + " в " + source);
+            return null;
+        }
+    }
     /** "hit_time_ms": абсолютное время удара в мс от начала анимации. */
     private static Long parseHitTimeMs(JsonObject obj, ResourceLocation source) {
         if (!obj.has("hit_time_ms")) return null;
@@ -215,8 +249,16 @@ public class WeaponAnimationManager implements PreparableReloadListener {
                     ? obj.get("reach_bonus").getAsDouble() : 0.0;
             Double hitTimeFraction = parseHitTimeFraction(obj, source);
             Long hitTimeMs = parseHitTimeMs(obj, source);
-            return new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus, hitTimeFraction, hitTimeMs);
-        }
+
+            Double moveDistance = parseMoveDistance(obj, source);
+            MoveDirection moveDirection = obj.has("move_direction")
+                    ? MoveDirection.fromName(obj.get("move_direction").getAsString())
+                    : MoveDirection.FORWARD;
+            Long moveDelayMs = parseLongField(obj, "move_delay_ms", source);
+            Long moveDurationMs = parseLongField(obj, "move_duration_ms", source);
+
+            return new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus,
+                    hitTimeFraction, hitTimeMs, moveDistance, moveDirection, moveDelayMs, moveDurationMs);        }
         return null;
     }
 
@@ -243,7 +285,16 @@ public class WeaponAnimationManager implements PreparableReloadListener {
                     ? obj.get("reach_bonus").getAsDouble() : 0.0;
             Double hitTimeFraction = parseHitTimeFraction(obj, source);
             Long hitTimeMs = parseHitTimeMs(obj, source);
-            consumer.accept(key, new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus, hitTimeFraction, hitTimeMs));
+
+            Double moveDistance = parseMoveDistance(obj, source);
+            MoveDirection moveDirection = obj.has("move_direction")
+                    ? MoveDirection.fromName(obj.get("move_direction").getAsString())
+                    : MoveDirection.FORWARD;
+            Long moveDelayMs = parseLongField(obj, "move_delay_ms", source);
+            Long moveDurationMs = parseLongField(obj, "move_duration_ms", source);
+
+            consumer.accept(key, new AnimEntry(anim, damageType, multiplier, shape, coneAngle, reachBonus,
+                    hitTimeFraction, hitTimeMs, moveDistance, moveDirection, moveDelayMs, moveDurationMs));
             return;
         }
 

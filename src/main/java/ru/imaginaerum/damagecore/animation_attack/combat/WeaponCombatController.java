@@ -3,6 +3,7 @@ package ru.imaginaerum.damagecore.animation_attack.combat;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.AttackHitResolver;
+import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.MovementDash;
 import ru.imaginaerum.damagecore.animation_attack.combat.states.IdleState;
 
 public final class WeaponCombatController {
@@ -86,7 +87,6 @@ public final class WeaponCombatController {
     }
 
     public void tick(long now) {
-        // Порог удержания достигнут: запускаем замах сильной атаки
         if (primaryHeld && !holdTriggered && ctx.idle && now - pressedAt >= HOLD_THRESHOLD_MS) {
             holdTriggered = true;
             ctx.strongMode = true;
@@ -94,6 +94,7 @@ public final class WeaponCombatController {
         }
 
         ctx.state.onTick(ctx, now);
+        MovementDash.tick(ctx, now); // NEW
 
         ctx.drainReady(now, hit -> AttackHitResolver.resolve(ctx.player, hit));
         AttackCooldownBridge.tick(ctx.player, ctx, now);
