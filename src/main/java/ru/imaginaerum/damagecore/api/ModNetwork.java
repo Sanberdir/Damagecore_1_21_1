@@ -8,6 +8,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ChainLightningPacket;
+import ru.imaginaerum.damagecore.animation_attack.PacketBreakBlock;
 import ru.imaginaerum.damagecore.api.skill_tree.LearnNodePacket;
 import ru.imaginaerum.damagecore.api.skill_tree.RequestFullSyncPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.SyncNodeLevelsPacket;
@@ -50,7 +51,9 @@ public final class ModNetwork {
         registrar.playToClient(HundredArmedSyncPacket.TYPE, HundredArmedSyncPacket.CODEC,   HundredArmedSyncPacket::handle);
         registrar.playToClient(SyncEffectSourcePayload.TYPE, SyncEffectSourcePayload.STREAM_CODEC, SyncEffectSourcePayload::handle);
         registrar.playToClient(SyncCombatModePacket.TYPE, SyncCombatModePacket.STREAM_CODEC, SyncCombatModePacket::handle); // ДОБАВЛЕНО
-
+// В месте, где регистрируете play-пакеты клиент->сервер:
+        registrar.playToServer(PacketBreakBlock.TYPE, PacketBreakBlock.STREAM_CODEC,
+                (packet, context) -> context.enqueueWork(() -> handleBreakBlock(packet, context.player())));
         // ─── Клиент → Сервер ───
         // ИСПРАВЛЕНО: Зарегистрирован новый пакет парного обмена предметов
         registrar.playToServer(SwapAccessorySlotsPacket.TYPE, SwapAccessorySlotsPacket.STREAM_CODEC, SwapAccessorySlotsPacketHandler::handle);
@@ -72,7 +75,25 @@ public final class ModNetwork {
     public static void sendToClient(DrainStaminaPacket msg, ServerPlayer player) {
         PacketDistributor.sendToPlayer(player, msg);
     }
+    private static void handleBreakBlock(PacketBreakBlock packet, net.minecraft.world.entity.player.Player player) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return;
 
+        var level = serverPlayer.level();
+        var pos = packet.pos();
+
+        // Базовая защита от читеров: дистанция и твёрдость проверяем на сервере,
+        // а не доверяем слепо клиенту.
+        if (serverPlayer.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > 8 * 8) return;
+
+        var state = level.getBlockState(pos);
+        if (state.isAir()) return;
+        if (state.getDestroySpeed(level, pos) != 0.0F) return;
+
+        // dropItems=true — обычные дропы блока (у травы обычно их и так нет);
+        // передаём serverPlayer, чтобы САМ ломающий игрок не получил дублирующийся
+        // levelEvent(2001) с сервера — у него уже есть свой локальный эффект.
+        level.destroyBlock(pos, true, serverPlayer);
+    }
     public static void sendToServer(ThirstDamagePacket msg) {
         PacketDistributor.sendToServer(msg);
     }
@@ -83,7 +104,9 @@ public final class ModNetwork {
     public static void sendToServer(NormalAttackPacket msg) {
         PacketDistributor.sendToServer(msg);
     }
-
+    public static void sendToServer(PacketBreakBlock msg) {
+        PacketDistributor.sendToServer(msg);
+    }
     public static void sendToServer(PacketTypedAttack msg) {
         PacketDistributor.sendToServer(msg);
     }

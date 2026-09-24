@@ -31,6 +31,7 @@
     "keys_left_hand.InventoryExtensionMixin",
     "keys_left_hand.InventoryMenuMixin",
     "keys_left_hand.PlayerStorageMixin",
+    "mobs.SkeletonWeaponMixin",
     "tree_mixins.shooting.BowItemServerMixin"
   ],
   "client": [
