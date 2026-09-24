@@ -3,7 +3,12 @@ package ru.imaginaerum.damagecore.animation_attack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.Input;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -13,6 +18,7 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.animation_attack.combat.WeaponCombatController;
+import ru.imaginaerum.damagecore.library_weapon_types.WeaponTypeManager;
 
 import java.util.Map;
 import java.util.UUID;
@@ -22,7 +28,25 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WeaponAttackAnimationHandler {
 
     private static final Map<UUID, WeaponCombatController> CONTROLLERS = new ConcurrentHashMap<>();
+    public static boolean triggerSwing(AbstractClientPlayer player) {
+        return controller(player).onPrimaryDown(null);
+    }
+    @SubscribeEvent
+    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+        if (!(event.getEntity() instanceof AbstractClientPlayer player)) return;
+        if (!player.level().isClientSide()) return;
 
+        ItemStack stack = player.getMainHandItem();
+        if (stack.isEmpty()) return;
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+
+        if (WeaponTypeManager.INSTANCE.getType(id) == null) return;
+
+        // Оружием не копаем; сам удар (и разрушение мягких блоков) запускается
+        // через AttackHitResolver в момент удара, а не клика.
+        event.setCanceled(true);
+        WeaponAttackAnimationHandler.triggerSwing(player);
+    }
     @SubscribeEvent
     public static void onAttackEntity(AttackEntityEvent event) {
         if (!event.getEntity().level().isClientSide()) return;

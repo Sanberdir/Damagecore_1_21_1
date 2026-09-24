@@ -1,11 +1,11 @@
 {
   "contexts": {
     "swing": [
-      { "animation": "damagecore:sword_fa_1", "damage_type": ["slashing","piercing"],"damage_multiplier": 1.0,"hit_time": 0.95, "attack_shape": "cone", "cone_angle": 80},
-      { "animation": "damagecore:sword_fa_2", "damage_type": "piercing", "damage_multiplier": 1.2, "attack_shape": "single", "reach_bonus": 1.0 },
-      { "animation": "damagecore:sword_fa_3", "damage_type": "slashing", "damage_multiplier": 1.4, "attack_shape": "cone", "cone_angle": 80,"move_distance": 1.0, "move_direction": "forward","move_delay_ms": 100,"move_duration_ms": 200},
-      { "animation": "damagecore:sword_fa_4", "damage_type": "piercing", "damage_multiplier": 1.7, "attack_shape": "single", "reach_bonus": 1.0, "move_distance": 1.0, "move_direction": "forward","move_delay_ms": 100,"move_duration_ms": 200},
-      { "animation": "damagecore:sword_fa_5", "damage_type": "slashing", "damage_multiplier": 2.0, "attack_shape": "cone","hit_time": 0.85, "cone_angle": 80, "reach_bonus": -0.1 }
+      { "animation": "damagecore:sword_fa_1", "damage_type": ["slashing","piercing"],"damage_multiplier": 1.0,"hit_time": 0.95, "attack_shape": "cone", "cone_angle": 80, "move_distance": 0.3, "move_direction": "forward","move_delay_ms": 50,"move_duration_ms": 100},
+      { "animation": "damagecore:sword_fa_2", "damage_type": "piercing", "damage_multiplier": 1.2, "attack_shape": "single", "reach_bonus": 1.0, "move_distance": 0.2, "move_direction": "forward","move_delay_ms": 50,"move_duration_ms": 100},
+      { "animation": "damagecore:sword_fa_3", "damage_type": "slashing", "damage_multiplier": 1.4, "attack_shape": "cone", "cone_angle": 80,"move_distance": 1.0, "move_direction": "forward","move_delay_ms": 70,"move_duration_ms": 200},
+      { "animation": "damagecore:sword_fa_4", "damage_type": "piercing", "damage_multiplier": 1.7, "attack_shape": "single", "reach_bonus": 1.0, "move_distance": 1.0, "move_direction": "forward","move_delay_ms": 70,"move_duration_ms": 200},
+      { "animation": "damagecore:sword_fa_5", "damage_type": "slashing", "damage_multiplier": 2.0, "attack_shape": "cone","hit_time": 0.85, "cone_angle": 80, "reach_bonus": -0.1, "move_distance": 0.4, "move_direction": "forward","move_delay_ms": 50,"move_duration_ms": 100}
     ],
     "swing_strike_animations": [
       { "key": "1", "animation": "damagecore:sword_p_sa_1"},
@@ -13,9 +13,9 @@
       { "key": "3", "animation": "damagecore:sword_p_sa_3"}
     ],
     "swing_strike_release_animations": [
-      { "key": "1", "animation": "damagecore:sword_sa_1", "damage_type": "slashing","damage_multiplier": 2.0,"hit_time_ms": 500},
-      { "key": "2", "animation": "damagecore:sword_sa_2", "damage_type": "piercing","damage_multiplier": 3.0,"hit_time_ms": 500},
-      { "key": "3", "animation": "damagecore:sword_sa_3", "damage_type": "slashing","damage_multiplier": 4.0,"hit_time_ms": 950}
+      { "key": "1", "animation": "damagecore:sword_sa_1", "damage_type": "slashing","damage_multiplier": 2.0,"hit_time_ms": 500,"move_distance": 0.3, "move_direction": "forward","move_delay_ms": 150,"move_duration_ms": 50},
+      { "key": "2", "animation": "damagecore:sword_sa_2", "damage_type": "piercing","damage_multiplier": 3.0,"hit_time_ms": 500,"move_distance": 0.8, "move_direction": "forward","move_delay_ms": 150,"move_duration_ms": 50},
+      { "key": "3", "animation": "damagecore:sword_sa_3", "damage_type": "slashing","damage_multiplier": 4.0,"hit_time_ms": 950,"move_distance": 0.4, "move_direction": "forward","move_delay_ms": 950,"move_duration_ms": 100}
     ]
   }
 }

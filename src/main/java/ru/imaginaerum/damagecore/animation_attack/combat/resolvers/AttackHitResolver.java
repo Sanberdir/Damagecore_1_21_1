@@ -2,9 +2,14 @@ package ru.imaginaerum.damagecore.animation_attack.combat.resolvers;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -25,9 +30,9 @@ public final class AttackHitResolver {
             case CONE   -> coneAttack(player, hit, radius);
             case CIRCLE -> circleAttack(player, hit, radius);
         }
+        breakSoftBlockInPath(player, hit, radius); // NEW
     }
 
-    /** Радиус = базовый рич атрибута + бонус из JSON. */
     private static double computeRadius(AbstractClientPlayer player, double reachBonus) {
         double base;
         try {
@@ -48,7 +53,6 @@ public final class AttackHitResolver {
         Entity e = ehr.getEntity();
         if (!(e instanceof LivingEntity living) || living == player) return;
 
-        // дистанция до центра хитбокса
         if (player.distanceTo(living) > radius + 0.5) return;
         send(player, living, hit);
     }
@@ -83,6 +87,60 @@ public final class AttackHitResolver {
             if (!(e instanceof LivingEntity living) || living == player) continue;
             send(player, living, hit);
         }
+    }
+
+    /**
+     * Ломает блок, в который физически бьёт оружие — точка удара находится
+     * трассировкой луча взгляда до дистанции атаки, что моделирует "куда наносится удар",
+     * а не то, куда наведён курсор в момент клика.
+     */
+    private static void breakSoftBlockInPath(AbstractClientPlayer player,
+                                             CombatContext.ScheduledHit hit, double radius) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle().normalize();
+        Vec3 end = eye.add(look.scale(radius));
+
+        // OUTLINE, а не COLLIDER: у травы/саженцев/цветов нет коллизии,
+        // но они выделяются в прицел именно через OUTLINE — так же, как ваниль.
+        ClipContext ctx = new ClipContext(eye, end,
+                ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player);
+        HitResult hr = player.level().clip(ctx);
+
+        if (!(hr instanceof BlockHitResult bhr) || hr.getType() != HitResult.Type.BLOCK) return;
+
+        BlockPos pos = bhr.getBlockPos();
+        BlockState state = player.level().getBlockState(pos);
+        if (state.isAir()) return;
+
+        float hardness = state.getDestroySpeed(player.level(), pos);
+        if (hardness != 0.0F) return;
+
+        breakInstantly(player, pos, state, bhr.getDirection());
+    }
+
+    private static void breakInstantly(AbstractClientPlayer player, BlockPos pos,
+                                       BlockState state, net.minecraft.core.Direction face) {
+        var connection = net.minecraft.client.Minecraft.getInstance().getConnection();
+        if (connection == null) return;
+
+        // Серверу — та же пара пакетов, что при обычной мгновенной добыче
+        connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerActionPacket(
+                net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, pos, face));
+        connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerActionPacket(
+                net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, pos, face));
+
+        var levelObj = player.level();
+        if (!(levelObj instanceof net.minecraft.client.multiplayer.ClientLevel clientLevel)) return;
+
+        // Частицы и звук — напрямую, минуя levelEvent/LevelRenderer forwarding
+        SoundType soundType = state.getSoundType();
+        clientLevel.playLocalSound(pos, soundType.getBreakSound(),
+                net.minecraft.sounds.SoundSource.BLOCKS,
+                (soundType.getVolume() + 1.0F) / 2.0F, soundType.getPitch() * 0.8F, false);
+        clientLevel.addDestroyBlockEffect(pos, state);
+
+        clientLevel.removeBlock(pos, false);
+        state.getBlock().destroy(clientLevel, pos, state);
     }
 
     private static Iterable<Entity> nearby(AbstractClientPlayer player, double radius) {
