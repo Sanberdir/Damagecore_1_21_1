@@ -77,13 +77,15 @@ public final class IdleState implements CombatState {
         return true;
     }
 
+    public static final int RETURN_FADE_TICKS = 8; // ~400 мс, подберите на глаз
+
     @Override
     public void onTick(CombatContext ctx, long now) {
         if (ctx.idle) return;
         long time = now - ctx.stateEnteredAt;
         if (time > COMBO_RESET_WINDOW_MS) {
             ctx.comboIndex = 0;
-            AnimationHelper.stop(ctx.player);
+            AnimationHelper.fadeOut(ctx.player, RETURN_FADE_TICKS); // было: stop
             ctx.clearPendingHits();
             ctx.idle = true;
         }

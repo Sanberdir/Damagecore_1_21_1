@@ -26,7 +26,7 @@ public class SkeletonWeaponMixin {
         AbstractSkeleton skeleton = (AbstractSkeleton) (Object) this;
         RandomSource random = level.getRandom();
             if (random.nextFloat() < 0.95f) {
-                skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+                skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD));
                 skeleton.setDropChance(EquipmentSlot.MAINHAND, 0.085f);
         }
     }
