@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.imaginaerum.damagecore.api.skill_tree.*;
+import ru.imaginaerum.damagecore.api.skill_tree.save_changes.SaveConfirmDialog;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.Render;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.SideTabsRenderer;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.StatsPanelRenderer;
@@ -280,9 +281,10 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
             if (mouseX >= minusScreenX && mouseX < minusScreenX + 11 / 1.2f
                     && mouseY >= minusScreenY && mouseY < minusScreenY + 7 / 1.2f) {
 
-                SaveConfirmDialog.markChanged(statType, false);
-                PacketDistributor.sendToServer(new StatChangePacket(statType, false));
-
+                if (SaveConfirmDialog.canUndo(statType)) {
+                    SaveConfirmDialog.markChanged(statType, false);
+                    PacketDistributor.sendToServer(new StatChangePacket(statType, false));
+                }
                 cir.setReturnValue(true);
                 return;
             }

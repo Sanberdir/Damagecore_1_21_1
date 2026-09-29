@@ -15,6 +15,7 @@ import ru.imaginaerum.damagecore.api.skill_tree.SyncNodeLevelsPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.implementation_skills.shooting.HundredArmedSyncPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SelectNodeVariantPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SyncNodeVariantsPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.save_changes.StatSessionPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.SyncEffectSourcePayload;
 import ru.imaginaerum.damagecore.events_tree.SyncTreeXpPacket;
 import ru.imaginaerum.damagecore.hud.elements.DrainStaminaPacket;
@@ -65,7 +66,7 @@ public final class ModNetwork {
         registrar.playToServer(SelectNodeVariantPacket.TYPE, SelectNodeVariantPacket.CODEC, SelectNodeVariantPacket::handle);
         registrar.playToServer(StatChangePacket.TYPE,       StatChangePacket.CODEC,         StatChangePacket::handle);
         registrar.playToServer(PacketTypedAttack.TYPE,      PacketTypedAttack.STREAM_CODEC, PacketTypedAttack::handle);
-
+        registrar.playToServer(StatSessionPacket.TYPE, StatSessionPacket.CODEC, StatSessionPacket::handle);
         // ─── Двунаправленные ───
         registrar.playBidirectional(NormalAttackPacket.TYPE, NormalAttackPacket.STREAM_CODEC, NormalAttackPacket::handle);
     }

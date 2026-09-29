@@ -9,6 +9,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.api.skill_tree.save_changes.StatSessionPacket;
 import ru.imaginaerum.damagecore.library_stats.attributes.AttributeApplier;
 
 // 1. Превращаем класс в record и реализуем CustomPacketPayload
@@ -43,7 +44,7 @@ public record StatChangePacket(StatsType statsType, boolean increment) implement
         return new StatChangePacket(statsType, increment);
     }
 
-    private static int getServerXp(ServerPlayer player) {
+    public static int getServerXp(ServerPlayer player) {
         int level = player.experienceLevel;
         float progress = player.experienceProgress;
 
@@ -117,7 +118,7 @@ public record StatChangePacket(StatsType statsType, boolean increment) implement
         var statsOptional = PlayerStatsCapability.get(player);
         if (statsOptional.isEmpty()) return;
         PlayerStats stats = statsOptional.get();
-
+        StatSessionPacket.ensureSnapshot(player, stats);
         if (packet.increment()) {
             if (stats.isMaxLevel(packet.statsType())) return;
 

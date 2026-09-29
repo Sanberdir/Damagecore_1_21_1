@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import ru.imaginaerum.damagecore.api.skill_tree.save_changes.SaveConfirmDialog;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.SideTabsRenderer;
 import ru.imaginaerum.damagecore.library_stats.IPlayerStats;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
@@ -80,7 +81,6 @@ public final class StatsPanelRenderer {
     public static final  int PLUS_X       = 111;
     public static final  int PLUS_Y       = 13;
     public static final  int PLUS_STEP    = ROW_STEP;
-
     /** Вычисление текущего XP игрока в "плоских" очках опыта. */
     public static int getClientXp(Player player) {
         int level  = player.experienceLevel;
@@ -153,17 +153,17 @@ public final class StatsPanelRenderer {
             int nextCost   = PlayerStatsCapability.get(player).map(s -> s.getNextCost(statType)).orElse(IPlayerStats.BASE_COST);
             int playerXp   = player != null ? getClientXp(player) : 0;
 
-            boolean isZero      = statValue == 0 && pressCount == 0;
             boolean plusBlocked = pressCount >= IPlayerStats.MAX_LEVEL || playerXp < nextCost;
-
+            boolean minusBlocked = !SaveConfirmDialog.canUndo(statType);
+            // Кнопка минус
             // Кнопка минус
             int minusScreenX = leftPos + MINUS_X;
             int minusScreenY = topPos  + MINUS_Y + i * MINUS_STEP - scrollPx;
-            boolean minusHovered = !isZero
+            boolean minusHovered = !minusBlocked
                     && mouseX >= minusScreenX && mouseX < minusScreenX + MINUS_W / 1.2f
                     && mouseY >= minusScreenY && mouseY < minusScreenY + MINUS_H / 1.2f;
-            int minusU = isZero ? 182 : (minusHovered ? MINUS_HOVER_U : MINUS_U);
-            int minusV = isZero ? 241 : (minusHovered ? MINUS_HOVER_V : MINUS_V);
+            int minusU = minusBlocked ? 182 : (minusHovered ? MINUS_HOVER_U : MINUS_U);
+            int minusV = minusBlocked ? 241 : (minusHovered ? MINUS_HOVER_V : MINUS_V);
             gui.pose().pushPose();
             gui.pose().translate(minusScreenX, minusScreenY, 0);
             gui.pose().scale(1f / 1.2f, 1f / 1.2f, 1f);

@@ -1,11 +1,13 @@
-package ru.imaginaerum.damagecore.api.skill_tree;
+package ru.imaginaerum.damagecore.api.skill_tree.save_changes;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -34,20 +36,16 @@ public class SaveConfirmDialog {
 
     private static boolean dirty = false;    // были изменения (нажимали +)
     private static boolean visible = false;  // окно открыто
-
+    public static boolean canUndo(StatsType type) {
+        return pending.getOrDefault(type, 0) > 0;
+    }
     public static void markChanged(StatsType type, boolean plus) {
         pending.merge(type, plus ? 1 : -1, Integer::sum);
         if (pending.get(type) == 0) pending.remove(type);
     }
     private static boolean isDirty() { return !pending.isEmpty(); }
     private static void revertChanges() {
-        for (Map.Entry<StatsType, Integer> e : pending.entrySet()) {
-            int delta = e.getValue();
-            boolean undoWithPlus = delta < 0;
-            for (int i = 0; i < Math.abs(delta); i++) {
-                PacketDistributor.sendToServer(new StatChangePacket(e.getKey(), undoWithPlus));
-            }
-        }
+        PacketDistributor.sendToServer(new StatSessionPacket(true));
         pending.clear();
     }
     private static final Map<StatsType, Integer> pending = new EnumMap<>(StatsType.class);
@@ -93,10 +91,14 @@ public class SaveConfirmDialog {
             int x = dx(screen), y = dy(screen);
             double mx = event.getMouseX(), my = event.getMouseY();
             if (inside(mx, my, x + YES_X, y + BTN_Y, BTN_W, BTN_H)) {
-                closeAll(screen);                 // "Да": изменения уже на сервере
-            } else if (inside(mx, my, x + NO_X, y + BTN_Y, BTN_W, BTN_H)) {
-                revertChanges();                  // "Нет": откат
+                PacketDistributor.sendToServer(new StatSessionPacket(false));
+                playClick();
                 closeAll(screen);
+            } else if (inside(mx, my, x + NO_X, y + BTN_Y, BTN_W, BTN_H)) {
+                revertChanges();
+                playClick();
+                closeAll(screen);
+
             }
         }
         event.setCanceled(true);
@@ -114,7 +116,10 @@ public class SaveConfirmDialog {
             dirty = false;
         }
     }
-
+    private static void playClick() {
+        Minecraft.getInstance().getSoundManager().play(
+                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+    }
     // ---------- отрисовка ----------
     @SubscribeEvent
     public static void onRender(ScreenEvent.Render.Post event) {
@@ -131,8 +136,16 @@ public class SaveConfirmDialog {
         gui.fill(0, 0, screen.width, screen.height, 0x88000000);
         gui.blit(TEXTURE, x, y, TEX_U, TEX_V, W, H, 512, 512);
 
-        gui.drawCenteredString(font, Component.translatable("damagecore.confirm.save"),
-                x + W / 2, y + 14, 0xFFFFFF);
+        float qScale = 0.75f; // размер шрифта вопроса: 1.0 = как раньше, меньше = мельче
+        Component question = Component.translatable("damagecore.confirm.save");
+        int qCenterX = x + W / 2;
+        int qY = y + 14;
+
+        gui.pose().pushPose();
+        gui.pose().translate(qCenterX, qY, 0);
+        gui.pose().scale(qScale, qScale, 1f);
+        gui.drawString(font, question, -font.width(question) / 2, 0, 0xFFFFFF, false);
+        gui.pose().popPose();
 
         drawButton(gui, font, x + YES_X, y + BTN_Y, "damagecore.confirm.yes", mx, my);
         drawButton(gui, font, x + NO_X, y + BTN_Y, "damagecore.confirm.no", mx, my);
