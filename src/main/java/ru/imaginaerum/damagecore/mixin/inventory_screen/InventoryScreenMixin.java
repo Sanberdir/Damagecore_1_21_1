@@ -254,14 +254,8 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
 
         InventoryScreen screen = (InventoryScreen) (Object) this;
 
-        // В 1.21.1 Mojang маппингах эти поля доступны напрямую у контейнер-экранов,
-        // так как они имеют модификатор protected. Аксессор больше не нужен.
-        int leftPos = screen.getGuiLeft(); // или screen.leftPos в зависимости от вашей конфигурации миксина (в InventoryScreen они видны)
-        int topPos  = screen.getGuiTop();  // или screen.topPos
-
-        // Если выше выдает ошибку доступа, можно использовать ванильные геттеры:
-        // int leftPos = screen.getGuiLeft();
-        // int topPos = screen.getGuiTop();
+        int leftPos = screen.getGuiLeft();
+        int topPos  = screen.getGuiTop();
 
         int scrollPx = StatsPanelRenderer.STRIP_DRAG_RANGE > 0
                 ? (damagecore$stripOffsetY * StatsPanelRenderer.SCROLL_MAX_PX) / StatsPanelRenderer.STRIP_DRAG_RANGE
@@ -277,7 +271,7 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
             if (mouseX >= plusScreenX && mouseX < plusScreenX + 11 / 1.2f
                     && mouseY >= plusScreenY && mouseY < plusScreenY + 7 / 1.2f) {
 
-                // ИСПРАВЛЕНО: Новый синтаксис отправки пакетов на сервер для NeoForge 1.21.1
+                SaveConfirmDialog.markChanged(statType, true);
                 PacketDistributor.sendToServer(new StatChangePacket(statType, true));
 
                 cir.setReturnValue(true);
@@ -286,7 +280,7 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
             if (mouseX >= minusScreenX && mouseX < minusScreenX + 11 / 1.2f
                     && mouseY >= minusScreenY && mouseY < minusScreenY + 7 / 1.2f) {
 
-                // ИСПРАВЛЕНО: Новый синтаксис отправки пакетов на сервер для NeoForge 1.21.1
+                SaveConfirmDialog.markChanged(statType, false);
                 PacketDistributor.sendToServer(new StatChangePacket(statType, false));
 
                 cir.setReturnValue(true);

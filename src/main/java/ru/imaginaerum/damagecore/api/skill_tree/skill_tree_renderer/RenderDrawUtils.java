@@ -444,24 +444,37 @@ public class RenderDrawUtils {
     }
 
     public static List<String> splitStringToPixelWidth(Font font, String text, int maxWidth) {
-        List<String> lines = new ArrayList<>(); if (text == null) return lines;
-        text = text.trim(); if (text.isEmpty()) return lines;
-        String[] words = text.split("\\s+"); StringBuilder cur = new StringBuilder();
-        for (String w : words) {
-            if (cur.length() == 0) {
-                if (font.width(w) > maxWidth) lines.addAll(splitLongWord(font, w, maxWidth));
-                else cur.append(w);
-            } else {
-                String candidate = cur.toString() + ' ' + w;
-                if (font.width(candidate) <= maxWidth) cur.append(' ').append(w);
-                else {
-                    lines.add(cur.toString());
-                    if (font.width(w) > maxWidth) { lines.addAll(splitLongWord(font, w, maxWidth)); cur = new StringBuilder(); }
-                    else cur = new StringBuilder(w);
+        List<String> lines = new ArrayList<>();
+        if (text == null) return lines;
+        text = text.trim();
+        if (text.isEmpty()) return lines;
+
+        // сначала жёсткие переносы, потом перенос по ширине внутри каждого абзаца
+        for (String paragraph : text.split("\n")) {
+            paragraph = paragraph.trim();
+            if (paragraph.isEmpty()) continue;
+
+            String[] words = paragraph.split("\\s+");
+            StringBuilder cur = new StringBuilder();
+            for (String w : words) {
+                if (cur.length() == 0) {
+                    if (font.width(w) > maxWidth) lines.addAll(splitLongWord(font, w, maxWidth));
+                    else cur.append(w);
+                } else {
+                    String candidate = cur.toString() + ' ' + w;
+                    if (font.width(candidate) <= maxWidth) cur.append(' ').append(w);
+                    else {
+                        lines.add(cur.toString());
+                        if (font.width(w) > maxWidth) {
+                            lines.addAll(splitLongWord(font, w, maxWidth));
+                            cur = new StringBuilder();
+                        } else cur = new StringBuilder(w);
+                    }
                 }
             }
+            if (cur.length() > 0) lines.add(cur.toString());
         }
-        if (cur.length() > 0) lines.add(cur.toString()); return lines;
+        return lines;
     }
 
     public static void drawNineSliceTiled(GuiGraphics gui, ResourceLocation tex,

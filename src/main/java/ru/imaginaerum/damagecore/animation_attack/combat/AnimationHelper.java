@@ -72,12 +72,6 @@ public final class AnimationHelper {
                 waitAnim);
     }
 
-    private static float wrapDegrees(float deg) {
-        float d = deg % 360f;
-        if (d >= 180f) d -= 360f;
-        else if (d < -180f) d += 360f;
-        return d;
-    }
 
     public static long durationMs(ResourceLocation animationId) {
         return DURATION_CACHE.computeIfAbsent(animationId, id -> {

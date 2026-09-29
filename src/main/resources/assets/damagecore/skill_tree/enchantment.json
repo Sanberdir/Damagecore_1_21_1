@@ -1,0 +1,100 @@
+{
+  "tabIcon": "minecraft:enchanting_table",
+  "nodes": [
+    {
+      "id": "start_enchantment",
+      "item": "minecraft:enchanting_table",
+      "parents": ["start"],
+      "gridX": 0,
+      "gridY": 0,
+      "xpCost": 2
+    },
+    {
+      "id": "enlightened",
+      "item": "minecraft:lapis_lazuli",
+      "parents": ["start_enchantment"],
+      "lock": true,
+      "gridX": 2,
+      "gridY": 0,
+      "requiredTreeLevel": 10,
+      "maxLevel": 10
+    },
+    {
+      "id": "etheric_knowledge",
+      "item": "minecraft:amethyst_shard",
+      "parents": ["enlightened"],
+      "lock": true,
+      "gridX": 2,
+      "gridY": -2,
+      "requiredTreeLevel": 50,
+      "maxLevel": 3
+    },
+    {
+      "id": "elegant_lettering",
+      "item": "minecraft:apple",
+      "parents": ["enlightened"],
+      "lock": true,
+      "gridX": 4,
+      "gridY": 2,
+      "requiredTreeLevel": 15,
+      "maxLevel": 10
+    },
+    {
+      "id": "economical_enchantment",
+      "item": "minecraft:gold_block",
+      "parents": ["elegant_lettering"],
+      "lock": true,
+      "gridX": 6,
+      "gridY": 2,
+      "requiredTreeLevel": 16,
+      "maxLevel": 5
+    },
+    {
+      "id": "excess",
+      "item": "minecraft:deepslate_diamond_ore",
+      "parents": ["economical_enchantment"],
+      "lock": true,
+      "gridX": 8,
+      "gridY": 2,
+      "requiredTreeLevel": 19,
+      "maxLevel": 5,
+      "xpCost": 1
+    },
+    {
+      "id": "weapon_inscription",
+      "item": "minecraft:wooden_sword",
+      "parents": ["enlightened"],
+      "lock": true,
+      "gridX": 4,
+      "gridY": 0
+    },
+    {
+      "id": "armor_enchantment",
+      "item": "minecraft:chainmail_chestplate",
+      "parents": ["weapon_inscription"],
+      "lock": true,
+      "gridX": 6,
+      "gridY": 0,
+      "xpCost": 7
+    },
+    {
+      "id": "knowledge_transfer",
+      "item": "minecraft:experience_bottle",
+      "parents": ["enlightened"],
+      "lock": true,
+      "gridX": 4,
+      "gridY": -2,
+      "requiredTreeLevel": 20,
+      "xpCost": 10
+    },
+    {
+      "id": "expertise",
+      "item": "minecraft:emerald",
+      "parents": ["start"],
+      "gridX": 2,
+      "gridY": 2,
+      "requiredTreeLevel": 20,
+      "maxLevel": 5
+    }
+  ]
+}

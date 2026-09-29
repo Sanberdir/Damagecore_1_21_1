@@ -52,8 +52,6 @@ public class Render {
         try {
             Object treeObj = invokePrivateGetCurrentTree();
             if (treeObj == null) return;
-            System.out.println("[RenderDebug] treeObj=" + treeObj.getClass()
-                    + " nodesSize=" + ((Map<?,?>) getFieldValue(treeObj, "nodes")).size());
             // проверяем таймер
             long now = System.currentTimeMillis();
             if (node.xpFailFlashUntil <= now) return;
@@ -180,12 +178,15 @@ public class Render {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        // Проверяем оба условия: опыт игрока И уровень вкладки
-        int REQUIRED_LEVELS = 5;
+// Проверяем оба условия: опыт игрока И уровень вкладки
+        int cost = currentHoveredNode.getXpCost();
+        boolean creative = mc.player.getAbilities().instabuild;
         int treeId = getActiveTreeIdViaReflection();
         int playerTreeLevel = DamageBookRenderer.getLevel(treeId);
 
-        if (mc.player.experienceLevel < REQUIRED_LEVELS ||
+        boolean notEnoughXp = !creative && cost > 0 && mc.player.experienceLevel < cost;
+
+        if (notEnoughXp ||
                 currentHoveredNode.getRequiredTreeLevel() > playerTreeLevel) {
 
             triggerXpFailFlash(currentHoveredNode);
@@ -223,6 +224,7 @@ public class Render {
         String title = Component.translatable(baseKey).getString();
         String desc = Component.translatable(baseKey + ".desc").getString();
         if (desc.equals(baseKey + ".desc")) desc = "";
+        desc = appendRequirements(currentHoveredNode, desc);   // <-- добавить
 
         String titleWithLevel = title + " " + currentHoveredNode.level + "/" + currentHoveredNode.maxLevel;
 
@@ -247,7 +249,29 @@ public class Render {
         // Рисуем сам тултип
         RenderDrawUtils.drawScaledTooltipWithProgress(gui, font, currentHoveredNode, titleWithLevel, desc, pivotX, pivotY, scale, progress);
     }
+    private static String appendRequirements(SkillTreeNode node, String desc) {
+        StringBuilder sb = new StringBuilder(desc == null ? "" : desc);
 
+        // требуемый уровень дерева: только пока он не достигнут
+        int req = node.getRequiredTreeLevel();
+        if (req > 0) {
+            int have = DamageBookRenderer.getLevel(getActiveTreeIdViaReflection());
+            if (have < req) {
+                String line = "§c" + Component.translatable("damagecore.skilltree.tree_level", req).getString();
+                if (sb.length() > 0) sb.append("\n");
+                sb.append(line);
+            }
+        }
+
+        // стоимость в опыте
+        if (node.getXpCost() > 0 && !node.isMaxLevel()) {
+            String line = Component.translatable("damagecore.skilltree.xp_cost", node.getXpCost()).getString();
+            if (sb.length() > 0) sb.append("\n");
+            sb.append(line);
+        }
+
+        return sb.toString();
+    }
     private static int getActiveTreeIdViaReflection() {
         try {
             Class<?> cls = Class.forName("ru.imaginaerum.damagecore.api.skill_tree.SkillTreeRenderer");
@@ -514,6 +538,7 @@ public class Render {
                 String title = Component.translatable(baseKey).getString();
                 String desc = Component.translatable(baseKey + ".desc").getString();
                 if (desc.equals(baseKey + ".desc")) desc = "";
+                desc = appendRequirements(hoveredNode, desc);
 
                 // используем существующие activeTreeId и levels
                 int nodeLevel = levels != null ? levels.getOrDefault(hoveredNode.id, hoveredNode.level) : hoveredNode.level;

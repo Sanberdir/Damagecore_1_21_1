@@ -1,6 +1,7 @@
 package ru.imaginaerum.damagecore.api.skill_tree;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
@@ -16,7 +17,7 @@ public final class SkillTreeServerHandler {
     private SkillTreeServerHandler() {}
 
     private static final String ROOT_KEY = "damagecore_skilltree";
-    private static final int REQUIRED_LEVELS = 5;
+
     private static final String NODE_LEVEL_PREFIX = "node_level_";
 
     // --------------------------------------------------
@@ -62,25 +63,35 @@ public final class SkillTreeServerHandler {
         // проверка родителей
         if (!canLearn(player, treeId, node)) return;
 
-        // получаем текущие уровни игрока
         Map<String, Integer> levels = getNodeLevels(player, treeId);
-
         int currentLevel = levels.getOrDefault(node.id, 0);
-        int newLevel = Math.min(node.maxLevel, currentLevel + 1);
 
-        // сохраняем
+        // уже максимум — ничего не списываем
+        if (currentLevel >= node.maxLevel) return;
+
+// ---- оплата опытом ----
+        int cost = node.getXpCost();
+        boolean free = cost <= 0 || player.getAbilities().instabuild;
+        if (!free) {
+            if (player.experienceLevel < cost) {
+                player.displayClientMessage(
+                        Component.literal("Нужно " + cost + " уровней опыта"), true);
+                return;
+            }
+            player.giveExperienceLevels(-cost);
+        }
+
+        int newLevel = currentLevel + 1;
         saveNodeLevel(player, treeId, node.id, newLevel);
+
         player.level().playSound(
-                null, // null = слышат все рядом
-                player.getX(),
-                player.getY(),
-                player.getZ(),
-                DCSoundEvents.LEARNING_SKILL.get(), // проверь имя!
+                null,
+                player.getX(), player.getY(), player.getZ(),
+                DCSoundEvents.LEARNING_SKILL.get(),
                 SoundSource.PLAYERS,
-                1.0f,
-                1.0f
+                1.0f, 1.0f
         );
-        // синк
+
         sendFullSyncToPlayer(player);
     }
     private static boolean canLearn(ServerPlayer player, int treeId, SkillTreeNode node) {
@@ -120,7 +131,6 @@ public final class SkillTreeServerHandler {
         persisted.put(ROOT_KEY, mod);
         root.put(Player.PERSISTED_NBT_TAG, persisted);
 
-        System.out.println("[Server] Saved variant: " + node.id + " = " + node.selectedOption);
     }
 
     // --------------------------------------------------

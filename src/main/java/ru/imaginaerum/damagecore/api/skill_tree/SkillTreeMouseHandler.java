@@ -1,44 +1,42 @@
 package ru.imaginaerum.damagecore.api.skill_tree;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
-import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo; // Импортируйте ваш главный класс мода
+import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.Render;
 
-// ИСПРАВЛЕНО: Рекомендуется использовать константу MODID вместо хардкода строки
 @EventBusSubscriber(modid = Damagecore_1_21_1_neo.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class SkillTreeMouseHandler {
 
     @SubscribeEvent
     public static void onGuiMouseScroll(ScreenEvent.MouseScrolled.Pre event) {
-        // ПРИМЕЧАНИЕ: Использование .Pre вместо базового события позволяет отменить
-        // прокрутку ДО того, как её обработает ванильный инвентарь (например, прокрутит список рецептов)
+        if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+        if (!(screen instanceof ISkillTreeAccessor accessor)) return;
+        if (!accessor.damagecore$isSkillTreeVisible()) return; // панель закрыта — ваниль
 
-        if (!(event.getScreen() instanceof InventoryScreen)) return;
+        double mx = event.getMouseX();
+        double my = event.getMouseY();
+        double delta = event.getScrollDeltaY();
 
-        Minecraft mc = Minecraft.getInstance();
+        // область дерева навыков
+        int treeX1 = Render.currentPanelScreenX + Render.PANEL_DRAW_OFFSET_X_IN_PANEL;
+        int treeY1 = Render.currentPanelScreenY + Render.PANEL_DRAW_OFFSET_Y_IN_PANEL;
+        boolean overTree = mx >= treeX1 && mx <= treeX1 + Render.AREA_WIDTH
+                && my >= treeY1 && my <= treeY1 + Render.AREA_HEIGHT;
 
-        // Получаем актуальные координаты панели из DamageBookRenderer
-        int panelScreenX = 100; // TODO: получить реальные координаты
-        int panelScreenY = 100;
-
-        // ИСПРАВЛЕНО: Вместо event.getScrollDelta() берем event.getScrollDeltaY() для вертикального скролла
-        boolean used = SkillTreeRenderer.mouseScrolled(
-                (int) event.getMouseX(),
-                (int) event.getMouseY(),
-                event.getScrollDeltaY(),
-                panelScreenX,
-                panelScreenY
-        );
-
-        if (used) {
+        if (overTree) {
+            // зум дерева только когда курсор над деревом
+            boolean used = SkillTreeRenderer.mouseScrolled(
+                    (int) mx, (int) my, delta,
+                    Render.currentPanelScreenX, Render.currentPanelScreenY);
+            if (used) event.setCanceled(true);
+        } else if (mx < treeX1) {
+            // слева от дерева — панель статов, листаем список
+            accessor.damagecore$scrollList(delta);
             event.setCanceled(true);
-
-            // ДОБАВИТЬ: принудительное обновление рендера
-            // SkillTreeRenderer.forceRecalculate();
         }
     }
 }

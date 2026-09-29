@@ -65,7 +65,14 @@ public final class SkillTreeLoader {
                 if (root.has("tabIcon")) {
                     tabIconStack = parseItemStack(root.get("tabIcon"));
                 }
-
+                int defaultXpCost = SkillTreeNode.DEFAULT_XP_COST;
+                if (root.has("xpCost")) {
+                    try {
+                        defaultXpCost = Math.max(0, root.get("xpCost").getAsInt());
+                    } catch (Exception e) {
+                        System.err.println("[SkillTreeLoader] Invalid tree xpCost in " + pathInNamespace);
+                    }
+                }
                 if (root.has("nodes") && root.get("nodes").isJsonArray()) {
                     JsonArray arr = root.getAsJsonArray("nodes");
                     for (JsonElement el : arr) {
@@ -100,7 +107,14 @@ public final class SkillTreeLoader {
                         }
 
                         SkillTreeNode node = new SkillTreeNode(id, itemStack, lock, parentIds, side);
-
+                        node.setXpCost(defaultXpCost);
+                        if (obj.has("xpCost")) {
+                            try {
+                                node.setXpCost(obj.get("xpCost").getAsInt());
+                            } catch (Exception e) {
+                                System.err.println("[SkillTreeLoader] Invalid xpCost for node " + id);
+                            }
+                        }
                         if (obj.has("maxLevel")) {
                             try {
                                 node.setMaxLevel(Math.max(1, obj.get("maxLevel").getAsInt()));

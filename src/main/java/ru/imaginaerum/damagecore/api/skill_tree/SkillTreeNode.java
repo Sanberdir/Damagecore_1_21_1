@@ -19,7 +19,13 @@ public final class SkillTreeNode {
     public String displayId;
     public ItemStack itemStack;
     public boolean locked;
+    public static final int DEFAULT_XP_COST = 5;
 
+    // стоимость изучения одного уровня ноды, в уровнях опыта (0 = бесплатно)
+    public int xpCost = DEFAULT_XP_COST;
+
+    public int getXpCost() { return xpCost; }
+    public void setXpCost(int cost) { this.xpCost = Math.max(0, cost); }
     // уровень текущий и максимум уровней для этой ноды (stackable node)
     // сделаны public чтобы старый код (который обращается напрямую) компилировался
     public int level = 0;
