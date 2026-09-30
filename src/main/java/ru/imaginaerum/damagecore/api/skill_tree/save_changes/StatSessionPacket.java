@@ -32,9 +32,20 @@ public record StatSessionPacket(boolean revert) implements CustomPacketPayload {
     // ---------- снимки ----------
     private record Snapshot(Map<StatsType, Integer> stats, Map<StatsType, Integer> press, int totalXp) {}
     private static final Map<UUID, Snapshot> snapshots = new ConcurrentHashMap<>();
+    private static final Map<UUID, Map<StatsType, Integer>> session = new ConcurrentHashMap<>();
 
+    public static int getSession(ServerPlayer player, StatsType type) {
+        Map<StatsType, Integer> m = session.get(player.getUUID());
+        return m == null ? 0 : m.getOrDefault(type, 0);
+    }
+
+    public static void addSession(ServerPlayer player, StatsType type, int delta) {
+        session.computeIfAbsent(player.getUUID(), id -> new EnumMap<>(StatsType.class))
+                .merge(type, delta, Integer::sum);
+    }
     /** Вызывать в StatChangePacket.handle ПЕРЕД изменением, после получения stats */
     public static void ensureSnapshot(ServerPlayer player, PlayerStats stats) {
+
         snapshots.computeIfAbsent(player.getUUID(), id -> {
             Map<StatsType, Integer> s = new EnumMap<>(StatsType.class);
             Map<StatsType, Integer> p = new EnumMap<>(StatsType.class);
@@ -52,29 +63,23 @@ public record StatSessionPacket(boolean revert) implements CustomPacketPayload {
         if (player == null) return;
 
         Snapshot snap = snapshots.remove(player.getUUID());
+        session.remove(player.getUUID()); // и "Да", и "Нет" завершают сессию
+
+        // "Да": ничего не трогаем, pressCount и цены остаются как есть
+        if (!packet.revert()) return;
+
+        // "Нет": откат
+        if (snap == null) return;
 
         var opt = PlayerStatsCapability.get(player);
         if (opt.isEmpty()) return;
         PlayerStats stats = opt.get();
-
-        // "Да": изменения становятся постоянными, минус больше не отменит их
-        if (!packet.revert()) {
-            for (StatsType t : StatsType.values()) {
-                stats.setPressCount(t, 0);
-            }
-            PacketDistributor.sendToPlayer(player, new SyncStatsPacket(stats, xpOf(player)));
-            return;
-        }
-
-        // "Нет": откат
-        if (snap == null) return;
 
         for (StatsType t : StatsType.values()) {
             stats.setStat(t, snap.stats().get(t));
             stats.setPressCount(t, snap.press().get(t));
         }
 
-        // дальше без изменений: восстановление опыта, атрибуты, синхронизация
         player.setExperienceLevels(0);
         player.experienceProgress = 0f;
         player.totalExperience = 0;
@@ -87,10 +92,9 @@ public record StatSessionPacket(boolean revert) implements CustomPacketPayload {
         PacketDistributor.sendToPlayer(player, new SyncStatsPacket(stats, xpOf(player)));
     }
 
-    public static void clear(UUID id) { snapshots.remove(id); }
+    public static void clear(UUID id) { snapshots.remove(id); session.remove(id); }
 
     private static int xpOf(ServerPlayer player) {
-        // тот же расчёт, что в StatChangePacket.getServerXp — сделай его package-private/public и вызывай отсюда
         return StatChangePacket.getServerXp(player);
     }
 }

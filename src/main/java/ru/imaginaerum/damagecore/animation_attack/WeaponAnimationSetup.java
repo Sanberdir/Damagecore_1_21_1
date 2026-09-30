@@ -3,6 +3,8 @@ package ru.imaginaerum.damagecore.animation_attack;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationFactory;
 
+import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
+import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonMode;
 import com.zigythebird.playeranimcore.enums.PlayState;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
@@ -23,10 +25,17 @@ public class WeaponAnimationSetup {
                 PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(
                         ATTACK_LAYER_ID,
                         1500,
-                        player -> new PlayerAnimationController(
-                                player,
-                                (controller, state, animSetter) -> PlayState.STOP
-                        )
+                        player -> {
+                            PlayerAnimationController c = new PlayerAnimationController(
+                                    player,
+                                    (controller, state, animSetter) -> PlayState.STOP
+                            );
+                            c.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
+                            c.setFirstPersonConfiguration(new FirstPersonConfiguration()
+                                    .setShowRightItem(true)
+                                    .setShowLeftItem(true));
+                            return c;
+                        }
                 )
         );
     }

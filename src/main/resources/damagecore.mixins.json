@@ -39,6 +39,7 @@
     "HudNoIconPotionEffectsMixin",
     "NoIconPotionEffectsMixin",
     "ScreenInvoker",
+    "first_person.FirstPersonOffsetMixin",
     "inventory_screen.AbstractContainerScreenMixin",
     "inventory_screen.InventoryScreenMixin",
     "keys_left_hand.AccessorySlotHudMixin",

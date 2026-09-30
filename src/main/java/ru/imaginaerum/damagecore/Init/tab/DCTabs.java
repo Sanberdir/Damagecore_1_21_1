@@ -18,6 +18,8 @@ public class DCTabs {
 
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept(DCItems.BIRCH_LEAF.get());
+            event.accept(DCItems.TOME_OF_ATTAINING_MEANINGS.get());
         }
+
     }
 }

@@ -1,0 +1,7 @@
+{
+  "parent": "item/generated",
+  "textures": { "layer0": "damagecore:item/tome_of_attaining_meanings" },
+  "overrides": [
+    { "predicate": { "damagecore:searching": 1 }, "model": "damagecore:item/the_searcher_of_meanings" }
+  ]
+}

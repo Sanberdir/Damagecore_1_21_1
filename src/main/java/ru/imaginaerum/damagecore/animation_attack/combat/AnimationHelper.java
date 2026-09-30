@@ -8,6 +8,7 @@ import com.zigythebird.playeranimcore.animation.RawAnimation;
 import com.zigythebird.playeranimcore.animation.layered.modifier.AbstractFadeModifier;
 import com.zigythebird.playeranimcore.bones.AdvancedPlayerAnimBone;
 import com.zigythebird.playeranimcore.easing.EasingType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.ResourceLocation;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationSetup;
@@ -41,7 +42,15 @@ public final class AnimationHelper {
     }
     public static void trigger(AbstractClientPlayer player, ResourceLocation animationId) {
         PlayerAnimationController c = controller(player);
-        if (c != null) c.triggerAnimation(animationId);
+        if (c == null) return;
+
+        ResourceLocation id = animationId;
+        if (Minecraft.getInstance().options.getCameraType().isFirstPerson()) {
+            ResourceLocation fp = ResourceLocation.fromNamespaceAndPath(
+                    animationId.getNamespace(), animationId.getPath() + "_fp");
+            if (PlayerAnimResources.hasAnimation(fp)) id = fp;
+        }
+        c.triggerAnimation(id);
     }
 
     public static void stop(AbstractClientPlayer player) {

@@ -155,6 +155,7 @@
 
 
   "item.damagecore.birch_leaf": "Birch Leaf",
+  "item.damagecore.tome_of_attaining_meanings": "Tome of Attaining Meanings",
   "item.damagecore.heavy_belt": "Heavy Belt",
   "item.damagecore.golden_ring": "Golden Ring",
   "item.damagecore.bandage": "Bandage",
@@ -166,6 +167,23 @@
   "item.damagecore.chlorophilosynthetic_belt": "Chlorophilosynthetic Belt",
   "item.damagecore.quiver_of_arrows": "Quiver Of Arrows",
   "item.damagecore.scarlet_stapler_ring": "Scarlet Stapler Ring",
+
+  "message.damagecore.tome.open": "...What a strange book. Its pages are filled with ancient symbols. As I looked upon these glyphs, I heard a quiet whisper in my head, speaking to me of the very foundation of the world. The language was unfamiliar: it spoke in images and pictures, yet I could hear them... It feels as if all my strength has been drained away, and the only thing I want now is to sleep...",
+  "message.damagecore.tome.step_1.1": "...I open this mysterious book once again, and my head instantly explodes with pain. New meanings pour into my mind in a mighty torrent... No, these are not letters. Mad pictures, images and flashes swirl before my eyes, but I... I physically hear them. This silent whisper of images makes my own tongue move. I catch myself rasping these words aloud, trying to hold on to my slipping sanity:",
+  "message.damagecore.tome.step_1.2": "\"Your mind is blind... while you merely look, but do not see the essence,\" I barely force out, feeling the book shatter my familiar sight. \"To weave the first meaning... you must find the four faces of all that is. Announce your presence to them...\"",
+  "message.damagecore.tome.step_1.3": "The images in my head give way to one another, turning into sounds on my lips:",
+  "message.damagecore.tome.step_1.4": "\"First... kneel before the silent flesh of the world that bears my steps. Then... with a cleansing gesture, touch that which flows forever, yet never flows away for good...\"",
+  "message.damagecore.tome.step_1.5": "A crimson light flares in my eyes, and a taste of ash fills my mouth:",
+  "message.damagecore.tome.step_1.6": "\"After that, calm with your touch the raging blood of the mountain that burns in the dark of the depths... And finally...\" I throw my head back, gasping for air, \"turn your gaze to the boundless emptiness above, where there are no barriers and no firmament... Breathe in its purity, touching nothing man-made...\"",
+  "message.damagecore.tome.step_1.7": "I fall to my knees, breathing heavily. The book in my hands suddenly loses its weight, its outline blurs, turning into some strange lens. The whisper in my head fades on the final phrase, which echoes in my skull:",
+  "message.damagecore.tome.step_1.8": "\"When every beginning answers your call, the threads will intertwine, and the word will take flesh...\"",
+  "message.damagecore.tome.finish": "It seems I have passed this trial. The book has taken on its familiar appearance once more. I still see in my mind the images of the four elements: Earth, Water, Fire and Air... But along with that, I feel on my skin how something indescribable and ancient has turned its gaze upon me... I sense this intent attention and... curiosity? Suddenly the book slammed shut for good. It no longer opens, or perhaps I simply have no strength left to master it after everything I have been through. I need rest. Tomorrow I will try to open it again.",
+
+  "tooltip.damagecore.tome.vibrating": "The book seems to vibrate, awaiting your sound conclusions and correct observations...",
+
+  "book.damagecore.tome.riddle_1": "\"Your mind is blind... while you merely look, but do not see the essence,\" I barely force out, feeling the book shatter my familiar sight. \"To weave the first meaning... you must find the four faces of all that is. Announce your presence to them...\"\n\"First... kneel before the silent flesh of the world that bears my steps. Then... with a cleansing gesture, touch that which flows forever, yet never flows away for good...\"\n\"After that, calm with your touch the raging blood of the mountain that burns in the dark of the depths... And finally...\" I throw my head back, gasping for air, \"turn your gaze to the boundless emptiness above, where there are no barriers and no firmament... Breathe in its purity, touching nothing man-made...\"\n\"When every beginning answers your call, the threads will intertwine, and the word will take flesh...\"",
+  "book.damagecore.tome.riddle_3": "...When I opened the book for the third time, I felt no headache. My mind calmly accepted the flow of meaning from the book. And once again I see pillars of light piercing the darkness. But suddenly the image began to recede sharply. The tangle of lines grew smaller and smaller. As I drew away, a hemisphere took shape, holding within it this battle of light and darkness. It was a great and majestic sight: light and darkness fighting inside a dome of titanic size.\nBut it did not last long: I noticed that the darkness was beginning to win. There was less and less light, and once it was gone entirely, a crack ran across the hemisphere. The dome began to split like a hen's egg, and from the fissures the blackest darkness burst out in clouds of smoke, devouring the stars. Soon the darkness became a hole that drew in matter itself, and then only absolute emptiness remained, where there was no wind, no glint of rays, no sound. This sight made my heart tremble with animal fear, and between the beats of my frenzied heart my lips began to move on their own, repeating words that were not mine:\n\"Behold what absolute evil may be capable of. You must know the danger of where this path may lead you. Study the deeds of the one who stepped upon it, so that you do not become like him!\"",
+
 
   "key.damagecore.strong_attack": "Strong Attack",
   "key.damagecore.combat_mode": "Combat mode",
