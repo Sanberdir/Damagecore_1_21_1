@@ -102,6 +102,7 @@ public class TomeOfAttainingMeanings extends Item {
                             .withStyle(ChatFormatting.DARK_PURPLE));
                 }
             }
+
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }

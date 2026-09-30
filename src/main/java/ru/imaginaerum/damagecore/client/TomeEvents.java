@@ -19,5 +19,6 @@ public class TomeEvents {
         } else if (step == 4 && player.isSleeping()) {
             player.setData(ModAttachments.TOME_STEP, 5);
         }
+
     }
 }

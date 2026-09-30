@@ -41,4 +41,5 @@ public class ModAttachments {
                     .sync(ByteBufCodecs.VAR_INT)
                     .copyOnDeath()
                     .build());
+
 }
