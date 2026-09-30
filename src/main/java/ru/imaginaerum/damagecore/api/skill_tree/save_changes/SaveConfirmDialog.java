@@ -36,6 +36,9 @@ public class SaveConfirmDialog {
 
     private static boolean dirty = false;    // были изменения (нажимали +)
     private static boolean visible = false;  // окно открыто
+    public static boolean isChanged(StatsType type) {
+        return pending.getOrDefault(type, 0) != 0;
+    }
     public static boolean canUndo(StatsType type) {
         return pending.getOrDefault(type, 0) > 0;
     }
@@ -153,10 +156,16 @@ public class SaveConfirmDialog {
         gui.pose().popPose();
     }
 
+    private static final ResourceLocation BUTTON =
+            ResourceLocation.withDefaultNamespace("widget/button");
+    private static final ResourceLocation BUTTON_HIGHLIGHTED =
+            ResourceLocation.withDefaultNamespace("widget/button_highlighted");
+
     private static void drawButton(GuiGraphics gui, Font font, int x, int y, String key, int mx, int my) {
-        if (inside(mx, my, x, y, BTN_W, BTN_H)) {
-            gui.fill(x, y, x + BTN_W, y + BTN_H, 0x40FFFFFF);
-        }
+        boolean hovered = inside(mx, my, x, y, BTN_W, BTN_H);
+
+        gui.blitSprite(hovered ? BUTTON_HIGHLIGHTED : BUTTON, x, y, BTN_W, BTN_H);
+
         gui.drawCenteredString(font, Component.translatable(key),
                 x + BTN_W / 2, y + (BTN_H - font.lineHeight) / 2 + 1, 0xFFFFFF);
     }

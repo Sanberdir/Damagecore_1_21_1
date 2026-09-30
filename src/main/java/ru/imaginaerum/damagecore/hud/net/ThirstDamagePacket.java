@@ -5,6 +5,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class ThirstDamagePacket implements CustomPacketPayload {
@@ -14,7 +15,6 @@ public class ThirstDamagePacket implements CustomPacketPayload {
 
     private static final ThirstDamagePacket INSTANCE = new ThirstDamagePacket();
 
-    // Пакет не несёт данных — используем unit-кодек, он просто ничего не читает/пишет
     public static final StreamCodec<RegistryFriendlyByteBuf, ThirstDamagePacket> STREAM_CODEC =
             StreamCodec.unit(INSTANCE);
 
@@ -22,10 +22,20 @@ public class ThirstDamagePacket implements CustomPacketPayload {
 
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) {
-                if (player.level().getDifficulty() != net.minecraft.world.Difficulty.PEACEFUL) {
-                    player.hurt(player.damageSources().starve(), 1.0f);
-                }
+            if (!(context.player() instanceof ServerPlayer player)) return;
+
+            Difficulty difficulty = player.level().getDifficulty();
+            float health = player.getHealth();
+
+            boolean canDamage = switch (difficulty) {
+                case PEACEFUL -> false;
+                case EASY -> health > 10.0f;   // не ниже 5 сердец
+                case NORMAL -> health > 1.0f;  // не убивает
+                case HARD -> true;             // может убить
+            };
+
+            if (canDamage) {
+                player.hurt(player.damageSources().starve(), 1.0f);
             }
         });
     }

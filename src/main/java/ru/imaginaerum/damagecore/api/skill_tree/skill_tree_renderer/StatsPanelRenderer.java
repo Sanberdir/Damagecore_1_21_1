@@ -155,7 +155,8 @@ public final class StatsPanelRenderer {
 
             boolean plusBlocked = pressCount >= IPlayerStats.MAX_LEVEL || playerXp < nextCost;
             boolean minusBlocked = !SaveConfirmDialog.canUndo(statType);
-            // Кнопка минус
+            boolean changed = SaveConfirmDialog.isChanged(statType);
+            int color = changed ? 0xdde4ee : 0xFFFFFF; // синий для несохранённых
             // Кнопка минус
             int minusScreenX = leftPos + MINUS_X;
             int minusScreenY = topPos  + MINUS_Y + i * MINUS_STEP - scrollPx;
@@ -190,14 +191,14 @@ public final class StatsPanelRenderer {
             gui.pose().translate(numX, plusScreenY, 0);
             gui.pose().scale(1f / 1.4f, 1f / 1.4f, 1f);
             gui.drawString(Minecraft.getInstance().font,
-                    Component.literal(String.valueOf(statValue)), 0, 0, 0xFFFFFF, true);
+                    Component.literal(String.valueOf(statValue)), 0, 0, color, true);
             gui.pose().popPose();
 
             // Текст строки
             gui.pose().pushPose();
             gui.pose().translate(leftPos + 99, rowScreenY, 0);
             gui.pose().scale(0.5f, 0.5f, 1f);
-            gui.drawString(Minecraft.getInstance().font, rowLabels[i], 0, 0, 0xFFFFFF, true);
+            gui.drawString(Minecraft.getInstance().font, rowLabels[i], 0, 0, color, true);
             gui.pose().popPose();
         }
         gui.disableScissor();
