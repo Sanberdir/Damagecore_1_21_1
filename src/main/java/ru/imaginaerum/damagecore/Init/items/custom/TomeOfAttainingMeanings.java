@@ -44,14 +44,20 @@ public class TomeOfAttainingMeanings extends Item {
     public TomeOfAttainingMeanings(Properties properties) {
         super(properties);
     }
+
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
-        if (ClientHooks.getTomeStep() >= 5) {
+        int step = ClientHooks.getTomeStep();
+        if (step == 6) {
             tooltip.add(Component.translatable("tooltip.damagecore.tome.vibrating")
+                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
+        } else if (step == 7) {
+            tooltip.add(Component.translatable("tooltip.damagecore.tome.calm")
                     .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
         }
     }
+
     /** Клик по блоку после прочтения видения запускает поиск стихий (шаг 3). */
     @Override
     public InteractionResult useOn(UseOnContext context) {
@@ -74,7 +80,8 @@ public class TomeOfAttainingMeanings extends Item {
         ItemStack stack = player.getItemInHand(hand);
         int step = player.getData(ModAttachments.TOME_STEP);
 
-        if (step == 4) {
+        // Шаги 4 и 6: книга нечитаема; шаг 8+: пока заглушка
+        if (step == 4 || step == 6 || step >= 8) {
             return InteractionResultHolder.fail(stack);
         }
 
@@ -86,7 +93,7 @@ public class TomeOfAttainingMeanings extends Item {
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
         }
 
-        // Шаги 1-2: читаем книгу
+        // Шаги 1, 2, 5, 7: читаем книгу
         if (level.isClientSide()) {
             ClientHooks.openTomeScreen();
         } else {
@@ -102,7 +109,6 @@ public class TomeOfAttainingMeanings extends Item {
                             .withStyle(ChatFormatting.DARK_PURPLE));
                 }
             }
-
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }

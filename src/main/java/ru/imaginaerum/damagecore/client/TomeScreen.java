@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
@@ -39,7 +40,7 @@ public class TomeScreen extends Screen {
     private static final int MAX_LINES = TEXT_H / LINE_H; // 16
     private static final int TEXT_COLOR = 0x3B2A1A;
 
-    /** Шаг книги: 1 - галактический текст, 2 - загадка 1, 3 - заглушка. */
+    /** Шаг книги: 1 - галактический текст, 2 - загадка 1, 5 - видение, 6 - видение + фраза после рейда. */
     private final int step;
 
     // Текст первого шага (генерируется при каждом открытии книги)
@@ -64,12 +65,11 @@ public class TomeScreen extends Screen {
         this.rightLines = GalacticText.wrap(this.font, stepOneRight, TEXT_W, MAX_LINES);
     }
 
-    /** Загадка 1 обычным шрифтом: сначала заполняется левая страница, остаток идёт на правую. */
+    /** Загадка обычным шрифтом: сначала заполняется левая страница, остаток идёт на правую. */
     private static final int LINES_PER_SPREAD = MAX_LINES * 2;
 
     private List<FormattedCharSequence> allLines = List.of();
     private int spread = 0;
-
 
     private void showSpread() {
         int size = allLines.size();
@@ -90,6 +90,7 @@ public class TomeScreen extends Screen {
                 .play(SimpleSoundInstance.forUI(SoundEvents.BOOK_PAGE_TURN, 1.0F));
         return true;
     }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_RIGHT && turnPage(1)) return true;
@@ -103,12 +104,16 @@ public class TomeScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-
     // ---------- Жизненный цикл ----------
 
-    /** Текст по ключу локализации, обычным шрифтом, с листанием разворотов. */
-    private void buildRiddle(String key) {
-        this.allLines = this.font.split(Component.translatable(key), TEXT_W);
+    /** Текст по одному или нескольким ключам локализации (через перенос строки), с листанием разворотов. */
+    private void buildRiddle(String... keys) {
+        MutableComponent text = Component.empty();
+        for (int i = 0; i < keys.length; i++) {
+            if (i > 0) text.append("\n");
+            text.append(Component.translatable(keys[i]));
+        }
+        this.allLines = this.font.split(text, TEXT_W);
         showSpread();
     }
 
@@ -117,7 +122,8 @@ public class TomeScreen extends Screen {
         switch (step) {
             case 1 -> buildStepOne();
             case 2 -> buildRiddle("book.damagecore.tome.riddle_1");
-            case 5 -> buildRiddle("book.damagecore.tome.riddle_3");
+            case 5 -> buildRiddle("book.damagecore.tome.riddle_3", "book.damagecore.tome.riddle_3_end");
+            case 7 -> buildRiddle("book.damagecore.tome.riddle_4");
             default -> { // заглушка для следующих шагов
                 this.leftLines = List.of();
                 this.rightLines = List.of();
