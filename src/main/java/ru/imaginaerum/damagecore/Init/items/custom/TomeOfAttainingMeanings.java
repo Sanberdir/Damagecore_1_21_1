@@ -26,6 +26,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import ru.imaginaerum.damagecore.client.ClientHooks;
 import ru.imaginaerum.damagecore.client.ModAttachments;
+import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 import java.util.List;
 
@@ -124,13 +125,37 @@ public class TomeOfAttainingMeanings extends Item {
             BlockState state = level.getBlockState(pos);
             FluidState fluid = state.getFluidState();
 
-            if (fluid.is(FluidTags.WATER)) {
+            if (fluid.is(FluidTags.WATER)
+                    || state.is(BlockTags.ICE)
+                    || state.is(Blocks.SNOW_BLOCK)
+                    || state.is(Blocks.SNOW)
+                    || state.is(Blocks.POWDER_SNOW)
+                    || state.is(Blocks.WATER_CAULDRON)
+                    || state.is(Blocks.POWDER_SNOW_CAULDRON)
+                    || state.is(Blocks.BUBBLE_COLUMN)) {
                 found = WATER;
-            } else if (fluid.is(FluidTags.LAVA) || state.is(Blocks.MAGMA_BLOCK) || state.is(Blocks.FIRE) || state.is(Blocks.SOUL_FIRE)
-                    || state.is(Blocks.CAMPFIRE) || state.is(Blocks.SOUL_CAMPFIRE)) {
+            } else if (fluid.is(FluidTags.LAVA)
+                    || state.is(BlockTags.FIRE)
+                    || state.is(BlockTags.CAMPFIRES)
+                    || state.is(BlockTags.CANDLES) // свечи и торты со свечами
+                    || state.is(Blocks.MAGMA_BLOCK)
+                    || state.is(Blocks.LAVA_CAULDRON)) {
                 found = FIRE;
-            } else if (state.is(BlockTags.DIRT) || state.is(Blocks.SOUL_SOIL) || state.is(Blocks.SOUL_SAND)
-                    || state.is(Blocks.SAND) || state.is(BlockTags.BASE_STONE_OVERWORLD)) {
+            } else if (state.is(BlockTags.DIRT)
+                    || state.is(BlockTags.BASE_STONE_OVERWORLD)
+                    || state.is(Blocks.SOUL_SOIL)
+                    || state.is(Blocks.SOUL_SAND)
+                    || state.is(Blocks.SAND)
+                    || state.is(Blocks.RED_SAND)
+                    || state.is(Blocks.SANDSTONE)
+                    || state.is(Blocks.RED_SANDSTONE)
+                    || state.is(Blocks.GRAVEL)
+                    || state.is(Blocks.CLAY)
+                    || state.is(Blocks.TERRACOTTA)
+                    || state.is(Blocks.MUD)
+                    || state.is(Blocks.MUDDY_MANGROVE_ROOTS)
+                    || state.is(Blocks.DRIPSTONE_BLOCK)
+                    || state.is(Blocks.POINTED_DRIPSTONE)) {
                 found = EARTH;
             }
         } else if (isLookingAtOpenSky(level, player)) {
@@ -142,7 +167,7 @@ public class TomeOfAttainingMeanings extends Item {
 
         mask |= found;
         player.setData(ModAttachments.TOME_ELEMENTS, mask);
-        player.playNotifySound(SoundEvents.BELL_BLOCK, SoundSource.PLAYERS, 1.0F, 1.0F); // слышит только игрок
+        player.playNotifySound(DCSoundEvents.LEARNING_SKILL.get(), SoundSource.PLAYERS, 1.0F, 1.0F); // слышит только игрок
 
         if (mask == ALL_ELEMENTS) {
             player.setData(ModAttachments.TOME_STEP, 4);

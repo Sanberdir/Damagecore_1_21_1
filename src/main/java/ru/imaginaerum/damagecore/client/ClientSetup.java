@@ -8,7 +8,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import ru.imaginaerum.damagecore.Init.items.DCItems;
+import ru.imaginaerum.damagecore.client.aspects.ElementOverlay;
 
 
 @EventBusSubscriber(modid = "damagecore", bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -23,5 +25,11 @@ public class ClientSetup {
                     Player p = entity instanceof Player pl ? pl : Minecraft.getInstance().player;
                     return p != null && p.getData(ModAttachments.TOME_STEP) == 3 ? 1.0F : 0.0F;
                 }));
+    }
+    @SubscribeEvent
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath("damagecore", "element_overlay"),
+                ElementOverlay::render);
     }
 }
