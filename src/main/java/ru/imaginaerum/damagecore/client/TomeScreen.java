@@ -124,6 +124,28 @@ public class TomeScreen extends Screen {
             case 2 -> buildRiddle("book.damagecore.tome.riddle_1");
             case 5 -> buildRiddle("book.damagecore.tome.riddle_3", "book.damagecore.tome.riddle_3_end");
             case 7 -> buildRiddle("book.damagecore.tome.riddle_4");
+            case 9 -> buildRiddle(
+                    "book.damagecore.tome.riddle_5_1",
+                    "book.damagecore.tome.riddle_5_2",
+                    "book.damagecore.tome.riddle_5_3",
+                    "book.damagecore.tome.riddle_5_4",
+                    "book.damagecore.tome.riddle_5_5",
+                    "book.damagecore.tome.riddle_5_6",
+                    "book.damagecore.tome.riddle_5_7",
+                    "book.damagecore.tome.riddle_5_8",
+                    "book.damagecore.tome.riddle_5_9",
+                    "book.damagecore.tome.riddle_5_10");
+            case 11 -> buildRiddle(
+                    "book.damagecore.tome.riddle_6_1",
+                    "book.damagecore.tome.riddle_6_2",
+                    "book.damagecore.tome.riddle_6_3",
+                    "book.damagecore.tome.riddle_6_4",
+                    "book.damagecore.tome.riddle_6_5",
+                    "book.damagecore.tome.riddle_6_6",
+                    "book.damagecore.tome.riddle_6_7",
+                    "book.damagecore.tome.riddle_6_8",
+                    "book.damagecore.tome.riddle_6_9",
+                    "book.damagecore.tome.riddle_6_10");
             default -> { // заглушка для следующих шагов
                 this.leftLines = List.of();
                 this.rightLines = List.of();

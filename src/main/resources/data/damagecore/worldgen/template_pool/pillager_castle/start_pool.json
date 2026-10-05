@@ -1,0 +1,15 @@
+﻿{
+  "name": "damagecore:pillager_castle/start_pool",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "location": "damagecore:pillager_castle/pillager_castle",
+        "processors": "damagecore:emerald_to_villager",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    }
+  ]
+}

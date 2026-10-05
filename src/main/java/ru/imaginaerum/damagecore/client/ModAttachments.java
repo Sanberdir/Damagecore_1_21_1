@@ -41,5 +41,16 @@ public class ModAttachments {
                     .sync(ByteBufCodecs.VAR_INT)
                     .copyOnDeath()
                     .build());
+    /** Цель компаса книги (BlockPos.asLong), Long.MIN_VALUE = нет цели. */
+    public static final Supplier<AttachmentType<Long>> TOME_TARGET = ATTACHMENTS.register("tome_target",
+            () -> AttachmentType.builder(() -> Long.MIN_VALUE)
+                    .serialize(Codec.LONG)
+                    .sync(ByteBufCodecs.VAR_LONG)
+                    .build());
+    public static final Supplier<AttachmentType<Boolean>> TOME_COMPASS_ON = ATTACHMENTS.register("tome_compass_on",
+            () -> AttachmentType.builder(() -> false)
+                    .serialize(Codec.BOOL)
+                    .sync(ByteBufCodecs.BOOL)
+                    .build());
 
 }

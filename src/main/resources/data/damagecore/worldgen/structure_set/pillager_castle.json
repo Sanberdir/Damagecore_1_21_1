@@ -1,0 +1,14 @@
+﻿{
+  "structures": [
+    {
+      "structure": "damagecore:pillager_castle",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "salt": 891472635,
+    "spacing": 20,
+    "separation": 5,
+    "type": "minecraft:random_spread"
+  }
+}

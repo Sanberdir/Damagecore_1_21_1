@@ -17,7 +17,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 @EventBusSubscriber(modid = "damagecore")
 public class TomeEvents {
     private static final String CURER_TAG = "damagecore_curer";
-
+    public static final String RESCUER_TAG = "damagecore_rescuer";
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -41,9 +41,71 @@ public class TomeEvents {
 
         } else if (step == 6 && player.isSleeping()) {
             player.setData(ModAttachments.TOME_STEP, 7);
+
+        } else if (step == 8 && player.isSleeping()) {
+            player.setData(ModAttachments.TOME_STEP, 9);
+
+        } else if (step == 9 && player.isSleeping()) {
+            // <-- ВОТ ЭТОГО НЕ ХВАТАЛО
+            player.setData(ModAttachments.TOME_STEP, 10);
         }
     }
+    /** Вызывать в момент открытия клетки (там, где житель начинает следовать за игроком). */
+    public static void markRescuer(net.minecraft.world.entity.LivingEntity villager, ServerPlayer player) {
+        villager.getPersistentData().putUUID(RESCUER_TAG, player.getUUID());
+    }
 
+    /** Единая точка завершения испытания. outcome: success / death / kill */
+    public static void finishRescue(ServerPlayer player, String outcome) {
+        if (player.getData(ModAttachments.TOME_STEP) != TomeLocator.COMPASS_STEP) return;
+        player.setData(ModAttachments.TOME_STEP, 11);
+        player.setData(ModAttachments.TOME_COMPASS_ON, false);
+        player.setData(ModAttachments.TOME_TARGET, Long.MIN_VALUE);
+        player.sendSystemMessage(Component.translatable("message.damagecore.tome.rescue." + outcome)
+                .withStyle(ChatFormatting.DARK_PURPLE));
+    }
+
+    @SubscribeEvent
+    public static void onRescuedVillagerDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        var victim = event.getEntity();
+        if (victim.level().isClientSide()) return;
+
+        boolean captive = victim.getPersistentData().hasUUID(RESCUER_TAG)
+                || victim.getTags().contains(ru.imaginaerum.damagecore.structure_processors.RescuableVillager.TAG);
+        if (!captive) return;
+
+        var level = (net.minecraft.server.level.ServerLevel) victim.level();
+        var killerEntity = event.getSource().getEntity();
+
+        ServerPlayer target = null;
+        if (killerEntity instanceof ServerPlayer killer) {
+            finishRescue(killer, "kill");
+            return;
+        }
+        if (victim.getPersistentData().hasUUID(RESCUER_TAG)) {
+            var p = level.getPlayerByUUID(victim.getPersistentData().getUUID(RESCUER_TAG));
+            if (p instanceof ServerPlayer sp) target = sp;
+        }
+        if (target == null && level.getNearestPlayer(victim, 64.0) instanceof ServerPlayer sp) target = sp;
+        if (target != null) finishRescue(target, "death");
+    }
+    @SubscribeEvent
+    public static void onRegisterCommands(net.neoforged.neoforge.event.RegisterCommandsEvent event) {
+        event.getDispatcher().register(
+                net.minecraft.commands.Commands.literal("tomestep")
+                        .requires(s -> s.hasPermission(2))
+                        .then(net.minecraft.commands.Commands.argument("step",
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 20))
+                                .executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                                    int s = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "step");
+                                    p.setData(ModAttachments.TOME_STEP, s);
+                                    p.setData(ModAttachments.TOME_COMPASS_ON, false);
+                                    p.setData(ModAttachments.TOME_TARGET, Long.MIN_VALUE);
+                                    ctx.getSource().sendSuccess(() -> Component.literal("Tome step = " + s), false);
+                                    return 1;
+                                })));
+    }
     /** Запоминаем игрока, который начал лечение зомби-жителя золотым яблоком. */
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {

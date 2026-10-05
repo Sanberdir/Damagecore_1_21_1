@@ -1,0 +1,7 @@
+{
+  "processors": [
+    {
+      "processor_type": "damagecore:emerald_to_villager"
+    }
+  ]
+}

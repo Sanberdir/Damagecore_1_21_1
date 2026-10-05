@@ -11,10 +11,12 @@ import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -26,6 +28,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import ru.imaginaerum.damagecore.client.ClientHooks;
 import ru.imaginaerum.damagecore.client.ModAttachments;
+import ru.imaginaerum.damagecore.client.TomeLocator;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 import java.util.List;
@@ -80,9 +83,13 @@ public class TomeOfAttainingMeanings extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         int step = player.getData(ModAttachments.TOME_STEP);
+        if (step == TomeLocator.COMPASS_STEP) {
+            player.startUsingItem(hand);
+            return InteractionResultHolder.consume(stack);
+        }
 
         // Шаги 4 и 6: книга нечитаема; шаг 8+: пока заглушка
-        if (step == 4 || step == 6 || step >= 8) {
+        if (step == 4 || step == 6 || step == 8 || step >= 12) {
             return InteractionResultHolder.fail(stack);
         }
 
@@ -109,11 +116,21 @@ public class TomeOfAttainingMeanings extends Item {
                     player.sendSystemMessage(Component.translatable("message.damagecore.tome.step_1." + i)
                             .withStyle(ChatFormatting.DARK_PURPLE));
                 }
+            } else if (step == 9 && player.isSleeping()) {
+                player.setData(ModAttachments.TOME_STEP, 10);
             }
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
+    @Override public UseAnim getUseAnimation(ItemStack s) { return UseAnim.NONE; }
+    @Override public int getUseDuration(ItemStack s, LivingEntity e) { return 72000; }
 
+    @Override
+    public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int remaining) {
+        if (entity instanceof ServerPlayer sp && sp.getTicksUsingItem() % 20 == 1) {
+            TomeLocator.update(sp);
+        }
+    }
     // ---------- Поиск стихий ----------
 
     private void searchElement(Level level, ServerPlayer player) {
