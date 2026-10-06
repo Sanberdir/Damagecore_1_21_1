@@ -89,16 +89,9 @@
     },
     {
       "rolls": 1,
-      "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.06 } ],
+      "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.006 } ],
       "entries": [
         { "type": "minecraft:item", "name": "minecraft:heart_of_the_sea" }
-      ]
-    },
-    {
-      "rolls": 1,
-      "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.01 } ],
-      "entries": [
-        { "type": "minecraft:item", "name": "minecraft:nether_star" }
       ]
     }
   ]

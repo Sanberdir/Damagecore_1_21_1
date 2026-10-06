@@ -1,0 +1,47 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": { "type": "minecraft:uniform", "min": 3, "max": 5 },
+      "entries": [
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 14,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:poison" } ] },
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 5,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:long_poison" } ] },
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 3,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:strong_poison" } ] },
+
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 14,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:harming" } ] },
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 5,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:strong_harming" } ] },
+
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 14,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:slowness" } ] },
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 5,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:long_slowness" } ] },
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 3,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:strong_slowness" } ] },
+
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 14,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:weakness" } ] },
+        { "type": "minecraft:item", "name": "minecraft:splash_potion", "weight": 5,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:long_weakness" } ] }
+      ]
+    },
+    {
+      "rolls": { "type": "minecraft:uniform", "min": 1, "max": 3 },
+      "entries": [
+        { "type": "minecraft:item", "name": "minecraft:lingering_potion", "weight": 10,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:poison" } ] },
+        { "type": "minecraft:item", "name": "minecraft:lingering_potion", "weight": 10,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:harming" } ] },
+        { "type": "minecraft:item", "name": "minecraft:lingering_potion", "weight": 10,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:slowness" } ] },
+        { "type": "minecraft:item", "name": "minecraft:lingering_potion", "weight": 10,
+          "functions": [ { "function": "minecraft:set_potion", "id": "minecraft:weakness" } ] },
+        { "type": "minecraft:empty", "weight": 10 }
+      ]
+    }
+  ]
+}
