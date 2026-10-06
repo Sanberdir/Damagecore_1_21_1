@@ -216,6 +216,7 @@
   "gui.damagecore.config.reset_entities": "Сбросить существ",
   "gui.damagecore.config.reset_blocks": "Сбросить блоки",
 
+  "block.damagecore.structure_block_and_entity": "Блок-структуры существа и блоки",
   "item.damagecore.birch_leaf": "Лист берёзы",
   "item.damagecore.tome_of_attaining_meanings": "Том обретения смыслов",
   "item.damagecore.heavy_belt": "Тяжёлый пояс",

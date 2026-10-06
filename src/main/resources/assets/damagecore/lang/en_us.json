@@ -163,6 +163,7 @@
   "gui.damagecore.config.reset_entities": "Clear Entities",
   "gui.damagecore.config.reset_blocks": "Clear Blocks",
 
+  "block.damagecore.structure_block_and_entity": "Structure Block and Entity",
   "item.damagecore.birch_leaf": "Birch Leaf",
   "item.damagecore.tome_of_attaining_meanings": "Tome of Attaining Meanings",
   "item.damagecore.heavy_belt": "Heavy Belt",

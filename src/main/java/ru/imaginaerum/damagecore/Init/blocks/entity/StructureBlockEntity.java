@@ -12,11 +12,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import ru.imaginaerum.damagecore.client.CaptiveData;
+import ru.imaginaerum.damagecore.structure_processors.RescuableVillager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,5 +81,10 @@ public class StructureBlockEntity extends BlockEntity {
         sl.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
         var e = type.spawn(sl, pos, MobSpawnType.STRUCTURE);
         if (e instanceof Mob m) m.setPersistenceRequired();
+
+        if (e instanceof Villager v) {
+            v.addTag(RescuableVillager.TAG);
+            CaptiveData.get(sl).add(v.getUUID(), pos);
+        }
     }
 }
