@@ -1,0 +1,192 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": { "type": "minecraft:uniform", "min": 3, "max": 5 },
+      "entries": [
+        {
+          "type": "minecraft:item", "name": "minecraft:iron_ingot", "weight": 20,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 2, "max": 5 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:emerald", "weight": 14,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 1, "max": 4 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:gold_ingot", "weight": 8,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 1, "max": 3 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:diamond", "weight": 3,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 1, "max": 2 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:arrow", "weight": 16,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 4, "max": 12 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:bread", "weight": 12,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 2, "max": 5 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:golden_apple", "weight": 2
+        }
+      ]
+    },
+    {
+      "rolls": { "type": "minecraft:uniform", "min": 1, "max": 3 },
+      "entries": [
+        {
+          "type": "minecraft:item", "name": "minecraft:crossbow", "weight": 14,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 8, "max": 25 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.4 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:iron_sword", "weight": 10,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 8, "max": 25 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.35 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:iron_axe", "weight": 8,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 8, "max": 25 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.35 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:chainmail_helmet", "weight": 8,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 8, "max": 22 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.3 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:chainmail_chestplate", "weight": 6,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 8, "max": 22 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.3 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:chainmail_leggings", "weight": 6,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 8, "max": 22 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.3 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:chainmail_boots", "weight": 8,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 8, "max": 22 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.3 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:iron_helmet", "weight": 5,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 10, "max": 25 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.35 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:iron_chestplate", "weight": 4,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } },
+            {
+              "function": "minecraft:enchant_with_levels",
+              "levels": { "type": "minecraft:uniform", "min": 10, "max": 25 },
+              "conditions": [ { "condition": "minecraft:random_chance", "chance": 0.35 } ]
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:shield", "weight": 5,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.2, "max": 0.9 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:diamond_sword", "weight": 1,
+          "functions": [
+            { "function": "minecraft:set_damage", "damage": { "type": "minecraft:uniform", "min": 0.3, "max": 0.9 } },
+            { "function": "minecraft:enchant_with_levels", "levels": { "type": "minecraft:uniform", "min": 10, "max": 30 } }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item", "name": "minecraft:enchanted_book", "weight": 6,
+          "functions": [
+            { "function": "minecraft:enchant_randomly" }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:emerald", "weight": 4,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 4, "max": 8 } }
+          ]
+        },
+        {
+          "type": "minecraft:item", "name": "minecraft:diamond", "weight": 2,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "type": "minecraft:uniform", "min": 1, "max": 3 } }
+          ]
+        },
+        {
+          "type": "minecraft:empty", "weight": 18
+        }
+      ]
+    }
+  ]
+}
