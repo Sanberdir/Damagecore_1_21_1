@@ -1,6 +1,7 @@
 package ru.imaginaerum.damagecore.Init.items.custom;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -67,6 +68,10 @@ public class TomeOfAttainingMeanings extends Item {
         } else if (step == 7) {
             tooltip.add(Component.translatable("tooltip.damagecore.tome.calm")
                     .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
+        } else if (step == 3 || step == TomeLocator.COMPASS_STEP) {
+            tooltip.add(Component.translatable("tooltip.damagecore.tome.switch_mode",
+                            Minecraft.getInstance().options.keyPickItem.getTranslatedKeyMessage())
+                    .withStyle(ChatFormatting.GRAY));
         }
     }
 

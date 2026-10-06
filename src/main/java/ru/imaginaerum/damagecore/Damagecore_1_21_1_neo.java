@@ -19,6 +19,8 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent; // Импортируем тик сервера
 
 import net.neoforged.neoforge.registries.RegisterEvent;
+import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
+import ru.imaginaerum.damagecore.Init.blocks.entity.DCBlockEntities;
 import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.DCEntities;
 import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.item.ChainLightingArrowRenderer;
 import ru.imaginaerum.damagecore.Init.items.DCItems;
@@ -36,7 +38,8 @@ import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionAttachments;
 import ru.imaginaerum.damagecore.particle.DCParticles;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 import ru.imaginaerum.damagecore.structure_processors.CastleGuardSpawner;
-import ru.imaginaerum.damagecore.structure_processors.EmeraldToVillagerProcessor;
+import ru.imaginaerum.damagecore.structure_processors.ModProcessors;
+import ru.imaginaerum.damagecore.structure_processors.StructureBlockProcessor;
 
 @Mod(Damagecore_1_21_1_neo.MODID)
 public class Damagecore_1_21_1_neo {
@@ -46,12 +49,12 @@ public class Damagecore_1_21_1_neo {
         modEventBus.addListener(this::commonSetup);
         FoodProtectionAttachments.ATTACHMENT_TYPES.register(modEventBus);
         // Регистрируем этот класс на глобальной шине событий NeoForge (для серверного тика)
-
-        modEventBus.addListener(this::onRegisterProcessors);
-
+        ModProcessors.PROCESSORS.register(modEventBus);
         NeoForge.EVENT_BUS.register(this);
         DCEffects.MOB_EFFECTS.register(modEventBus);
         DCParticles.PARTICLE_TYPES.register(modEventBus);
+        BlocksDC.BLOCKS.register(modEventBus);
+        DCBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         DCItems.ITEMS.register(modEventBus);
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
@@ -67,15 +70,7 @@ public class Damagecore_1_21_1_neo {
     public static final WeaponDamageManager WEAPON_DAMAGE_MANAGER = new WeaponDamageManager();
     public static final ArrowDamageManager ARROW_DAMAGE_MANAGER = new ArrowDamageManager();
     public static final DamageArmorModifier ARMOR_MODIFIER = new DamageArmorModifier(); // только здесь, final
-    private void onRegisterProcessors(RegisterEvent event) {
-        // Проверяем, что сейчас регистрируются процессоры структур
-        if (event.getRegistryKey().equals(Registries.STRUCTURE_PROCESSOR)) {
-            event.register(Registries.STRUCTURE_PROCESSOR,
-                    ResourceLocation.fromNamespaceAndPath(MODID, "emerald_to_villager"),
-                    () -> EmeraldToVillagerProcessor.TYPE // Передаем созданный тип процессора
-            );
-        }
-    }
+
     private void commonSetup(final FMLCommonSetupEvent event) {
 
     }

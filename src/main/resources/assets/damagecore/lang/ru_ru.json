@@ -199,10 +199,22 @@
 
   "message.damagecore.tome.cure": "Этим испытанием книга заставила меня совершить настоящий добрый поступок. Я сумел помочь этому бедолаге. Теперь он снова может радоваться солнечным лучам и закатам, чувствовать вкус еды и вернуться в свою семью... прежним.",
 
+  "tooltip.damagecore.tome.switch_mode": "%s: переключить режим",
+
   "gui.damagecore.rescue.title": "Пленный житель",
   "gui.damagecore.rescue.follow": "Следуй за мной",
   "gui.damagecore.rescue.stay": "Стой",
   "message.damagecore.villager_rescued": "Житель спасён и обустроился на новом месте!",
+
+
+  "gui.damagecore.config.title": "Настройка блока",
+  "gui.damagecore.config.entities": "Существа",
+  "gui.damagecore.config.blocks": "Блоки",
+  "gui.damagecore.config.search": "Поиск",
+  "gui.damagecore.config.save": "Сохранить",
+
+  "gui.damagecore.config.reset_entities": "Сбросить существ",
+  "gui.damagecore.config.reset_blocks": "Сбросить блоки",
 
   "item.damagecore.birch_leaf": "Лист берёзы",
   "item.damagecore.tome_of_attaining_meanings": "Том обретения смыслов",

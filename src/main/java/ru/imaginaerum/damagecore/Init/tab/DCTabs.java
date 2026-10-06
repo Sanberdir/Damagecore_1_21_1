@@ -7,6 +7,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
 import ru.imaginaerum.damagecore.Init.items.DCItems;
 
 public class DCTabs {
@@ -20,6 +21,8 @@ public class DCTabs {
             event.accept(DCItems.BIRCH_LEAF.get());
             event.accept(DCItems.TOME_OF_ATTAINING_MEANINGS.get());
         }
-
+        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
+            event.accept(BlocksDC.STRUCTURE_BLOCK_AND_ENTITY.get());
+        }
     }
 }

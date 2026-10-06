@@ -7,6 +7,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import ru.imaginaerum.damagecore.Init.blocks.custom.BlockConfigNetwork;
+import ru.imaginaerum.damagecore.Init.blocks.screen.BlockConfigScreen;
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ChainLightningPacket;
 import ru.imaginaerum.damagecore.animation_attack.PacketBreakBlock;
 import ru.imaginaerum.damagecore.api.skill_tree.LearnNodePacket;
@@ -41,6 +43,12 @@ public final class ModNetwork {
         final PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
 
         // ─── Клиент ← Сервер ───
+
+        registrar.playToClient(BlockConfigNetwork.OpenConfig.TYPE, BlockConfigNetwork.OpenConfig.CODEC,
+                (p, ctx) -> BlockConfigScreen
+                        .open(p.pos(), p.entityIds(), p.blockIds()));
+        registrar.playToServer(BlockConfigNetwork.SaveConfig.TYPE, BlockConfigNetwork.SaveConfig.CODEC,
+                BlockConfigNetwork::onSave);
         registrar.playToClient(SyncAccessorySlotsPacket.TYPE, SyncAccessorySlotsPacket.STREAM_CODEC, SyncAccessorySlotsPacket::handle);
         registrar.playToClient(SyncNodeLevelsPacket.TYPE,   SyncNodeLevelsPacket.CODEC,   SyncNodeLevelsPacket::handle);
         registrar.playToClient(SyncNodeVariantsPacket.TYPE, SyncNodeVariantsPacket.CODEC, SyncNodeVariantsPacket::handle);
