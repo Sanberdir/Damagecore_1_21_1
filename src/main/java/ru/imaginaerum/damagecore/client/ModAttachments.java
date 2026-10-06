@@ -52,5 +52,15 @@ public class ModAttachments {
                     .serialize(Codec.BOOL)
                     .sync(ByteBufCodecs.BOOL)
                     .build());
-
+    public static final Supplier<AttachmentType<Integer>> TOME_RESCUE = ATTACHMENTS.register("tome_rescue",
+            () -> AttachmentType.builder(() -> 0)
+                    .serialize(Codec.INT)
+                    .sync(ByteBufCodecs.VAR_INT)
+                    .copyOnDeath()
+                    .build());
+    public static final Supplier<AttachmentType<Boolean>> TOME_LENS_ON = ATTACHMENTS.register("tome_lens_on",
+            () -> AttachmentType.builder(() -> false)
+                    .serialize(Codec.BOOL)
+                    .sync(ByteBufCodecs.BOOL)
+                    .build());
 }

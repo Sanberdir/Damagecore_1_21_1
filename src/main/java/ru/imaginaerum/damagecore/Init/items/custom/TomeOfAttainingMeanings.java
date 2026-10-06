@@ -44,7 +44,15 @@ public class TomeOfAttainingMeanings extends Item {
 
     private static final double SKY_CHECK_DISTANCE = 10.0;
     private static final float SKY_MIN_PITCH = -30.0F; // xRot: отрицательное значение = взгляд вверх
-
+    public static void onMiddleClick(ServerPlayer sp) {
+        if (!TomeLocator.holdsTome(sp)) return;
+        int step = sp.getData(ModAttachments.TOME_STEP);
+        if (step == 3) {
+            sp.setData(ModAttachments.TOME_LENS_ON, !sp.getData(ModAttachments.TOME_LENS_ON));
+        } else if (step == TomeLocator.COMPASS_STEP) {
+            TomeLocator.toggle(sp);
+        }
+    }
     public TomeOfAttainingMeanings(Properties properties) {
         super(properties);
     }
@@ -53,7 +61,7 @@ public class TomeOfAttainingMeanings extends Item {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
         int step = ClientHooks.getTomeStep();
-        if (step == 6) {
+        if (step == 5) {
             tooltip.add(Component.translatable("tooltip.damagecore.tome.vibrating")
                     .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
         } else if (step == 7) {
@@ -72,6 +80,7 @@ public class TomeOfAttainingMeanings extends Item {
             boolean client = context.getLevel().isClientSide();
             if (!client) {
                 player.setData(ModAttachments.TOME_ELEMENTS, 0);
+                player.setData(ModAttachments.TOME_LENS_ON, false);
                 player.setData(ModAttachments.TOME_STEP, 3);
             }
             return InteractionResult.sidedSuccess(client);
@@ -83,57 +92,37 @@ public class TomeOfAttainingMeanings extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         int step = player.getData(ModAttachments.TOME_STEP);
-        if (step == TomeLocator.COMPASS_STEP) {
-            player.startUsingItem(hand);
-            return InteractionResultHolder.consume(stack);
-        }
 
-        // Шаги 4 и 6: книга нечитаема; шаг 8+: пока заглушка
-        if (step == 4 || step == 6 || step == 8 || step >= 12) {
+        if (step >= 12) {
             return InteractionResultHolder.fail(stack);
         }
-
-        // Шаг 3: поиск стихий, текст открыть нельзя
-        if (step == 3) {
+        if (step == TomeLocator.COMPASS_STEP && player.getData(ModAttachments.TOME_COMPASS_ON)) {
+            return InteractionResultHolder.fail(stack);
+        }
+// Шаг 3, режим лупы: ПКМ исследует стихию, книга не открывается
+        if (step == 3 && player.getData(ModAttachments.TOME_LENS_ON)) {
             if (!level.isClientSide() && player instanceof ServerPlayer sp) {
                 searchElement(level, sp);
             }
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
         }
 
-        // Шаги 1, 2, 5, 7: читаем книгу
+// Остальные случаи (в том числе шаг 3 в режиме книги): читаем книгу
         if (level.isClientSide()) {
             ClientHooks.openTomeScreen();
         } else {
             if (step == 1 && !player.getData(ModAttachments.TOME_OPENED)) {
                 player.setData(ModAttachments.TOME_OPENED, true);
-                player.sendSystemMessage(Component.translatable("message.damagecore.tome.open")
-                        .withStyle(ChatFormatting.DARK_PURPLE));
-
             } else if (step == 2 && !player.getData(ModAttachments.TOME_VISION_READ)) {
                 player.setData(ModAttachments.TOME_VISION_READ, true);
-                for (int i = 1; i <= VISION_PARTS; i++) {
-                    player.sendSystemMessage(Component.translatable("message.damagecore.tome.step_1." + i)
-                            .withStyle(ChatFormatting.DARK_PURPLE));
-                }
-            } else if (step == 9 && player.isSleeping()) {
-                player.setData(ModAttachments.TOME_STEP, 10);
             }
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
-    @Override public UseAnim getUseAnimation(ItemStack s) { return UseAnim.NONE; }
-    @Override public int getUseDuration(ItemStack s, LivingEntity e) { return 72000; }
 
-    @Override
-    public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int remaining) {
-        if (entity instanceof ServerPlayer sp && sp.getTicksUsingItem() % 20 == 1) {
-            TomeLocator.update(sp);
-        }
-    }
     // ---------- Поиск стихий ----------
 
-    private void searchElement(Level level, ServerPlayer player) {
+    private static void searchElement(Level level, ServerPlayer player) {
         int found = 0;
 
         BlockHitResult hit = getPlayerPOVHitResult(level, player, ClipContext.Fluid.ANY);
@@ -187,14 +176,13 @@ public class TomeOfAttainingMeanings extends Item {
         player.playNotifySound(DCSoundEvents.LEARNING_SKILL.get(), SoundSource.PLAYERS, 1.0F, 1.0F); // слышит только игрок
 
         if (mask == ALL_ELEMENTS) {
+            player.setData(ModAttachments.TOME_LENS_ON, false);
             player.setData(ModAttachments.TOME_STEP, 4);
-            player.sendSystemMessage(Component.translatable("message.damagecore.tome.finish")
-                    .withStyle(ChatFormatting.DARK_PURPLE));
         }
     }
 
     /** Игрок смотрит вверх, и на 10 блоков вдоль взгляда нет ни одного блока. */
-    private boolean isLookingAtOpenSky(Level level, Player player) {
+    private static boolean isLookingAtOpenSky(Level level, Player player) {
         if (player.getXRot() > SKY_MIN_PITCH) return false;
 
         Vec3 from = player.getEyePosition();

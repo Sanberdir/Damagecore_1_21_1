@@ -21,7 +21,7 @@ public class TomeEvents {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-
+        TomeLocator.tick(player);
         int step = player.getData(ModAttachments.TOME_STEP);
 
         if (step == 1 && player.getData(ModAttachments.TOME_OPENED) && player.isSleeping()) {
@@ -35,8 +35,6 @@ public class TomeEvents {
                     .getNearbyRaid(player.blockPosition(), 128 * 128);
             if (raid != null && !raid.isOver()) {
                 player.setData(ModAttachments.TOME_STEP, 6);
-                player.sendSystemMessage(Component.translatable("message.damagecore.tome.raid")
-                        .withStyle(ChatFormatting.DARK_PURPLE));
             }
 
         } else if (step == 6 && player.isSleeping()) {
@@ -55,14 +53,13 @@ public class TomeEvents {
         villager.getPersistentData().putUUID(RESCUER_TAG, player.getUUID());
     }
 
-    /** Единая точка завершения испытания. outcome: success / death / kill */
     public static void finishRescue(ServerPlayer player, String outcome) {
         if (player.getData(ModAttachments.TOME_STEP) != TomeLocator.COMPASS_STEP) return;
+        int code = switch (outcome) { case "kill" -> 3; case "death" -> 2; default -> 1; };
+        player.setData(ModAttachments.TOME_RESCUE, code);
         player.setData(ModAttachments.TOME_STEP, 11);
         player.setData(ModAttachments.TOME_COMPASS_ON, false);
         player.setData(ModAttachments.TOME_TARGET, Long.MIN_VALUE);
-        player.sendSystemMessage(Component.translatable("message.damagecore.tome.rescue." + outcome)
-                .withStyle(ChatFormatting.DARK_PURPLE));
     }
 
     @SubscribeEvent
@@ -89,6 +86,7 @@ public class TomeEvents {
         if (target == null && level.getNearestPlayer(victim, 64.0) instanceof ServerPlayer sp) target = sp;
         if (target != null) finishRescue(target, "death");
     }
+
     @SubscribeEvent
     public static void onRegisterCommands(net.neoforged.neoforge.event.RegisterCommandsEvent event) {
         event.getDispatcher().register(

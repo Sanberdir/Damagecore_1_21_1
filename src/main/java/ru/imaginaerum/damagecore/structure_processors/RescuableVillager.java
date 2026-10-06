@@ -14,7 +14,10 @@ import net.minecraft.world.entity.ai.behavior.EntityTracker;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.WalkTarget;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerData;
 import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.core.GlobalPos;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -33,11 +36,21 @@ public class RescuableVillager {
     public static final String TAG    = "damagecore_rescuable";
     public static final String FOLLOW = "damagecore_follow";
     public static final String OWNER  = "damagecore_owner";
-
+    public static final String RESCUED = "damagecore_rescued"; // освобождён, ждёт профессии
     private static final ResourceKey<Structure> CASTLE = ResourceKey.create(
             Registries.STRUCTURE,
             ResourceLocation.fromNamespaceAndPath("damagecore", "pillager_castle"));
+    private static final java.lang.reflect.Method UPDATE_TRADES = findUpdateTrades();
 
+    private static java.lang.reflect.Method findUpdateTrades() {
+        try {
+            var m = Villager.class.getDeclaredMethod("updateTrades");
+            m.setAccessible(true);
+            return m;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
     // ПКМ: вместо торговли открываем экран с командами
     @SubscribeEvent
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
@@ -58,6 +71,11 @@ public class RescuableVillager {
         if (event.getEntity() instanceof Villager v && v.level() instanceof ServerLevel l
                 && v.getTags().contains(TAG)) {
             CaptiveData.get(l).remove(v.getUUID());
+
+            // тотем только если убил игрок (в том числе стрелой или снарядом)
+            if (event.getSource().getEntity() instanceof ServerPlayer) {
+                v.spawnAtLocation(new ItemStack(Items.TOTEM_OF_UNDYING));
+            }
         }
     }
     @SubscribeEvent
@@ -65,7 +83,14 @@ public class RescuableVillager {
         if (!(event.getEntity() instanceof Villager v)) return;
         if (!(v.level() instanceof ServerLevel level)) return;
         if (!v.getTags().contains(TAG)) return;
-
+// запрет профессии, пока житель в плену
+        var b = v.getBrain();
+        b.eraseMemory(MemoryModuleType.POTENTIAL_JOB_SITE);
+        b.eraseMemory(MemoryModuleType.JOB_SITE);
+        if (v.getVillagerData().getProfession() != VillagerProfession.NONE
+                && v.getVillagerXp() == 0) {
+            v.setVillagerData(v.getVillagerData().setProfession(VillagerProfession.NONE));
+        }
         // --- освобождение ---
         if (v.tickCount % 20 == 0 && tryRelease(level, v)) return;
 
@@ -97,7 +122,33 @@ public class RescuableVillager {
         }
         brain.setMemory(MemoryModuleType.LOOK_TARGET, new EntityTracker(owner, true));
     }
+    private static void makeMaster(Villager v) {
+        try {
+            v.setOffers(null);                       // чистые предложения
+            v.setVillagerData(v.getVillagerData().setLevel(1));
+            v.getOffers();                           // уровень 1
+            for (int lvl = 2; lvl <= 5; lvl++) {
+                v.setVillagerData(v.getVillagerData().setLevel(lvl));
+                UPDATE_TRADES.invoke(v);             // или v.updateTrades(), если AT подключён
+            }
+            v.setVillagerXp(VillagerData.getMinXpPerLevel(5));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @SubscribeEvent
+    public static void onRescuedTick(EntityTickEvent.Post event) {
+        if (!(event.getEntity() instanceof Villager v)) return;
+        if (v.level().isClientSide()) return;
+        if (v.tickCount % 20 != 0) return;
+        if (!v.getTags().contains(RESCUED)) return;
+        if (v.getTags().contains(TAG)) return; // ещё в плену
+        if (v.getVillagerData().getProfession() == VillagerProfession.NONE
+                || v.getVillagerData().getProfession() == VillagerProfession.NITWIT) return;
 
+        makeMaster(v);
+        v.removeTag(RESCUED);
+    }
     /** Житель вне замка и занял кровать вне замка -> становится обычным. */
     private static boolean tryRelease(ServerLevel level, Villager v) {
         if (insideCastle(level, v.blockPosition())) return false;
@@ -122,6 +173,7 @@ public class RescuableVillager {
         if (p == null && level.getNearestPlayer(v, 32.0) instanceof ServerPlayer near) p = near;
 
         v.removeTag(TAG);
+        v.addTag(RESCUED);
         v.removeTag(FOLLOW);
         data.remove(OWNER);
         data.remove(TomeEvents.RESCUER_TAG);

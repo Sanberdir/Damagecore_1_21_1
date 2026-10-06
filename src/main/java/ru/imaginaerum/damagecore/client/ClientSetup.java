@@ -29,7 +29,9 @@ public class ClientSetup {
                     ResourceLocation.fromNamespaceAndPath("damagecore", "searching"),
                     (stack, level, entity, seed) -> {
                         Player p = entity instanceof Player pl ? pl : Minecraft.getInstance().player;
-                        return p != null && p.getData(ModAttachments.TOME_STEP) == 3 ? 1.0F : 0.0F;
+                        return p != null
+                                && p.getData(ModAttachments.TOME_STEP) == 3
+                                && p.getData(ModAttachments.TOME_LENS_ON) ? 1.0F : 0.0F;
                     });
 
             ItemProperties.register(tome,

@@ -20,6 +20,7 @@ import net.minecraft.util.RandomSource;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TomeScreen extends Screen {
@@ -61,8 +62,20 @@ public class TomeScreen extends Screen {
     // ---------- Шаги ----------
 
     private void buildStepOne() {
-        this.leftLines = GalacticText.wrap(this.font, stepOneLeft, TEXT_W, MAX_LINES);
-        this.rightLines = GalacticText.wrap(this.font, stepOneRight, TEXT_W, MAX_LINES);
+        List<FormattedCharSequence> all = new ArrayList<>();
+        List<FormattedCharSequence> symbols =
+                GalacticText.wrap(this.font, stepOneLeft, TEXT_W, MAX_LINES);
+        all.addAll(symbols);
+        for (int i = symbols.size(); i < MAX_LINES; i++) all.add(FormattedCharSequence.EMPTY);
+        all.addAll(this.font.split(Component.translatable("message.damagecore.tome.open"), TEXT_W));
+        this.allLines = all;
+        showSpread();
+    }
+
+    /** Добивает страницу пустыми строками, чтобы следующий текст начался с нового разворота. */
+    private static void padPage(List<FormattedCharSequence> dst, List<FormattedCharSequence> src) {
+        dst.addAll(src);
+        for (int i = src.size(); i < MAX_LINES; i++) dst.add(FormattedCharSequence.EMPTY);
     }
 
     /** Загадка обычным шрифтом: сначала заполняется левая страница, остаток идёт на правую. */
@@ -117,40 +130,45 @@ public class TomeScreen extends Screen {
         showSpread();
     }
 
+    /** Ключи prefix1 ... prefixN. */
+    private static void addSeq(List<String> keys, String prefix, int n) {
+        for (int i = 1; i <= n; i++) keys.add(prefix + i);
+    }
+
+    private static String rescueKey() {
+        var p = Minecraft.getInstance().player;
+        int r = p == null ? 1 : p.getData(ModAttachments.TOME_RESCUE);
+        return switch (r) {
+            case 2 -> "message.damagecore.tome.rescue.death";
+            case 3 -> "message.damagecore.tome.rescue.kill";
+            default -> "message.damagecore.tome.rescue.success";
+        };
+    }
+
     @Override
     protected void init() {
+        List<String> k = new ArrayList<>();
         switch (step) {
-            case 1 -> buildStepOne();
-            case 2 -> buildRiddle("book.damagecore.tome.riddle_1");
-            case 5 -> buildRiddle("book.damagecore.tome.riddle_3", "book.damagecore.tome.riddle_3_end");
-            case 7 -> buildRiddle("book.damagecore.tome.riddle_4");
-            case 9 -> buildRiddle(
-                    "book.damagecore.tome.riddle_5_1",
-                    "book.damagecore.tome.riddle_5_2",
-                    "book.damagecore.tome.riddle_5_3",
-                    "book.damagecore.tome.riddle_5_4",
-                    "book.damagecore.tome.riddle_5_5",
-                    "book.damagecore.tome.riddle_5_6",
-                    "book.damagecore.tome.riddle_5_7",
-                    "book.damagecore.tome.riddle_5_8",
-                    "book.damagecore.tome.riddle_5_9",
-                    "book.damagecore.tome.riddle_5_10");
-            case 11 -> buildRiddle(
-                    "book.damagecore.tome.riddle_6_1",
-                    "book.damagecore.tome.riddle_6_2",
-                    "book.damagecore.tome.riddle_6_3",
-                    "book.damagecore.tome.riddle_6_4",
-                    "book.damagecore.tome.riddle_6_5",
-                    "book.damagecore.tome.riddle_6_6",
-                    "book.damagecore.tome.riddle_6_7",
-                    "book.damagecore.tome.riddle_6_8",
-                    "book.damagecore.tome.riddle_6_9",
-                    "book.damagecore.tome.riddle_6_10");
-            default -> { // заглушка для следующих шагов
+            case 1 -> { buildStepOne(); return; }
+            case 2 -> addSeq(k, "message.damagecore.tome.step_1.", 8);
+            case 3 -> addSeq(k, "message.damagecore.tome.step_1.", 8);   // глава шага 2
+            case 4 -> k.add("message.damagecore.tome.finish");
+            case 5 -> k.add("book.damagecore.tome.riddle_3");
+            case 6 -> k.add("message.damagecore.tome.raid");
+            case 8 -> k.add("message.damagecore.tome.cure");
+            case 9 -> addSeq(k, "book.damagecore.tome.riddle_5_", 10);
+            case 10 -> addSeq(k, "book.damagecore.tome.riddle_5_", 10);  // глава шага 9
+            case 11 -> {
+                k.add(rescueKey());
+                addSeq(k, "book.damagecore.tome.riddle_6_", 10);
+            }
+            default -> {
                 this.leftLines = List.of();
                 this.rightLines = List.of();
+                return;
             }
         }
+        buildRiddle(k.toArray(new String[0]));
     }
 
     // ---------- Отрисовка ----------

@@ -47,7 +47,8 @@ public class RescueNetwork {
         r.playToServer(Command.TYPE, Command.CODEC, RescueNetwork::onCommand);
         r.playToServer(ToggleCompass.TYPE, ToggleCompass.CODEC,
                 (p, ctx) -> {
-                    if (ctx.player() instanceof ServerPlayer sp) TomeLocator.toggle(sp);
+                    if (ctx.player() instanceof ServerPlayer sp)
+                        ru.imaginaerum.damagecore.Init.items.custom.TomeOfAttainingMeanings.onMiddleClick(sp);
                 });
     }
     public record ToggleCompass() implements CustomPacketPayload {
