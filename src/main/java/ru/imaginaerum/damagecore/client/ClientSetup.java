@@ -55,6 +55,24 @@ public class ClientSetup {
                                 ? null
                                 : GlobalPos.of(level.dimension(), BlockPos.of(l));
                     }));
+            ItemProperties.register(tome,
+                    ResourceLocation.fromNamespaceAndPath("damagecore", "sphere"),
+                    (stack, level, entity, seed) -> {
+                        Player p = entity instanceof Player pl ? pl : Minecraft.getInstance().player;
+                        return p != null
+                                && !ClientHooks.isReadingMode()
+                                && p.getData(ModAttachments.TOME_STEP) == TomeLocator.SPHERE_STEP ? 1.0F : 0.0F;
+                    });
+            ItemProperties.register(tome,
+                    ResourceLocation.fromNamespaceAndPath("damagecore", "sphere_state"),
+                    (stack, level, entity, seed) -> {
+                        Player p = entity instanceof Player pl ? pl : Minecraft.getInstance().player;
+                        if (p == null || ClientHooks.isReadingMode()
+                                || p.getData(ModAttachments.TOME_STEP) != TomeLocator.SPHERE_STEP) return 0.0F;
+                        return TomeDeeds.stateCode(
+                                p.getData(ModAttachments.TOME_GOOD),
+                                p.getData(ModAttachments.TOME_BAD));
+                    });
         });
     }
 

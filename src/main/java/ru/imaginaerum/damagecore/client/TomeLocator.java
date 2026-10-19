@@ -19,7 +19,8 @@ import java.util.UUID;
 
 public final class TomeLocator {
     public static final int COMPASS_STEP = 10;
-
+    public static final int SPHERE_STEP = 12;
+    public static final int FINAL_STEP = 13;
     private static final ResourceKey<Structure> CASTLE = ResourceKey.create(
             Registries.STRUCTURE,
             ResourceLocation.fromNamespaceAndPath("damagecore", "pillager_castle"));

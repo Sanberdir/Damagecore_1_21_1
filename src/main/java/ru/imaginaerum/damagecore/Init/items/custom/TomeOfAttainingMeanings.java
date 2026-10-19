@@ -31,6 +31,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
 import ru.imaginaerum.damagecore.client.ClientHooks;
 import ru.imaginaerum.damagecore.client.ModAttachments;
+import ru.imaginaerum.damagecore.client.TomeDeeds;
 import ru.imaginaerum.damagecore.client.TomeLocator;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
@@ -62,7 +63,7 @@ public class TomeOfAttainingMeanings extends Item {
         } else if (step == 7) {
             tooltip.add(Component.translatable("tooltip.damagecore.tome.calm")
                     .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
-        } else if (step == 3 || step == TomeLocator.COMPASS_STEP) {
+        } else if (step == 3 || step == TomeLocator.COMPASS_STEP || step == TomeLocator.SPHERE_STEP) {
             tooltip.add(Component.translatable("tooltip.damagecore.tome.switch_mode")
                     .withStyle(ChatFormatting.GRAY));
         }
@@ -75,6 +76,9 @@ public class TomeOfAttainingMeanings extends Item {
             }
             if (ClientHooks.isCompassMode()) {
                 return Component.translatable("item.damagecore.tome_of_attaining_meanings.compass");
+            }
+            if (ClientHooks.isSphereMode()) {
+                return Component.translatable("item.damagecore.tome_of_attaining_meanings.sphere");
             }
         }
         return super.getName(stack);
@@ -90,10 +94,9 @@ public class TomeOfAttainingMeanings extends Item {
         ItemStack stack = player.getItemInHand(hand);
         int step = player.getData(ModAttachments.TOME_STEP);
 
-        if (step >= 12) {
+        if (step > TomeLocator.FINAL_STEP) {
             return InteractionResultHolder.fail(stack);
         }
-
         boolean reading = player.isShiftKeyDown(); // Shift = режим книги
 
         if (!reading) {
@@ -108,6 +111,19 @@ public class TomeOfAttainingMeanings extends Item {
             if (step == TomeLocator.COMPASS_STEP && player.getData(ModAttachments.TOME_COMPASS_ON)) {
                 return InteractionResultHolder.fail(stack);
             }
+            if (step == TomeLocator.SPHERE_STEP) {
+                int g = player.getData(ModAttachments.TOME_GOOD);
+                int b = player.getData(ModAttachments.TOME_BAD);
+                if (g + b >= TomeDeeds.MAX) {
+                    if (!level.isClientSide()) {
+                        player.setData(ModAttachments.TOME_STEP, TomeLocator.FINAL_STEP);
+                        level.playSound(null, player.blockPosition(), DCSoundEvents.LEARNING_SKILL.get(),
+                                SoundSource.PLAYERS, 1.0F, 0.8F);
+                    }
+                    return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+                }
+                return InteractionResultHolder.fail(stack);
+            }
         }
 
         // Чтение книги
@@ -118,6 +134,8 @@ public class TomeOfAttainingMeanings extends Item {
                 player.setData(ModAttachments.TOME_OPENED, true);
             } else if (step == 2 && !player.getData(ModAttachments.TOME_VISION_READ)) {
                 player.setData(ModAttachments.TOME_VISION_READ, true);
+            } else if (step == 11) {
+                player.setData(ModAttachments.TOME_STEP, TomeLocator.SPHERE_STEP); // книга -> сфера
             }
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());

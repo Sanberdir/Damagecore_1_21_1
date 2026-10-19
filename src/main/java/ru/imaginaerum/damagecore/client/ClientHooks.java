@@ -26,7 +26,12 @@ public class ClientHooks {
                 && p.getData(ModAttachments.TOME_STEP) == 3
                 && p.getData(ModAttachments.TOME_LENS_ON);
     }
-
+    public static boolean isSphereMode() {
+        var p = Minecraft.getInstance().player;
+        return p != null
+                && !isReadingMode()
+                && p.getData(ModAttachments.TOME_STEP) == TomeLocator.SPHERE_STEP;
+    }
     public static boolean isCompassMode() {
         var p = Minecraft.getInstance().player;
         return p != null

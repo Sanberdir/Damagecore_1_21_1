@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.ZombieVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raid;
@@ -52,8 +53,9 @@ public class TomeEvents {
         }
     }
     /** Вызывать в момент открытия клетки (там, где житель начинает следовать за игроком). */
-    public static void markRescuer(net.minecraft.world.entity.LivingEntity villager, ServerPlayer player) {
+    public static void markRescuer(LivingEntity villager, ServerPlayer player) {
         villager.getPersistentData().putUUID(RESCUER_TAG, player.getUUID());
+        TomeDeedEvents.award(player, true, "prisoner", 0);
     }
 
     public static void finishRescue(ServerPlayer player, String outcome) {
@@ -106,6 +108,23 @@ public class TomeEvents {
                                     ctx.getSource().sendSuccess(() -> Component.literal("Tome step = " + s), false);
                                     return 1;
                                 })));
+        event.getDispatcher().register(
+                net.minecraft.commands.Commands.literal("tomedeed")
+                        .requires(s -> s.hasPermission(2))
+                        .then(net.minecraft.commands.Commands.literal("good").executes(ctx -> {
+                            TomeDeeds.add(ctx.getSource().getPlayerOrException(), true);
+                            return 1;
+                        }))
+                        .then(net.minecraft.commands.Commands.literal("bad").executes(ctx -> {
+                            TomeDeeds.add(ctx.getSource().getPlayerOrException(), false);
+                            return 1;
+                        }))
+                        .then(net.minecraft.commands.Commands.literal("reset").executes(ctx -> {
+                            ServerPlayer p = ctx.getSource().getPlayerOrException();
+                            p.setData(ModAttachments.TOME_GOOD, 0);
+                            p.setData(ModAttachments.TOME_BAD, 0);
+                            return 1;
+                        })));
     }
     /** Запоминаем игрока, который начал лечение зомби-жителя золотым яблоком. */
     @SubscribeEvent

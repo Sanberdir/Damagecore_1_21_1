@@ -41,6 +41,16 @@
     { "predicate": { "damagecore:locating": 1, "damagecore:angle": 0.890625 }, "model": "damagecore:item/chaos_diviner_13" },
     { "predicate": { "damagecore:locating": 1, "damagecore:angle": 0.921875 }, "model": "damagecore:item/chaos_diviner_14" },
     { "predicate": { "damagecore:locating": 1, "damagecore:angle": 0.953125 }, "model": "damagecore:item/chaos_diviner_15" },
-    { "predicate": { "damagecore:locating": 1, "damagecore:angle": 0.984375 }, "model": "damagecore:item/chaos_diviner" }
+    { "predicate": { "damagecore:locating": 1, "damagecore:angle": 0.984375 }, "model": "damagecore:item/chaos_diviner" },
+    { "predicate": { "damagecore:sphere": 1 }, "model": "damagecore:item/sphere_of_true_essence" },
+    { "predicate": { "damagecore:sphere_state": 1 }, "model": "damagecore:item/light_1" },
+    { "predicate": { "damagecore:sphere_state": 2 }, "model": "damagecore:item/light_2" },
+    { "predicate": { "damagecore:sphere_state": 3 }, "model": "damagecore:item/light_3" },
+    { "predicate": { "damagecore:sphere_state": 4 }, "model": "damagecore:item/dark_1" },
+    { "predicate": { "damagecore:sphere_state": 5 }, "model": "damagecore:item/dark_2" },
+    { "predicate": { "damagecore:sphere_state": 6 }, "model": "damagecore:item/dark_3" },
+    { "predicate": { "damagecore:sphere_state": 7 }, "model": "damagecore:item/light_dark" },
+    { "predicate": { "damagecore:sphere_state": 8 }, "model": "damagecore:item/light_2_dark" },
+    { "predicate": { "damagecore:sphere_state": 9 }, "model": "damagecore:item/light_dark_2" }
   ]
 }

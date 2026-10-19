@@ -63,4 +63,16 @@ public class ModAttachments {
                     .serialize(Codec.BOOL)
                     .sync(ByteBufCodecs.BOOL)
                     .build());
+    public static final Supplier<AttachmentType<Integer>> TOME_GOOD = ATTACHMENTS.register("tome_good",
+            () -> AttachmentType.builder(() -> 0)
+                    .serialize(Codec.INT)
+                    .sync(ByteBufCodecs.VAR_INT)
+                    .copyOnDeath()
+                    .build());
+    public static final Supplier<AttachmentType<Integer>> TOME_BAD = ATTACHMENTS.register("tome_bad",
+            () -> AttachmentType.builder(() -> 0)
+                    .serialize(Codec.INT)
+                    .sync(ByteBufCodecs.VAR_INT)
+                    .copyOnDeath()
+                    .build());
 }

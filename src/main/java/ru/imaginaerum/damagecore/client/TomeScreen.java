@@ -158,10 +158,11 @@ public class TomeScreen extends Screen {
             case 8 -> k.add("message.damagecore.tome.cure");
             case 9 -> addSeq(k, "book.damagecore.tome.riddle_5_", 10);
             case 10 -> addSeq(k, "book.damagecore.tome.riddle_5_", 10);  // глава шага 9
-            case 11 -> {
+            case 11, 12 -> {
                 k.add(rescueKey());
                 addSeq(k, "book.damagecore.tome.riddle_6_", 10);
             }
+            case 13 -> k.add("book.damagecore.tome.ending_" + endingIndex());
             default -> {
                 this.leftLines = List.of();
                 this.rightLines = List.of();
@@ -170,10 +171,10 @@ public class TomeScreen extends Screen {
         }
         buildRiddle(k.toArray(new String[0]));
     }
-    private void buildSymbolsOnly() {
-        this.allLines = List.of();
-        this.leftLines  = GalacticText.wrap(this.font, stepOneLeft,  TEXT_W, MAX_LINES);
-        this.rightLines = GalacticText.wrap(this.font, stepOneRight, TEXT_W, MAX_LINES);
+    private static int endingIndex() {
+        var p = Minecraft.getInstance().player;
+        int good = p == null ? 0 : p.getData(ModAttachments.TOME_GOOD);
+        return Math.max(1, Math.min(4, 4 - good));
     }
     // ---------- Отрисовка ----------
 
