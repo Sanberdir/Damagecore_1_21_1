@@ -91,7 +91,8 @@ public abstract class DiggerItemMixin implements IDamageCoreWeapon {
                 EquipmentSlotGroup.MAINHAND
         );
 
-        cir.setReturnValue(builder.build());
+        ItemAttributeModifiers built = builder.build();
+        cir.setReturnValue(new ItemAttributeModifiers(built.modifiers(), false));
     }
 
     @Unique

@@ -56,7 +56,9 @@ public class BackstepHandler {
         long now = System.currentTimeMillis();
         if (now - lastUsed < COOLDOWN_MS) return;
         if (WeaponAttackAnimationHandler.isBusy(player)) return;
-
+        if (player.getMainHandItem().getItem() instanceof net.minecraft.world.item.BlockItem
+                && Minecraft.getInstance().hitResult != null
+                && Minecraft.getInstance().hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) return;
         lastUsed = now;
         lockedUntil = now + INPUT_LOCK_MS;
 

@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.ai.behavior.EntityTracker;
+import net.minecraft.world.entity.ai.gossip.GossipType;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.WalkTarget;
 import net.minecraft.world.entity.npc.Villager;
@@ -171,7 +172,7 @@ public class RescuableVillager {
                     data.getUUID(TomeEvents.RESCUER_TAG));
         }
         if (p == null && level.getNearestPlayer(v, 32.0) instanceof ServerPlayer near) p = near;
-
+        if (p != null) giveMaxDiscount(v, p);
         v.removeTag(TAG);
         v.addTag(RESCUED);
         v.removeTag(FOLLOW);
@@ -190,7 +191,12 @@ public class RescuableVillager {
         }
         return true;
     }
-
+    private static void giveMaxDiscount(Villager v, ServerPlayer player) {
+        UUID id = player.getUUID();
+        v.getGossips().add(id, GossipType.MAJOR_POSITIVE, 100);  // лимит типа обрежет до максимума
+        v.getGossips().add(id, GossipType.MINOR_POSITIVE, 100);
+        v.getGossips().add(id, GossipType.TRADING, 100);
+    }
     private static boolean insideCastle(ServerLevel level, BlockPos pos) {
         Structure s = level.registryAccess().registryOrThrow(Registries.STRUCTURE).get(CASTLE);
         return s != null && level.structureManager().getStructureAt(pos, s).isValid();

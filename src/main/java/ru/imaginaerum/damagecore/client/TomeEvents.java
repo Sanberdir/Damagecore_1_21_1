@@ -23,10 +23,13 @@ public class TomeEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         TomeLocator.tick(player);
         int step = player.getData(ModAttachments.TOME_STEP);
-
+        if (step == 3 && !player.getData(ModAttachments.TOME_LENS_ON)) {
+            player.setData(ModAttachments.TOME_LENS_ON, true);
+        }
         if (step == 1 && player.getData(ModAttachments.TOME_OPENED) && player.isSleeping()) {
-            player.setData(ModAttachments.TOME_STEP, 2);
-
+            player.setData(ModAttachments.TOME_STEP, 3);
+            player.setData(ModAttachments.TOME_ELEMENTS, 0);
+            player.setData(ModAttachments.TOME_LENS_ON, false);
         } else if (step == 4 && player.isSleeping()) {
             player.setData(ModAttachments.TOME_STEP, 5);
 

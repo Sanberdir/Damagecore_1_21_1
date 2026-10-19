@@ -11,7 +11,7 @@
   "damage_type.slashing": "Режущий урон",
   "damage_type.fire": "Огненный урон",
 
-  "damagecore.possible_damage": "Возможный урон: ",
+  "damagecore.characteristics": "Характеристики: ",
   "damagecore.immunity_tab.header": "Иммунитет",
   "damagecore.armor_tab.header": "Броня",
 
@@ -199,7 +199,7 @@
 
   "message.damagecore.tome.cure": "Этим испытанием книга заставила меня совершить настоящий добрый поступок. Я сумел помочь этому бедолаге. Теперь он снова может радоваться солнечным лучам и закатам, чувствовать вкус еды и вернуться в свою семью... прежним.",
 
-  "tooltip.damagecore.tome.switch_mode": "%s: переключить режим",
+  "tooltip.damagecore.tome.switch_mode": "Зажмите Shift: переключить режим",
 
   "gui.damagecore.rescue.title": "Пленный житель",
   "gui.damagecore.rescue.follow": "Следуй за мной",
@@ -230,6 +230,8 @@
   "item.damagecore.chlorophilosynthetic_belt": "Хлорофилосинтезный пояс",
   "item.damagecore.quiver_of_arrows": "Колчан для стрел",
   "item.damagecore.scarlet_stapler_ring": "Кольцо Алого Сшивателя",
+  "item.damagecore.tome_of_attaining_meanings.lens": "Искатель смыслов",
+  "item.damagecore.tome_of_attaining_meanings.compass": "Определитель хаоса",
 
   "damagecore.confirm.save": "Сохранить изменения?",
   "damagecore.confirm.yes": "Да",

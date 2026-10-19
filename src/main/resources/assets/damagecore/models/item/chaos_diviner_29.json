@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "damagecore:item/chaos_diviner_29"
+  }
+}

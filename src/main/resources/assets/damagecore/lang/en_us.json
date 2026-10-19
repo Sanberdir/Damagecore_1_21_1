@@ -7,7 +7,7 @@
   "damagecore.attack_speed": "Attack speed: %s",
   "damagecore.damage.fire": "Fire damage: %s",
 
-  "damagecore.possible_damage": "Possible Damage: ",
+  "damagecore.characteristics": "Characteristics: ",
 
   "damage_type.bludgeoning": "Bludgeoning damage",
   "damage_type.piercing": "Piercing damage",
@@ -151,7 +151,7 @@
   "damagecore.skilltree.variant.chemist_student.desc": "Enhancement potions last longer",
 
 
-  "tooltip.damagecore.tome.switch_mode": "%s: switch mode",
+  "tooltip.damagecore.tome.switch_mode": "Hold down Shift: toggle mode",
 
   "damagecore.skilltree.locked": "Locked",
 
@@ -162,6 +162,7 @@
   "gui.damagecore.config.save": "Save",
   "gui.damagecore.config.reset_entities": "Clear Entities",
   "gui.damagecore.config.reset_blocks": "Clear Blocks",
+
 
   "block.damagecore.structure_block_and_entity": "Dc Block – creature and block spawner",
   "item.damagecore.birch_leaf": "Birch Leaf",
@@ -177,6 +178,8 @@
   "item.damagecore.chlorophilosynthetic_belt": "Chlorophilosynthetic Belt",
   "item.damagecore.quiver_of_arrows": "Quiver Of Arrows",
   "item.damagecore.scarlet_stapler_ring": "Scarlet Stapler Ring",
+  "item.damagecore.tome_of_attaining_meanings.lens": "The Searcher of Meanings",
+  "item.damagecore.tome_of_attaining_meanings.compass": "Chaos Diviner",
 
   "message.damagecore.tome.open": "...What a strange book. Its pages are filled with ancient symbols. As I looked upon these glyphs, I heard a quiet whisper in my head, speaking to me of the very foundation of the world. The language was unfamiliar: it spoke in images and pictures, yet I could hear them... It feels as if all my strength has been drained away, and the only thing I want now is to sleep...",
   "message.damagecore.tome.step_1.1": "...I open this mysterious book once again, and my head instantly explodes with pain. New meanings pour into my mind in a mighty torrent... No, these are not letters. Mad pictures, images and flashes swirl before my eyes, but I... I physically hear them. This silent whisper of images makes my own tongue move. I catch myself rasping these words aloud, trying to hold on to my slipping sanity:",

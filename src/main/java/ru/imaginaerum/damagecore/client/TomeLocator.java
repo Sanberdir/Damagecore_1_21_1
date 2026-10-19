@@ -33,31 +33,20 @@ public final class TomeLocator {
         return p.getMainHandItem().is(tome) || p.getOffhandItem().is(tome);
     }
 
-    public static void toggle(ServerPlayer p) {
-        if (p.getData(ModAttachments.TOME_STEP) != COMPASS_STEP) return;
-        if (!holdsTome(p)) return;
 
-        boolean on = !p.getData(ModAttachments.TOME_COMPASS_ON);
-        p.setData(ModAttachments.TOME_COMPASS_ON, on);
-
-        if (on) {
-            update(p);
-        } else {
-            p.setData(ModAttachments.TOME_TARGET, Long.MIN_VALUE);
-        }
-    }
 
     /** Вызывать каждый тик игрока. */
     public static void tick(ServerPlayer p) {
-        if (!p.getData(ModAttachments.TOME_COMPASS_ON)) return;
+        boolean on = p.getData(ModAttachments.TOME_COMPASS_ON);
+        boolean should = p.getData(ModAttachments.TOME_STEP) == COMPASS_STEP && holdsTome(p);
 
-        if (p.getData(ModAttachments.TOME_STEP) != COMPASS_STEP || !holdsTome(p)) {
-            p.setData(ModAttachments.TOME_COMPASS_ON, false);
-            p.setData(ModAttachments.TOME_TARGET, Long.MIN_VALUE);
+        if (should != on) {
+            p.setData(ModAttachments.TOME_COMPASS_ON, should);
+            if (should) update(p);
+            else p.setData(ModAttachments.TOME_TARGET, Long.MIN_VALUE);
             return;
         }
-
-        if (p.tickCount % 20 == 0) update(p);
+        if (should && p.tickCount % 20 == 0) update(p);
     }
     public static void update(ServerPlayer player) {
         ServerLevel level = player.serverLevel();

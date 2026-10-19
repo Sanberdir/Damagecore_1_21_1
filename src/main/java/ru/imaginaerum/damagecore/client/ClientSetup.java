@@ -30,6 +30,7 @@ public class ClientSetup {
                     (stack, level, entity, seed) -> {
                         Player p = entity instanceof Player pl ? pl : Minecraft.getInstance().player;
                         return p != null
+                                && !ClientHooks.isReadingMode()
                                 && p.getData(ModAttachments.TOME_STEP) == 3
                                 && p.getData(ModAttachments.TOME_LENS_ON) ? 1.0F : 0.0F;
                     });
@@ -39,6 +40,7 @@ public class ClientSetup {
                     (stack, level, entity, seed) -> {
                         Player p = entity instanceof Player pl ? pl : Minecraft.getInstance().player;
                         return p != null
+                                && !ClientHooks.isReadingMode()
                                 && p.getData(ModAttachments.TOME_STEP) == TomeLocator.COMPASS_STEP
                                 && p.getData(ModAttachments.TOME_COMPASS_ON) ? 1.0F : 0.0F;
                     });

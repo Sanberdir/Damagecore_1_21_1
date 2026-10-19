@@ -45,18 +45,6 @@ public class RescueNetwork {
         r.playToClient(OpenScreen.TYPE, OpenScreen.CODEC,
                 (p, ctx) -> RescueClient.open(p.entityId()));
         r.playToServer(Command.TYPE, Command.CODEC, RescueNetwork::onCommand);
-        r.playToServer(ToggleCompass.TYPE, ToggleCompass.CODEC,
-                (p, ctx) -> {
-                    if (ctx.player() instanceof ServerPlayer sp)
-                        ru.imaginaerum.damagecore.Init.items.custom.TomeOfAttainingMeanings.onMiddleClick(sp);
-                });
-    }
-    public record ToggleCompass() implements CustomPacketPayload {
-        public static final Type<ToggleCompass> TYPE = new Type<>(
-                ResourceLocation.fromNamespaceAndPath("damagecore", "toggle_tome_compass"));
-        public static final StreamCodec<FriendlyByteBuf, ToggleCompass> CODEC =
-                StreamCodec.unit(new ToggleCompass());
-        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
     private static void onCommand(Command cmd, IPayloadContext ctx) {
         if (!(ctx.player() instanceof ServerPlayer sp)) return;

@@ -26,44 +26,33 @@ public abstract class ItemMixin {
 
         if (!(stack.getItem() instanceof IDamageCoreWeapon weapon)) return;
 
+        // Единый цвет, как у ванильных атрибутов
+        final ChatFormatting vanillaColor = ChatFormatting.DARK_GREEN;
+
         Map<DamageType, Double> damageMap = weapon.damagecore$getDamageMap();
 
         if (!damageMap.isEmpty()) {
-            tooltip.add(Component.translatable("damagecore.possible_damage").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("damagecore.characteristics").withStyle(ChatFormatting.GRAY));
 
             for (Map.Entry<DamageType, Double> entry : damageMap.entrySet()) {
-                DamageType damageType = entry.getKey();
-
-                ChatFormatting color = switch (damageType) {
-                    case PIERCING, SLASHING, BLUDGEONING -> ChatFormatting.GREEN;
-                    case FIRE,EXPLOSIVE, BLEEDING, TEMPERATURE -> ChatFormatting.RED;
-                    case COLD, THERMAL -> ChatFormatting.AQUA;
-                    case LIGHTNING, THUNDER -> ChatFormatting.YELLOW;
-                    case NECROTIC -> ChatFormatting.DARK_PURPLE;
-                    case POISON, ACID -> ChatFormatting.DARK_GREEN;
-                    case LUMINOUS_RADIANT -> ChatFormatting.WHITE;
-                    case PSY, ETHEREAL -> ChatFormatting.LIGHT_PURPLE;
-                    case SOUNDER -> ChatFormatting.BLUE;
-                    case SUFFOCATION, WITHERING -> ChatFormatting.DARK_GRAY;
-                };
-
                 tooltip.add(Component.literal(" ").append(
                         Component.translatable(
-                                "damagecore.damage." + damageType.getDamageName(),
+                                "damagecore.damage." + entry.getKey().getDamageName(),
                                 String.format("%.1f", entry.getValue())
-                        ).withStyle(color)
-                ));
+                        )
+                ).withStyle(vanillaColor));
             }
         }
 
-        Item item = stack.getItem();
-        WeaponDamageData data = Damagecore_1_21_1_neo.WEAPON_DAMAGE_MANAGER.getDamageData(item);
+        WeaponDamageData data = Damagecore_1_21_1_neo.WEAPON_DAMAGE_MANAGER.getDamageData(stack.getItem());
 
         if (data != null && data.hasAttackSpeed()) {
-            tooltip.add(Component.translatable(
-                    "damagecore.attack_speed",
-                    String.format("%.1f", data.getAttackSpeed())
-            ).withStyle(ChatFormatting.BLUE));
+            tooltip.add(Component.literal(" ").append(
+                    Component.translatable(
+                            "damagecore.attack_speed",
+                            String.format("%.1f", data.getAttackSpeed())
+                    )
+            ).withStyle(vanillaColor));
         }
     }
 }

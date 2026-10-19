@@ -27,6 +27,8 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import ru.imaginaerum.damagecore.client.ClientHooks;
 import ru.imaginaerum.damagecore.client.ModAttachments;
 import ru.imaginaerum.damagecore.client.TomeLocator;
@@ -45,15 +47,7 @@ public class TomeOfAttainingMeanings extends Item {
 
     private static final double SKY_CHECK_DISTANCE = 10.0;
     private static final float SKY_MIN_PITCH = -30.0F; // xRot: отрицательное значение = взгляд вверх
-    public static void onMiddleClick(ServerPlayer sp) {
-        if (!TomeLocator.holdsTome(sp)) return;
-        int step = sp.getData(ModAttachments.TOME_STEP);
-        if (step == 3) {
-            sp.setData(ModAttachments.TOME_LENS_ON, !sp.getData(ModAttachments.TOME_LENS_ON));
-        } else if (step == TomeLocator.COMPASS_STEP) {
-            TomeLocator.toggle(sp);
-        }
-    }
+
     public TomeOfAttainingMeanings(Properties properties) {
         super(properties);
     }
@@ -69,27 +63,25 @@ public class TomeOfAttainingMeanings extends Item {
             tooltip.add(Component.translatable("tooltip.damagecore.tome.calm")
                     .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
         } else if (step == 3 || step == TomeLocator.COMPASS_STEP) {
-            tooltip.add(Component.translatable("tooltip.damagecore.tome.switch_mode",
-                            Minecraft.getInstance().options.keyPickItem.getTranslatedKeyMessage())
+            tooltip.add(Component.translatable("tooltip.damagecore.tome.switch_mode")
                     .withStyle(ChatFormatting.GRAY));
         }
     }
-
+    @Override
+    public Component getName(ItemStack stack) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            if (ClientHooks.isLensMode()) {
+                return Component.translatable("item.damagecore.tome_of_attaining_meanings.lens");
+            }
+            if (ClientHooks.isCompassMode()) {
+                return Component.translatable("item.damagecore.tome_of_attaining_meanings.compass");
+            }
+        }
+        return super.getName(stack);
+    }
     /** Клик по блоку после прочтения видения запускает поиск стихий (шаг 3). */
     @Override
     public InteractionResult useOn(UseOnContext context) {
-        Player player = context.getPlayer();
-        if (player == null) return InteractionResult.PASS;
-
-        if (player.getData(ModAttachments.TOME_STEP) == 2 && player.getData(ModAttachments.TOME_VISION_READ)) {
-            boolean client = context.getLevel().isClientSide();
-            if (!client) {
-                player.setData(ModAttachments.TOME_ELEMENTS, 0);
-                player.setData(ModAttachments.TOME_LENS_ON, false);
-                player.setData(ModAttachments.TOME_STEP, 3);
-            }
-            return InteractionResult.sidedSuccess(client);
-        }
         return InteractionResult.PASS;
     }
 
@@ -101,18 +93,24 @@ public class TomeOfAttainingMeanings extends Item {
         if (step >= 12) {
             return InteractionResultHolder.fail(stack);
         }
-        if (step == TomeLocator.COMPASS_STEP && player.getData(ModAttachments.TOME_COMPASS_ON)) {
-            return InteractionResultHolder.fail(stack);
-        }
-// Шаг 3, режим лупы: ПКМ исследует стихию, книга не открывается
-        if (step == 3 && player.getData(ModAttachments.TOME_LENS_ON)) {
-            if (!level.isClientSide() && player instanceof ServerPlayer sp) {
-                searchElement(level, sp);
+
+        boolean reading = player.isShiftKeyDown(); // Shift = режим книги
+
+        if (!reading) {
+            // Лупа: ПКМ сканирует стихии
+            if (step == 3 && player.getData(ModAttachments.TOME_LENS_ON)) {
+                if (!level.isClientSide() && player instanceof ServerPlayer sp) {
+                    searchElement(level, sp);
+                }
+                return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
             }
-            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+            // Компас: ПКМ ничего не делает
+            if (step == TomeLocator.COMPASS_STEP && player.getData(ModAttachments.TOME_COMPASS_ON)) {
+                return InteractionResultHolder.fail(stack);
+            }
         }
 
-// Остальные случаи (в том числе шаг 3 в режиме книги): читаем книгу
+        // Чтение книги
         if (level.isClientSide()) {
             ClientHooks.openTomeScreen();
         } else {
@@ -136,37 +134,13 @@ public class TomeOfAttainingMeanings extends Item {
             BlockState state = level.getBlockState(pos);
             FluidState fluid = state.getFluidState();
 
-            if (fluid.is(FluidTags.WATER)
-                    || state.is(BlockTags.ICE)
-                    || state.is(Blocks.SNOW_BLOCK)
-                    || state.is(Blocks.SNOW)
-                    || state.is(Blocks.POWDER_SNOW)
-                    || state.is(Blocks.WATER_CAULDRON)
-                    || state.is(Blocks.POWDER_SNOW_CAULDRON)
-                    || state.is(Blocks.BUBBLE_COLUMN)) {
+            if (fluid.is(FluidTags.WATER)) {
                 found = WATER;
             } else if (fluid.is(FluidTags.LAVA)
-                    || state.is(BlockTags.FIRE)
-                    || state.is(BlockTags.CAMPFIRES)
-                    || state.is(BlockTags.CANDLES) // свечи и торты со свечами
-                    || state.is(Blocks.MAGMA_BLOCK)
-                    || state.is(Blocks.LAVA_CAULDRON)) {
+                    || state.is(Blocks.MAGMA_BLOCK)) {
                 found = FIRE;
             } else if (state.is(BlockTags.DIRT)
-                    || state.is(BlockTags.BASE_STONE_OVERWORLD)
-                    || state.is(Blocks.SOUL_SOIL)
-                    || state.is(Blocks.SOUL_SAND)
-                    || state.is(Blocks.SAND)
-                    || state.is(Blocks.RED_SAND)
-                    || state.is(Blocks.SANDSTONE)
-                    || state.is(Blocks.RED_SANDSTONE)
-                    || state.is(Blocks.GRAVEL)
-                    || state.is(Blocks.CLAY)
-                    || state.is(Blocks.TERRACOTTA)
-                    || state.is(Blocks.MUD)
-                    || state.is(Blocks.MUDDY_MANGROVE_ROOTS)
-                    || state.is(Blocks.DRIPSTONE_BLOCK)
-                    || state.is(Blocks.POINTED_DRIPSTONE)) {
+                    || state.is(Blocks.GRASS_BLOCK)) {
                 found = EARTH;
             }
         } else if (isLookingAtOpenSky(level, player)) {
@@ -181,7 +155,7 @@ public class TomeOfAttainingMeanings extends Item {
         player.playNotifySound(DCSoundEvents.LEARNING_SKILL.get(), SoundSource.PLAYERS, 1.0F, 1.0F); // слышит только игрок
 
         if (mask == ALL_ELEMENTS) {
-            player.setData(ModAttachments.TOME_LENS_ON, false);
+            player.setData(ModAttachments.TOME_LENS_ON, true);
             player.setData(ModAttachments.TOME_STEP, 4);
         }
     }

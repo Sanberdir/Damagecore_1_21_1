@@ -151,7 +151,7 @@ public class TomeScreen extends Screen {
         switch (step) {
             case 1 -> { buildStepOne(); return; }
             case 2 -> addSeq(k, "message.damagecore.tome.step_1.", 8);
-            case 3 -> addSeq(k, "message.damagecore.tome.step_1.", 8);   // глава шага 2
+            case 3 -> addSeq(k, "message.damagecore.tome.step_1.", 8);   // текст следующей главы
             case 4 -> k.add("message.damagecore.tome.finish");
             case 5 -> k.add("book.damagecore.tome.riddle_3");
             case 6 -> k.add("message.damagecore.tome.raid");
@@ -170,7 +170,11 @@ public class TomeScreen extends Screen {
         }
         buildRiddle(k.toArray(new String[0]));
     }
-
+    private void buildSymbolsOnly() {
+        this.allLines = List.of();
+        this.leftLines  = GalacticText.wrap(this.font, stepOneLeft,  TEXT_W, MAX_LINES);
+        this.rightLines = GalacticText.wrap(this.font, stepOneRight, TEXT_W, MAX_LINES);
+    }
     // ---------- Отрисовка ----------
 
     @Override
