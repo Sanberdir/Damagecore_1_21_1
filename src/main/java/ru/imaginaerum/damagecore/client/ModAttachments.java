@@ -19,7 +19,11 @@ public class ModAttachments {
                     .sync(ByteBufCodecs.VAR_INT)
                     .copyOnDeath()
                     .build());
-
+    public static final Supplier<AttachmentType<Integer>> TOME_MISTAKES = ATTACHMENTS.register("tome_mistakes",
+            () -> AttachmentType.builder(() -> 0)
+                    .serialize(Codec.INT)
+                    .copyOnDeath()
+                    .build());
     /** Игрок уже открывал книгу на шаге 1 (сообщение в чат показано). */
     public static final Supplier<AttachmentType<Boolean>> TOME_OPENED = ATTACHMENTS.register("tome_opened",
             () -> AttachmentType.builder(() -> false)

@@ -29,10 +29,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLEnvironment;
-import ru.imaginaerum.damagecore.client.ClientHooks;
-import ru.imaginaerum.damagecore.client.ModAttachments;
-import ru.imaginaerum.damagecore.client.TomeDeeds;
-import ru.imaginaerum.damagecore.client.TomeLocator;
+import ru.imaginaerum.damagecore.client.*;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 import java.util.List;
@@ -145,6 +142,7 @@ public class TomeOfAttainingMeanings extends Item {
 
     private static void searchElement(Level level, ServerPlayer player) {
         int found = 0;
+        boolean wrong = false;
 
         BlockHitResult hit = getPlayerPOVHitResult(level, player, ClipContext.Fluid.ANY);
         if (hit.getType() == HitResult.Type.BLOCK) {
@@ -154,25 +152,41 @@ public class TomeOfAttainingMeanings extends Item {
 
             if (fluid.is(FluidTags.WATER)) {
                 found = WATER;
-            } else if (fluid.is(FluidTags.LAVA)
-                    || state.is(Blocks.MAGMA_BLOCK)) {
+            } else if (fluid.is(FluidTags.LAVA) || state.is(Blocks.MAGMA_BLOCK)) {
                 found = FIRE;
-            } else if (state.is(BlockTags.DIRT)
-                    || state.is(Blocks.GRASS_BLOCK)) {
+            } else if (state.is(BlockTags.DIRT) || state.is(Blocks.GRASS_BLOCK)) {
                 found = EARTH;
+            } else {
+                wrong = true; // изучил не стихию
             }
         } else if (isLookingAtOpenSky(level, player)) {
             found = AIR;
+        } else if (player.getXRot() <= SKY_MIN_PITCH) {
+            wrong = true; // смотрит вверх, но небо закрыто
+        }
+        int mask = player.getData(ModAttachments.TOME_ELEMENTS);
+
+// Ошибка: не стихия или повтор уже найденной
+        if (found != 0 && (mask & found) != 0) wrong = true;
+
+        if (found == 0 || wrong) {
+            if (wrong) {
+                int m = player.getData(ModAttachments.TOME_MISTAKES) + 1;
+                player.setData(ModAttachments.TOME_MISTAKES, m);
+                TomePunishment.apply(player, m);
+            }
+            return; // ничего не подошло или это была ошибка
         }
 
-        int mask = player.getData(ModAttachments.TOME_ELEMENTS);
-        if (found == 0 || (mask & found) != 0) return; // ничего не подошло или стихия уже найдена
 
         mask |= found;
+
         player.setData(ModAttachments.TOME_ELEMENTS, mask);
+        TomePunishment.relief(player);
         player.playNotifySound(DCSoundEvents.LEARNING_SKILL.get(), SoundSource.PLAYERS, 1.0F, 1.0F); // слышит только игрок
 
         if (mask == ALL_ELEMENTS) {
+            player.setData(ModAttachments.TOME_MISTAKES, 0);
             player.setData(ModAttachments.TOME_LENS_ON, true);
             player.setData(ModAttachments.TOME_STEP, 4);
         }

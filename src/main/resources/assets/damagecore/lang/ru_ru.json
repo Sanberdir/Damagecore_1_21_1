@@ -212,6 +212,13 @@
   "gui.damagecore.rescue.stay": "Стой",
   "message.damagecore.villager_rescued": "Житель спасён и обустроился на новом месте!",
 
+  "message.damagecore.tome.punish_1": "Книга недовольно дрожит... Это не то, что она ищет. Вокруг будто сгущается тень.",
+  "message.damagecore.tome.punish_2": "Страницы шелестят сами собой. Небо темнеет — книга не прощает невнимательности.",
+  "message.damagecore.tome.punish_3": "Воздух трещит от напряжения. Где-то рядом ударила молния — это предупреждение.",
+  "message.damagecore.tome.punish_4": "Кто-то дышит мне в спину... Книга послала за мной того, кто напомнит о внимательности.",
+  "message.damagecore.tome.punish_5": "Я слишком часто ошибался. Небо раскалывается, и тьма больше не шутит!",
+  "message.damagecore.tome.punish_6": "Книга больше не терпит моей слепоты. Сама реальность обращается против меня!",
+  "message.damagecore.tome.relief": "Книга смягчается... Тяжесть на душе немного отпускает.",
 
   "gui.damagecore.config.title": "Настройка блока",
   "gui.damagecore.config.entities": "Существа",

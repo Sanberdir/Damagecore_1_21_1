@@ -9,6 +9,9 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 import ru.imaginaerum.damagecore.Init.blocks.custom.BlockConfigNetwork;
 import ru.imaginaerum.damagecore.Init.blocks.screen.BlockConfigScreen;
+import ru.imaginaerum.damagecore.Init.fishing.client.ClientPayloadHandler;
+import ru.imaginaerum.damagecore.Init.fishing.fight.FightManager;
+import ru.imaginaerum.damagecore.Init.fishing.net.*;
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ChainLightningPacket;
 import ru.imaginaerum.damagecore.animation_attack.PacketBreakBlock;
 import ru.imaginaerum.damagecore.api.skill_tree.LearnNodePacket;
@@ -77,6 +80,16 @@ public final class ModNetwork {
         registrar.playToServer(StatSessionPacket.TYPE, StatSessionPacket.CODEC, StatSessionPacket::handle);
         // ─── Двунаправленные ───
         registrar.playBidirectional(NormalAttackPacket.TYPE, NormalAttackPacket.STREAM_CODEC, NormalAttackPacket::handle);
+// ─── Рыбалка ───
+        registrar.playToClient(FightStatePayload.TYPE, FightStatePayload.CODEC, ClientPayloadHandler::handleState);
+        registrar.playToClient(FightPosPayload.TYPE,   FightPosPayload.CODEC,   ClientPayloadHandler::handlePos);
+        registrar.playToServer(FightInputPayload.TYPE, FightInputPayload.CODEC, ServerPayloadHandler::handleInput);
+        registrar.playToServer(FightKeysPayload.TYPE, FightKeysPayload.CODEC,
+                (payload, ctx) -> {
+                    if (ctx.player() instanceof ServerPlayer sp) {
+                        FightManager.onKeys(sp, payload.side(), payload.tighten(), payload.slack());
+                    }
+                });
     }
 
     // ─── Удобные методы отправки ───

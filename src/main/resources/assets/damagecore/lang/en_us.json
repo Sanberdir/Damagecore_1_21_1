@@ -238,6 +238,14 @@
   "book.damagecore.tome.ending_3": "The visions of the sphere burned away what was left of my faith in justice. Darkness draws near, and I feel myself withering along with this world.",
   "book.damagecore.tome.ending_4": "I no longer care about balance. This fragile order deserves to be destroyed. I will take all the power for myself and create a world of my own!",
 
+  "message.damagecore.tome.punish_1": "The book trembles in displeasure... This is not what it seeks. A shadow gathers around me.",
+  "message.damagecore.tome.punish_2": "The pages rustle on their own. The sky darkens: the book does not forgive carelessness.",
+  "message.damagecore.tome.punish_3": "The air crackles with tension. Lightning struck nearby; it was a warning.",
+  "message.damagecore.tome.punish_4": "Someone is breathing down my neck... The book has sent someone to remind me to be careful.",
+  "message.damagecore.tome.punish_5": "I have erred too often. The sky splits open, and the darkness is no longer joking!",
+  "message.damagecore.tome.punish_6": "The book will no longer tolerate my blindness. Reality itself turns against me!",
+  "message.damagecore.tome.relief": "The book softens... The weight on my soul lifts a little.",
+
   "gui.damagecore.rescue.title": "Captive Villager",
   "gui.damagecore.rescue.follow": "Follow me",
   "gui.damagecore.rescue.stay": "Stay",

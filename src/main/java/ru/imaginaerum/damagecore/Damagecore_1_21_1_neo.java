@@ -18,7 +18,7 @@ import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent; // Импортируем тик сервера
 
-import net.neoforged.neoforge.registries.RegisterEvent;
+
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
 import ru.imaginaerum.damagecore.Init.blocks.entity.DCBlockEntities;
 import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.DCEntities;
@@ -101,6 +101,7 @@ public class Damagecore_1_21_1_neo {
         public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
             event.register(ModKeyMappings.USE_ACCESSORY_SLOT);
         }
+
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             // Регистрация 3D отображения летящей стрелы в мире
