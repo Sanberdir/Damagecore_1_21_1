@@ -41,7 +41,6 @@
     "NoIconPotionEffectsMixin",
     "ScreenInvoker",
     "first_person.FirstPersonOffsetMixin",
-    "fishing.MouseHandlerMixin",
     "inventory_screen.AbstractContainerScreenMixin",
     "inventory_screen.InventoryScreenMixin",
     "keys_left_hand.AccessorySlotHudMixin",

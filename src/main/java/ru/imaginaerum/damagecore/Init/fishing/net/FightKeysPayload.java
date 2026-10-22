@@ -8,7 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 
 /** Client -> server: pressed keys. side: -1 = A/left, 1 = D/right. */
-public record FightKeysPayload(byte side, boolean tighten, boolean slack) implements CustomPacketPayload {
+public record FightKeysPayload(byte side, boolean tighten, boolean slack, boolean reel, boolean release)
+        implements CustomPacketPayload {
 
     public static final Type<FightKeysPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(Damagecore_1_21_1_neo.MODID, "fight_keys"));
@@ -17,6 +18,8 @@ public record FightKeysPayload(byte side, boolean tighten, boolean slack) implem
             ByteBufCodecs.BYTE, FightKeysPayload::side,
             ByteBufCodecs.BOOL, FightKeysPayload::tighten,
             ByteBufCodecs.BOOL, FightKeysPayload::slack,
+            ByteBufCodecs.BOOL, FightKeysPayload::reel,
+            ByteBufCodecs.BOOL, FightKeysPayload::release,
             FightKeysPayload::new);
 
     @Override

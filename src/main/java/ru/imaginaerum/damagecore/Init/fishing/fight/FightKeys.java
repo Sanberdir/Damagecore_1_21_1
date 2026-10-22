@@ -6,6 +6,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
@@ -16,7 +17,7 @@ import ru.imaginaerum.damagecore.Init.fishing.net.FightKeysPayload;
 @EventBusSubscriber(modid = Damagecore_1_21_1_neo.MODID, value = Dist.CLIENT)
 public final class FightKeys {
     private static int lastSide;
-    private static boolean lastTighten, lastSlack;
+    private static boolean lastTighten, lastSlack, lastReel;
     private static int resend;
 
     private FightKeys() {}
@@ -31,29 +32,42 @@ public final class FightKeys {
         if (mc.player == null) return;
 
         int side = 0;
-        boolean tighten = false, slack = false;
+        boolean tighten = false, slack = false, reel = false;
         if (FightClient.active && mc.screen == null) {
             boolean left = mc.options.keyLeft.isDown() || raw(mc, GLFW.GLFW_KEY_LEFT);
             boolean right = mc.options.keyRight.isDown() || raw(mc, GLFW.GLFW_KEY_RIGHT);
             side = (right ? 1 : 0) - (left ? 1 : 0);
             tighten = mc.options.keyDown.isDown() || raw(mc, GLFW.GLFW_KEY_DOWN);
             slack = mc.options.keyUp.isDown() || raw(mc, GLFW.GLFW_KEY_UP);
-        } else if (lastSide == 0 && !lastTighten && !lastSlack) {
-            return; // боя нет и ничего не зажато: пакеты не шлём
+            reel = mc.options.keyUse.isDown();
+            if (mc.player.isSprinting()) mc.player.setSprinting(false);
+        } else if (lastSide == 0 && !lastTighten && !lastSlack && !lastReel) {
+            return;
         }
 
-        // шлём при изменении и раз в 5 тиков (на случай, если бой начался позже)
-        boolean changed = side != lastSide || tighten != lastTighten || slack != lastSlack;
+        boolean changed = side != lastSide || tighten != lastTighten || slack != lastSlack || reel != lastReel;
         if (changed || ++resend >= 5) {
             resend = 0;
             lastSide = side;
             lastTighten = tighten;
             lastSlack = slack;
-            PacketDistributor.sendToServer(new FightKeysPayload((byte) side, tighten, slack));
+            lastReel = reel;
+            PacketDistributor.sendToServer(new FightKeysPayload((byte) side, tighten, slack, reel, false));
         }
     }
 
-    /** Во время боя WASD не двигает игрока. */
+    /** Во время боя ЛКМ = отпустить, ПКМ = мотать (через опрос клавиши), остальные действия блокируются. */
+    @SubscribeEvent
+    public static void onInteraction(InputEvent.InteractionKeyMappingTriggered e) {
+        if (!FightClient.active) return;
+        e.setCanceled(true);
+        e.setSwingHand(false);
+        if (e.isAttack()) {
+            PacketDistributor.sendToServer(new FightKeysPayload((byte) 0, false, false, false, true));
+        }
+    }
+
+    /** Во время боя WASD не двигает игрока, только сопротивляется рыбе. */
     @SubscribeEvent
     public static void onMovementInput(MovementInputUpdateEvent event) {
         if (!FightClient.active) return;
@@ -65,5 +79,6 @@ public final class FightKeys {
         in.left = false;
         in.right = false;
         in.jumping = false;
+        in.shiftKeyDown = false;
     }
 }

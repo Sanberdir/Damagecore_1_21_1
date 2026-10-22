@@ -87,8 +87,7 @@ public final class ModNetwork {
         registrar.playToServer(FightKeysPayload.TYPE, FightKeysPayload.CODEC,
                 (payload, ctx) -> {
                     if (ctx.player() instanceof ServerPlayer sp) {
-                        FightManager.onKeys(sp, payload.side(), payload.tighten(), payload.slack());
-                    }
+                        FightManager.onKeys(sp, payload.side(), payload.tighten(), payload.slack(), payload.reel(), payload.release());                    }
                 });
     }
 

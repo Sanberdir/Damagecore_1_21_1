@@ -56,25 +56,24 @@ public final class FishFight {
     // ---- tunables ----
 
     static final float MAX_INPUT = 60.0f;       // max mouse pixels counted per tick
-    static final float LAT_INPUT_GAIN = 0.0035f;
-    static final float PULL_INPUT_GAIN = 0.006f;
-    public static final float SAFE_LOW = 0.44f;
     public static final float SAFE_HIGH = 0.71f;
     static final float BASE_TENSION = 0.575f;   // спокойное натяжение, центр зелёной зоны
     static final float SNAP_LEVEL = 0.92f;
-    static final float SLACK_LEVEL = 0.12f;
     static final int SNAP_TICKS = 24;
-    static final int ESCAPE_TICKS = 50;
-    static final float BASE_REEL = 0.0042f;     // progress per tick (~11 s for a calm fish)
-    static final float LAT_DASH_GAIN = 0.025f;   // было 0.012: рывки теперь заметные
-    static final float ROD_PULL = 0.02f;         // сила тяги удилища вбок
-    static final float ROD_LOAD = 0.15f;         // нагрузка на леску от боковой тяги
     private final ServerPlayer player;
     private final ServerLevel level;
     private final FishingHook hook;
     private final FishingHookAccessor hookAcc;
     private final InteractionHand hand;
     private final List<ItemStack> loot;
+    static final float RUN_SPEED = 0.11f;    // блоков/тик при полной силе рыбы (~2 блока/с)
+    static final float REEL_SPEED = 0.085f;  // скорость подмотки в окне
+    static final float MAX_LAT = 8.0f;       // дальше в сторону - сорвалась
+    static final float MAX_OUT = 9.0f;       // дальше от места поклёвки - сорвалась
+
+    private int phase;                       // 0 отдых (окно), 1 замах, 2 рывок
+    private int runAge;
+    private boolean keyReel;
     @Nullable
     private final Entity visual;
     private final float strength;
@@ -96,14 +95,7 @@ public final class FishFight {
     private float vyaw;
     private double prevHx, prevHz;
     private double mvx, mvz;          // сглаженная скорость крючка
-    private boolean yawInit;
-    static final float MAX_LAT = 6.0f;        // дальше этого в сторону рыба срывается
-    static final float MAX_OUT = 7.0f;        // насколько дальше исходной точки она может утащить
-    static final float FISH_GAIN =  0.024f;   // сила рывка рыбы
-    static final float PLAYER_SIDE = 0.014f;  // сила A/D
-    static final float PLAYER_REEL = 0.008f;  // сила S
-    static final float DRAG = 0.85f;          // затухание скорости
-    static final float LINE_CENTER = 0.003f;
+    private boolean yawInit;     // насколько дальше исходной точки она может утащить
 
 
     // шанс, что следующее действие рыбы - нырок
@@ -112,10 +104,11 @@ public final class FishFight {
     private float diveDepth;
     private int keySide;
     private boolean keyTighten, keySlack;
-    public void setKeys(int side, boolean tighten, boolean slack) {
+    public void setKeys(int side, boolean tighten, boolean slack, boolean reel) {
         this.keySide = Mth.clamp(side, -1, 1);
         this.keyTighten = tighten;
         this.keySlack = slack && !tighten;
+        this.keyReel = reel;
     }
     private FishFight(ServerPlayer player, FishingHook hook, InteractionHand hand, List<ItemStack> loot,
                       @Nullable Entity visual, boolean real, float strength, Vec3 baseDir,
@@ -239,14 +232,10 @@ public final class FishFight {
     }
 
     /** Called every server tick. Returns false when the fight is over. */
-    /** Called every server tick. Returns false when the fight is over. */
-    /** Called every server tick. Returns false when the fight is over. */
-    /** Called every server tick. Returns false when the fight is over. */
     public boolean tick() {
         if (finished) {
             return false;
         }
-
         if (hook.isRemoved() || player.fishing != hook || player.isRemoved() || !player.isAlive()
                 || hook.level() != player.level()
                 || !(player.getItemInHand(hand).getItem() instanceof FishingRodItem)) {
@@ -255,77 +244,88 @@ public final class FishFight {
         }
         ticks++;
         updateFish(player.getRandom());
+        wander = Mth.sin(ticks * 0.21f) * 0.6f + Mth.sin(ticks * 0.07f) * 0.4f;
+
+        boolean warnPhase = phase == 1;
+        boolean run = phase == 2;
         float st = strength < 0.7f ? 0f : stamina;
         float vigor = 0.35f + 0.65f * st;
-        inputX = 0;   // мышь не используется
-        inputY = 0;
+        boolean reeling = keyReel && ticks > 10;      // первые 0.5 с после подсечки не мотаем
 
-        // ---- рыба ----
-        boolean busy = dashLat != 0 || dashOut != 0;
-        dashAge = busy ? dashAge + 1 : 0;
-        float ramp = Mth.clamp(dashAge / 6f, 0f, 1f);
-        float dirScale = (dashLat != 0 && dashOut != 0) ? 0.75f : 1f;        // по диагонали слабее
-        float burst = busy ? dashPower * strength * ramp * dirScale : 0f;
-        float effort = burst * vigor;
+        runAge = run ? runAge + 1 : 0;
+        float ramp = Mth.clamp(runAge / 6f, 0f, 1f);
 
-        float fishLat = dashLat * effort * FISH_GAIN + wander * 0.003f * vigor;
-        float fishOut = dashOut * effort * FISH_GAIN + 0.003f * vigor;
-        if (keySlack) fishOut *= 1.5f;                                       // леску травят: рыба берёт её свободно
+        // ---- сопротивление: по осям независимо ----
+        float cLat = 0f, cOut = 0f;      // 1 = держишь, <0 = поддаёшься
+        if (run) {
+            if (dashLat != 0) {
+                cLat = keySide == -dashLat ? 1f : (keySide == dashLat ? -0.3f : 0f);
+            }
+            if (dashOut != 0) {
+                cOut = keyTighten ? 1f : (keySlack ? -0.3f : 0f);
+            }
+        }
+        int axes = (dashLat != 0 ? 1 : 0) + (dashOut != 0 ? 1 : 0);
+        float c = axes == 0 ? 0f : Mth.clamp((cLat + cOut) / axes, -0.3f, 1f);
 
-        // ---- твои силы: A/D вбок, S к себе ----
-        float resist = 0.7f + 0.6f * strength * vigor;
-        float slackK = keySlack ? 0.3f : 1f;
-        float sideEff = dashLat != 0 ? 1f : 0.35f;                           // вести рыбу вбок можно только слабо
-        float latPull = keySide * PLAYER_SIDE * sideEff * slackK / resist;
+        // ---- скорость рыбы и подмотка ----
+        float power = dashPower * strength * vigor;
+        float diag = axes == 2 ? 0.75f : 1f;
+        float baseSpeed = run ? RUN_SPEED * power * ramp * diag : 0f;
+        float speedLat = baseSpeed * (1f - 0.95f * cLat);
+        float speedOut = baseSpeed * (1f - 0.95f * cOut);
+        float reelPow = REEL_SPEED * (0.6f + 0.8f * (1f - st)) / (0.8f + 0.2f * strength);
 
-        float outBoost = 1f + 1.2f * (dashOut != 0 ? ramp : 0f);            // против рывка вперёд S сильнее
-        float reelEase = 0.6f + 0.8f * (1f - st);                            // уставшая рыба идёт легче
-        float outPull = keyTighten ? PLAYER_REEL * outBoost * reelEase / resist : 0f;
+        float vLat = dashLat * speedLat + (run ? 0f : wander * 0.012f * vigor);
+        float vOut = dashOut * speedOut + (run ? 0f : 0.004f * vigor);
 
-        latVel += fishLat + latPull - lat * LINE_CENTER;
-        distVel += fishOut - outPull;
-        latVel = Mth.clamp(latVel * DRAG, -0.25f, 0.25f);
-        distVel = Mth.clamp(distVel * DRAG, -0.25f, 0.25f);
+        // игрок может вести рыбу всегда, но во время рывка в 2.5 раза слабее
+        float pullK = run ? 0.4f : 1f;
+        vLat += keySide * 0.03f * pullK;                       // A/D ведут рыбу в сторону нажатия
+        if (keyTighten) vOut -= reelPow * 0.3f * (run ? 1.3f : 1f); // S подтягивает
+        if (keySlack) vOut += 0.03f;                           // W травит леску
+        if (reeling) vOut -= run ? reelPow * 0.4f : (warnPhase ? reelPow * 0.5f : reelPow);
 
-        // ---- удержание и натяжение (без HUD, только звук скрипа) ----
-        float hold = 0f;
-        if (dashLat != 0) hold = Math.max(hold, Mth.clamp(-keySide * dashLat, 0f, 1f));
-        if (dashOut != 0 && keyTighten) hold = 1f;
+        latVel += (vLat - latVel) * 0.25f;
+        distVel += (vOut - distVel) * 0.25f;
 
-        float tTarget = 0.45f
-                + 0.40f * effort * (0.35f + 0.65f * hold)
-                + (keyTighten ? 0.10f : 0f)
+        // ---- натяжение ----
+        float load = run ? Math.min(power, 1.3f) : 0f;
+        float tTarget = 0.30f
+                + 0.10f * load
+                + 0.30f * load * Math.max(c, 0f)       // держишь рывок: леска нагружена
+                + (reeling ? (run ? 0.30f : 0.10f) : 0f) // мотать во время рывка опасно
                 - (keySlack ? 0.25f : 0f);
         tension = Mth.clamp(tension + (tTarget - tension) * 0.2f, 0f, 1f);
 
-        if (tension > 0.8f && ticks % 8 == 0) {
+        if (tension > 0.7f && ticks % 8 == 0) {
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.TRIPWIRE_CLICK_ON,
-                    SoundSource.PLAYERS, 0.6f, 1.4f + (tension - 0.8f) * 3f);
+                    SoundSource.PLAYERS, 0.6f, 1.4f + (tension - 0.7f) * 3f);
         }
 
         // ---- усталость ----
         if (strength >= 0.7f) {
-            if (busy) {
-                stamina -= 0.0008f + 0.003f * hold;   // чем лучше держишь, тем быстрее она устаёт
-            } else {
-                stamina += 0.001f;
+            if (run) {
+                stamina -= 0.0012f + 0.0035f * Math.max(c, 0f);   // чем лучше держишь, тем быстрее устаёт
+            } else if (!warnPhase) {
+                stamina += reeling ? -0.0012f : 0.0005f;
             }
             stamina = Mth.clamp(stamina, 0f, 1f);
         }
 
-        // ---- движение рыбы ----
+        // ---- движение ----
         Vec3 o = player.position();
         float nl = lat + latVel;
         double nd = dist + distVel;
 
         if (!waterAt(o, nd, nl)) {
-            boolean dOk = waterAt(o, nd, lat);   // изменилась только дистанция
-            boolean lOk = waterAt(o, dist, nl);  // изменилась только боковая позиция
+            boolean dOk = waterAt(o, nd, lat);
+            boolean lOk = waterAt(o, dist, nl);
             if (dOk) {
                 nl = lat;
                 latVel *= -0.4f;
             } else if (lOk) {
-                if (distVel < 0) { win(); return false; }   // подтянули к берегу
+                if (distVel < 0) { win(); return false; }    // подтянули к берегу
                 nd = dist;
                 distVel *= -0.3f;
             } else {
@@ -341,7 +341,7 @@ public final class FishFight {
 
         // ---- конец боя ----
         if (dist > startDist + MAX_OUT || Math.abs(lat) > MAX_LAT) {
-            escape();                                // утащила слишком далеко
+            escape();
             return false;
         }
         progress = (float) Mth.clamp((startDist - dist) / (startDist - endDist), 0.0, 1.0);
@@ -359,8 +359,8 @@ public final class FishFight {
         // ---- позиция ----
         double x = o.x + baseDir.x * dist + right.x * lat;
         double z = o.z + baseDir.z * dist + right.z * lat;
-        double dip = busy ? 0.10 * Math.abs(Mth.sin(ticks * 0.8f)) : 0.03 * Math.abs(Mth.sin(ticks * 0.3f));
-        double y = baseY + (tension - BASE_TENSION) * 0.2 - dip;
+        double dip = run ? 0.10 * Math.abs(Mth.sin(ticks * 0.8f)) : 0.03 * Math.abs(Mth.sin(ticks * 0.3f));
+        double y = baseY + (tension - 0.4f) * 0.15 - dip;
         hook.setPos(x, y, z);
         hook.setDeltaMovement(Vec3.ZERO);
         hookAcc.deepfishing$setNibble(20);
@@ -376,43 +376,53 @@ public final class FishFight {
         return isWater(o.x + baseDir.x * d + right.x * l, o.z + baseDir.z * d + right.z * l);
     }
     private void updateFish(RandomSource r) {
-        if (strength < 0.7f) {
+        if (strength < 0.7f) {                 // мусор и сокровища: пассивный груз
+            phase = 0;
             dashLat = 0;
             dashOut = 0;
             dashPower = 0f;
-            wander = 0f;
             return;
         }
-        if (--phaseTicks <= 0) {
-            int prevLat = dashLat, prevOut = dashOut;
-            // новое направление, не такое же как прошлое
-            do {
-                switch (r.nextInt(5)) {
-                    case 0 -> { dashLat = -1; dashOut = 0; }   // влево
-                    case 1 -> { dashLat = 1;  dashOut = 0; }   // вправо
-                    case 2 -> { dashLat = 0;  dashOut = 1; }   // вперёд, от берега
-                    case 3 -> { dashLat = -1; dashOut = 1; }   // вперёд-влево
-                    default -> { dashLat = 1; dashOut = 1; }   // вперёд-вправо
+        if (--phaseTicks > 0) return;
+
+        switch (phase) {
+            case 0 -> {                        // отдых -> замах
+                if (stamina < 0.12f) {         // выдохлась, больше не рвётся
+                    phaseTicks = 40;
+                    return;
                 }
-            } while (dashLat == prevLat && dashOut == prevOut);
-
-            dashPower = 0.75f + r.nextFloat() * 0.25f;
-            dashAge = 0;                                       // короткий разгон при смене курса
-            phaseTicks = 25 + r.nextInt(30);                   // 1.2-2.7 с на одном курсе
-
-            // сильно уставшая рыба иногда на секунду замирает
-            if (stamina < 0.2f && r.nextInt(3) == 0) {
+                int pl = dashLat, po = dashOut;
+                do {
+                    switch (r.nextInt(5)) {
+                        case 0 -> { dashLat = -1; dashOut = 0; }
+                        case 1 -> { dashLat = 1;  dashOut = 0; }
+                        case 2 -> { dashLat = 0;  dashOut = 1; }
+                        case 3 -> { dashLat = -1; dashOut = 1; }
+                        default -> { dashLat = 1; dashOut = 1; }
+                    }
+                } while (dashLat == pl && dashOut == po);
+                dashPower = 0.8f + r.nextFloat() * 0.2f;
+                phase = 1;
+                phaseTicks = 10;               // 0.5 с на реакцию
+                level.playSound(null, hook.getX(), hook.getY(), hook.getZ(), SoundEvents.FISHING_BOBBER_SPLASH,
+                        SoundSource.NEUTRAL, 0.7f, 1.0f + r.nextFloat() * 0.3f);
+                level.sendParticles(ParticleTypes.SPLASH, hook.getX(), hook.getY(), hook.getZ(), 10, 0.2, 0.05, 0.2, 0.1);
+            }
+            case 1 -> {                        // замах -> рывок
+                phase = 2;
+                runAge = 0;
+                phaseTicks = 45 + r.nextInt(40);   // 2.2-4.2 с
+            }
+            default -> {                       // рывок -> отдых (окно)
+                phase = 0;
                 dashLat = 0;
                 dashOut = 0;
                 dashPower = 0f;
-                phaseTicks = 20;
+                phaseTicks = (int) ((30 + r.nextInt(20)) * (1f + 1.5f * (1f - stamina)));
+                level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                        SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.35f, 1.7f);
             }
-
-            level.playSound(null, hook.getX(), hook.getY(), hook.getZ(), SoundEvents.FISHING_BOBBER_SPLASH,
-                    SoundSource.NEUTRAL, 0.5f, 1.0f + r.nextFloat() * 0.4f);
-            level.sendParticles(ParticleTypes.SPLASH, hook.getX(), hook.getY(), hook.getZ(), 8, 0.2, 0.05, 0.2, 0.1);
         }
-        wander = Mth.sin(ticks * 0.21f) * 0.6f + Mth.sin(ticks * 0.07f) * 0.4f;
     }
 
     private boolean isWater(double x, double z) {
@@ -476,11 +486,8 @@ public final class FishFight {
 
 
     private void sendState(boolean active) {
-        byte warn = 0;
-        if (over > 0 || tension > SAFE_HIGH) warn = 1;
-        else if (slack > 0 || tension < 0.2f) warn = 2;
         PacketDistributor.sendToPlayer(player,
-                new FightStatePayload(active, tension, progress, lat / MAX_LAT, (byte) dashLat, warn));
+                new FightStatePayload(active, tension, progress, lat / MAX_LAT, (byte) phase, (byte) 0));
     }
 
     private EquipmentSlot slot() {

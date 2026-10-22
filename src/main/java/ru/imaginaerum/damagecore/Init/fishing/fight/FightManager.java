@@ -165,11 +165,15 @@ public final class FightManager {
     private static boolean isBiting(FishingHook hook) {
         return !hook.isRemoved() && ((FishingHookAccessor) hook).deepfishing$getNibble() > 0;
     }
-    public static void onKeys(ServerPlayer player, int side, boolean tighten, boolean slack) {
+    public static void onKeys(ServerPlayer player, int side, boolean tighten, boolean slack, boolean reel, boolean release) {
         FishFight fight = FIGHTS.get(player.getUUID());
-        if (fight != null) {
-            fight.setKeys(side, tighten, slack);
+        if (fight == null) return;
+        if (release) {
+            FIGHTS.remove(player.getUUID());
+            fight.release();                  // ЛКМ: отпустить рыбу
+            return;
         }
+        fight.setKeys(side, tighten, slack, reel);
     }
     static void releaseFish(Entity e) {
         LIVE_VISUALS.remove(e.getUUID());
@@ -224,9 +228,10 @@ public final class FightManager {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getItemStack().getItem() instanceof FishingRodItem)) return;
 
-        FishFight fight = FIGHTS.remove(player.getUUID());
+        FishFight fight = FIGHTS.get(player.getUUID());
         if (fight != null) {
-            fight.release(); // vanilla then pulls in an empty hook
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
             return;
         }
         FishingHook hook = player.fishing;
