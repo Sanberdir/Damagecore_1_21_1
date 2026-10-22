@@ -34,18 +34,19 @@ public final class FightKeys {
         int side = 0;
         boolean tighten = false, slack = false, reel = false;
         if (FightClient.active && mc.screen == null) {
-            boolean left = mc.options.keyLeft.isDown() || raw(mc, GLFW.GLFW_KEY_LEFT);
+            boolean left  = mc.options.keyLeft.isDown()  || raw(mc, GLFW.GLFW_KEY_LEFT);
             boolean right = mc.options.keyRight.isDown() || raw(mc, GLFW.GLFW_KEY_RIGHT);
-            side = (right ? 1 : 0) - (left ? 1 : 0);
-            tighten = mc.options.keyDown.isDown() || raw(mc, GLFW.GLFW_KEY_DOWN);
-            slack = mc.options.keyUp.isDown() || raw(mc, GLFW.GLFW_KEY_UP);
-            reel = mc.options.keyUse.isDown();
+            side    = (right ? 1 : 0) - (left ? 1 : 0);
+            tighten = mc.options.keyDown.isDown() || raw(mc, GLFW.GLFW_KEY_DOWN);   // S = натянуть/отклонить назад
+            slack   = mc.options.keyUp.isDown()   || raw(mc, GLFW.GLFW_KEY_UP);     // W = ослабить
+            reel    = mc.options.keyAttack.isDown();   // ЛКМ = крутить катушку
             if (mc.player.isSprinting()) mc.player.setSprinting(false);
         } else if (lastSide == 0 && !lastTighten && !lastSlack && !lastReel) {
             return;
         }
 
-        boolean changed = side != lastSide || tighten != lastTighten || slack != lastSlack || reel != lastReel;
+        boolean changed = side != lastSide || tighten != lastTighten
+                || slack != lastSlack || reel != lastReel;
         if (changed || ++resend >= 5) {
             resend = 0;
             lastSide = side;
@@ -56,15 +57,22 @@ public final class FightKeys {
         }
     }
 
-    /** Во время боя ЛКМ = отпустить, ПКМ = мотать (через опрос клавиши), остальные действия блокируются. */
+    /**
+     * Во время боя:
+     *  - ЛКМ (attack) - это reel; обрабатывается через keyAttack в onClientTick.
+     *  - ПКМ (use)   - отпустить рыбу (abort).
+     *  - Все остальные interaction-триггеры просто гасим, чтобы игрок не махал мечом.
+     */
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered e) {
         if (!FightClient.active) return;
         e.setCanceled(true);
         e.setSwingHand(false);
-        if (e.isAttack()) {
+        if (e.isUseItem()) {
+            // ПКМ = отпустить
             PacketDistributor.sendToServer(new FightKeysPayload((byte) 0, false, false, false, true));
         }
+        // ЛКМ не посылаем здесь - его обрабатывает onClientTick через keyAttack.
     }
 
     /** Во время боя WASD не двигает игрока, только сопротивляется рыбе. */
@@ -72,7 +80,7 @@ public final class FightKeys {
     public static void onMovementInput(MovementInputUpdateEvent event) {
         if (!FightClient.active) return;
         var in = event.getInput();
-        in.leftImpulse = 0;
+        in.leftImpulse  = 0;
         in.forwardImpulse = 0;
         in.up = false;
         in.down = false;
