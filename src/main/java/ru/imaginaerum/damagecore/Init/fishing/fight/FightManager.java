@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -34,17 +35,29 @@ import java.util.function.Consumer;
 @EventBusSubscriber(modid = Damagecore_1_21_1_neo.MODID)
 public final class FightManager {
     public static final String TAG = "deepfishing_visual";
-
+    static final double SHORE_DIST = 0.9;
     static final Map<UUID, FishFight> FIGHTS = new HashMap<>();
     static final Set<UUID> LIVE_VISUALS = new HashSet<>();
-
+    static final Set<UUID> REELING = new HashSet<>();
+    static final double REEL_PULL = 0.12;
+    static final int YANK_HOLD = 8; // тиков удержания ЛКМ для рывка
+    static final Set<UUID> ATTACK_HELD = new HashSet<>();
+    static final Map<UUID, Integer> YANK_TICKS = new HashMap<>();
     private FightManager() {}
+    static final Map<UUID, Long> CAST_LOCK = new HashMap<>();
 
+    public static void lockCast(ServerPlayer p) {
+        CAST_LOCK.put(p.getUUID(), p.serverLevel().getGameTime() + 8);
+    }
     public static void onInput(ServerPlayer player, float dx, float dy) {
         FishFight fight = FIGHTS.get(player.getUUID());
         if (fight != null) {
             fight.addInput(dx, dy);
         }
+    }
+    private static boolean waterAt(ServerLevel level, double x, double y, double z) {
+        return level.getFluidState(BlockPos.containing(x, y, z)).is(FluidTags.WATER)
+                || level.getFluidState(BlockPos.containing(x, y - 0.3, z)).is(FluidTags.WATER);
     }
     public static final class Approach {
         Entity fish;
@@ -71,7 +84,49 @@ public final class FightManager {
             a.fish.discard();
         }
     }
+    private static void tickReel(ServerPlayer player) {
+        UUID id = player.getUUID();
+        if (!REELING.contains(id) || FIGHTS.containsKey(id)) return;
 
+        FishingHook hook = player.fishing;
+        if (hook == null || hook.isRemoved() || hook.getHookedIn() != null || isBiting(hook)) return;
+
+        InteractionHand hand;
+        if (player.getMainHandItem().getItem() instanceof FishingRodItem) hand = InteractionHand.MAIN_HAND;
+        else if (player.getOffhandItem().getItem() instanceof FishingRodItem) hand = InteractionHand.OFF_HAND;
+        else return;
+
+        // в полёте не трогаем
+        if (!hook.isInWater() && !hook.onGround()) return;
+
+        double dx = player.getX() - hook.getX();
+        double dz = player.getZ() - hook.getZ();
+        double d = Math.sqrt(dx * dx + dz * dz);
+        if (d < 1.0E-4) d = 1.0E-4;
+        double nx = dx / d, nz = dz / d;
+
+        // берег: впереди по курсу к игроку воды уже нет (или поплавок лежит на суше),
+        // либо игрок и так рядом
+        ServerLevel level = player.serverLevel();
+        boolean shore = hook.onGround() && !hook.isInWater()
+                || !waterAt(level, hook.getX() + nx * SHORE_DIST, hook.getY(), hook.getZ() + nz * SHORE_DIST)
+                || d < 1.5;
+
+        if (shore) {
+            ItemStack rod = player.getItemInHand(hand);
+            REELING.remove(id);
+            dropApproach(id);
+            int dmg = hook.retrieve(rod);
+            FightManager.lockCast(player);
+            rod.hurtAndBreak(dmg, player, LivingEntity.getSlotForHand(hand));
+            level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.NEUTRAL, 1.0f, 1.0f);
+            return;
+        }
+
+        Vec3 v = hook.getDeltaMovement();
+        hook.setDeltaMovement(nx * REEL_PULL, v.y, nz * REEL_PULL);
+    }
     @javax.annotation.Nullable
     private static ItemStack itemOf(Entity e) {
         if (e instanceof Cod) return new ItemStack(Items.COD);
@@ -165,15 +220,48 @@ public final class FightManager {
     private static boolean isBiting(FishingHook hook) {
         return !hook.isRemoved() && ((FishingHookAccessor) hook).deepfishing$getNibble() > 0;
     }
-    public static void onKeys(ServerPlayer player, int side, boolean tighten, boolean slack, boolean reel, boolean release) {
-        FishFight fight = FIGHTS.get(player.getUUID());
-        if (fight == null) return;
-        if (release) {
-            FIGHTS.remove(player.getUUID());
-            fight.release();                  // ЛКМ: отпустить рыбу
+    public static void onKeys(ServerPlayer player, int side, boolean tighten, boolean slack, boolean reel, boolean attack) {
+        UUID id = player.getUUID();
+        FishFight fight = FIGHTS.get(id);
+        if (fight == null) {
+            if (reel) REELING.add(id); else REELING.remove(id);
+            if (attack) ATTACK_HELD.add(id);
+            else { ATTACK_HELD.remove(id); YANK_TICKS.remove(id); }
             return;
         }
-        fight.setKeys(side, tighten, slack, reel);
+        REELING.remove(id);
+        ATTACK_HELD.remove(id);
+        YANK_TICKS.remove(id);
+        fight.setKeys(side, tighten, slack, reel, attack);
+    }
+    private static void tickYank(ServerPlayer player) {
+        UUID id = player.getUUID();
+        if (!ATTACK_HELD.contains(id) || FIGHTS.containsKey(id)) { YANK_TICKS.remove(id); return; }
+
+        FishingHook hook = player.fishing;
+        // во время поклёвки рывок не работает: там начинается бой по ПКМ
+        if (hook == null || hook.isRemoved() || isBiting(hook)) { YANK_TICKS.remove(id); return; }
+
+        int t = YANK_TICKS.merge(id, 1, Integer::sum);
+        if (t < YANK_HOLD) return;
+
+        InteractionHand hand;
+        if (player.getMainHandItem().getItem() instanceof FishingRodItem) hand = InteractionHand.MAIN_HAND;
+        else if (player.getOffhandItem().getItem() instanceof FishingRodItem) hand = InteractionHand.OFF_HAND;
+        else { YANK_TICKS.remove(id); return; }
+
+        YANK_TICKS.remove(id);
+        ATTACK_HELD.remove(id);
+        REELING.remove(id);
+        dropApproach(id);
+
+        ServerLevel level = player.serverLevel();
+        ItemStack rod = player.getItemInHand(hand);
+        int dmg = hook.retrieve(rod);
+        lockCast(player);
+        rod.hurtAndBreak(dmg, player, LivingEntity.getSlotForHand(hand));
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.NEUTRAL, 1.0f, 1.6f);
     }
     static void releaseFish(Entity e) {
         LIVE_VISUALS.remove(e.getUUID());
@@ -187,7 +275,10 @@ public final class FightManager {
     public static void onServerTick(ServerTickEvent.Post event) {
         for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
             tickApproach(p);
+            tickReel(p);
+            tickYank(p);
         }
+
         Iterator<FishFight> it = FIGHTS.values().iterator();
         while (it.hasNext()) {
             if (!it.next().tick()) {
@@ -227,7 +318,15 @@ public final class FightManager {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!(event.getItemStack().getItem() instanceof FishingRodItem)) return;
-
+        Long until = CAST_LOCK.get(player.getUUID());
+        if (until != null) {
+            if (player.serverLevel().getGameTime() < until) {
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.FAIL);
+                return;
+            }
+            CAST_LOCK.remove(player.getUUID());
+        }
         FishFight fight = FIGHTS.get(player.getUUID());
         if (fight != null) {
             event.setCanceled(true);
@@ -246,11 +345,19 @@ public final class FightManager {
                 APPROACH.put(player.getUUID(), pre);
                 dropApproach(player.getUUID());
             }
+        } else if (hook != null && hook.getHookedIn() == null) {
+            // клёва нет: ванильный мгновенный вытяг отменяем, подтягивает tickReel
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
         }
     }
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        UUID pid = event.getEntity().getUUID();
+        REELING.remove(pid);
+        ATTACK_HELD.remove(pid);
+        YANK_TICKS.remove(pid);
         FishFight fight = FIGHTS.remove(event.getEntity().getUUID());
         if (fight != null) fight.abort();
         for (UUID id : new java.util.ArrayList<>(APPROACH.keySet())) dropApproach(id);

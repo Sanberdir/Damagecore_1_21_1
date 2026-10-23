@@ -90,6 +90,8 @@
   "damagecore.skilltree.node.economical_enchantment": "Экономичное зачарование",
   "damagecore.skilltree.node.excess": "Переизбыток",
 
+  "damagecore.skilltree.node.gathering_experience": "Опыт собирательства",
+
   "damagecore.skilltree.node.alchemy_experience.desc": "Игрок получает опыт за сваренное зелье",
   "damagecore.skilltree.node.swift_brewing.desc": "Повышает скорость производительности зельеварки",
   "damagecore.skilltree.node.potion_master.desc": "Увеличивает количество зелий в одной ячейке",

@@ -1,0 +1,12 @@
+{
+  "tabIcon": "minecraft:wheat",
+  "nodes": [
+    {
+      "id": "gathering_experience",
+      "item": "minecraft:wheat",
+      "parents": ["start"],
+      "gridX": 0,
+      "gridY": 0
+    }
+  ]
+}

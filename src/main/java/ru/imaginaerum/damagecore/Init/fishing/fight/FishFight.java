@@ -69,7 +69,14 @@ public final class FishFight {
     static final int PHASE_WARN     = 1;
     static final int PHASE_STRUGGLE = 2;
     static final int PHASE_WINDOW   = 3;
-
+    static final int   TAP_TICKS      = 7;      // ЛКМ короче этого = тап (рывок)
+    static final int   RELEASE_HOLD   = 30;     // удержание ЛКМ = отпустить (1,5 с)
+    static final int   JERK_TICKS     = 5;      // сколько тиков длится рывок
+    static final float JERK_SPEED     = 0.35f;  // сила рывка (блоков/тик в расчёте)
+    static final int   JERK_COOLDOWN  = 15;     // пауза между рывками
+    static final float JERK_STRAIN    = 0.30f;  // рывок в борьбе резко добавляет натяжение
+    private boolean keyAttack;
+    private int attackTicks, jerkTicks, jerkCd;
     static final int   WARN_TICKS        = 10;
     static final int   DASH_TICKS        = 35;
     static final int   DASHES_PER_STRUGGLE = 3;
@@ -108,7 +115,10 @@ public final class FishFight {
 
     private double dist;
     private float distVel;
-
+    static final float STRAIN_RISE = 0.025f;  // за тик, x strength. 0.025 = ~2 с для обычной рыбы
+    static final float STRAIN_FALL = 0.06f;   // за тик, как быстро отпускает
+    static final double SHAKE_AMP  = 0.18;
+    private float strain;
     private int dashLat, dashOut;
     private float dashPower;
 
@@ -123,11 +133,12 @@ public final class FishFight {
     private double mvx, mvz;
     private boolean yawInit;
 
-    public void setKeys(int side, boolean tighten, boolean slack, boolean reel) {
+    public void setKeys(int side, boolean tighten, boolean slack, boolean reel, boolean attack) {
         this.keySide    = Mth.clamp(side, -1, 1);
         this.keyTighten = tighten;
         this.keySlack   = slack && !tighten;
         this.keyReel    = reel;
+        this.keyAttack  = attack;
     }
 
     private FishFight(ServerPlayer player, FishingHook hook, InteractionHand hand, List<ItemStack> loot,
@@ -260,7 +271,7 @@ public final class FishFight {
 
         if (struggling) struggleTicks++;
 
-        // ── countering: сколько осей отклонено правильно ──
+        // ── countering ──
         int axes = (dashLat != 0 ? 1 : 0) + (dashOut != 0 ? 1 : 0);
         int counteredAxes = 0;
         if (struggling) {
@@ -283,12 +294,48 @@ public final class FishFight {
             stamina = Mth.clamp(stamina, 0f, 1f);
         }
 
+        boolean reeling = keyReel && ticks > 10;
+
+        // ── ЛКМ: тап = рывок, удержание = отпустить рыбу ──
+        if (jerkCd > 0) jerkCd--;
+        if (keyAttack) {
+            attackTicks++;
+            if (attackTicks >= RELEASE_HOLD) {
+                release();
+                return false;
+            }
+            // звук «лесками травим», растёт к моменту отпускания
+            if (attackTicks > TAP_TICKS && attackTicks % 6 == 0) {
+                level.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
+                        SoundEvents.TRIPWIRE_CLICK_OFF, SoundSource.NEUTRAL,
+                        0.35f, 0.8f + 0.8f * attackTicks / RELEASE_HOLD);
+            }
+        } else {
+            if (attackTicks > 0 && attackTicks <= TAP_TICKS && jerkCd == 0) {
+                jerkTicks = JERK_TICKS;
+                jerkCd = JERK_COOLDOWN;
+                if (struggling) strain += JERK_STRAIN;     // рывок против бегущей рыбы опасен
+                level.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
+                        SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.NEUTRAL, 0.5f, 1.5f);
+            }
+            attackTicks = 0;
+        }
+
+        // ── strain ──
+        boolean straining = struggling && reeling && struggleTicks > REEL_GRACE;
+        if (straining) {
+            strain += STRAIN_RISE * strength;
+        } else {
+            strain -= STRAIN_FALL;
+        }
+        strain = Mth.clamp(strain, 0f, 1f);
+
         // ── tension ──
         float tTarget;
         if (struggling) {
-            tTarget = 0.55f + 0.40f * (1f - counterFrac);      // counter -> 0.55, нет -> 0.95
+            tTarget = 0.55f + 0.40f * (1f - counterFrac);
             if (keySlack) tTarget -= 0.20f;
-            if (keyReel)  tTarget += 0.40f;                     // ОПАСНО
+            if (keyReel)  tTarget += 0.40f * strain;
         } else if (warn) {
             tTarget = 0.50f;
             if (keyReel) tTarget += 0.10f;
@@ -298,16 +345,15 @@ public final class FishFight {
         }
         tension = Mth.clamp(tension + (tTarget - tension) * 0.25f, 0f, 1f);
 
-        boolean reeling = keyReel && ticks > 10;
-
         // ── snap ──
-        if (struggling && reeling && struggleTicks > REEL_GRACE) {
-            if (strength >= 1.3f) { snap(); return false; }    // крупная — сразу
-            over += 10;
-        } else {
-            over = tension > SNAP_LEVEL ? over + 1 : Math.max(0, over - 2);
+        over = tension > SNAP_LEVEL ? over + 1 : Math.max(0, over - 2);
+        if (strain >= 1f || over >= SNAP_TICKS) { snap(); return false; }
+
+        if (strain > 0.2f && ticks % Math.max(2, (int) (8 - strain * 6)) == 0) {
+            level.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
+                    SoundEvents.TRIPWIRE_CLICK_ON, SoundSource.NEUTRAL,
+                    0.4f + 0.4f * strain, 0.7f + 0.9f * strain);
         }
-        if (over >= SNAP_TICKS) { snap(); return false; }
 
         // ── fish movement ──
         Vec3 o = player.position();
@@ -316,8 +362,8 @@ public final class FishFight {
 
         float vLat = 0f, vOut = 0f;
         if (struggling && dashLat != 0) {
-            float slow = 1f - 0.85f * counterFrac;            // counter -> 0.15, нет -> 1.0
-            if (counteredAxes == 0) slow = 1.20f;             // поддался — рыба быстрее
+            float slow = 1f - 0.85f * counterFrac;
+            if (counteredAxes == 0) slow = 1.20f;
             vLat = dashLat * baseSpeed * slow;
         }
         if (struggling && dashOut != 0) {
@@ -326,23 +372,27 @@ public final class FishFight {
             vOut = dashOut * baseSpeed * 0.5f * slow;
         }
 
-        // reel: только в окне/варне безопасно; в struggle — snap (выше)
+        // ПКМ: плавная подмотка
         if (reeling) {
             if (window || passive)      vOut -= REEL_SPEED;
             else if (warn)              vOut -= REEL_SPEED * 0.5f;
             else if (struggling)        vOut -= REEL_SPEED * 0.15f;
         }
 
-        // ВЕСТИ РЫБУ: только когда она не сопротивляется (окно / пассивный груз).
-        // A/D — рулим в сторону, S — подтягиваем, W — травим. Медленнее ЛКМ,
-        // но можно целиться и вытягивать без катушки.
-        if (window || passive) {
-            if (keySide != 0)  vLat += keySide * 0.04f;   // боковое руление
-            if (keyTighten)    vOut -= 0.05f;             // S — подтянуть
-            if (keySlack)      vOut += 0.03f;             // W — отпустить
+        // ЛКМ: резкий рывок. В окне/с пассивным грузом тянет сильно, в борьбе почти нет
+        if (jerkTicks > 0) {
+            jerkTicks--;
+            if (window || passive)  vOut -= JERK_SPEED;
+            else if (warn)          vOut -= JERK_SPEED * 0.5f;
+            else                    vOut -= JERK_SPEED * 0.2f;
         }
 
-        if (keySlack && (struggling || warn)) vOut += 0.03f;   // slack в борьбе/замахе
+        // A/D руление и W слабина; S рыбу не подтягивает
+        if (window || passive) {
+            if (keySide != 0)  vLat += keySide * 0.04f;
+            if (keySlack)      vOut += 0.03f;
+        }
+        if (keySlack && (struggling || warn)) vOut += 0.03f;
 
         latVel  = latVel  * 0.65f + vLat  * 0.35f;
         distVel = distVel * 0.65f + vOut  * 0.35f;
@@ -380,6 +430,19 @@ public final class FishFight {
                 ? 0.10 * Math.abs(Mth.sin(ticks * 0.8f))
                 : 0.03 * Math.abs(Mth.sin(ticks * 0.3f));
         double y = baseY + (tension - 0.4f) * 0.15 - dip;
+
+        if (strain > 0.1f) {
+            RandomSource rs = player.getRandom();
+            double amp = SHAKE_AMP * strain * strain;
+            x += (rs.nextDouble() - 0.5) * 2 * amp;
+            z += (rs.nextDouble() - 0.5) * 2 * amp;
+            y += (rs.nextDouble() - 0.5) * amp * 0.5;
+            if (ticks % 3 == 0) {
+                level.sendParticles(ParticleTypes.FISHING, hook.getX(), hook.getY(), hook.getZ(),
+                        2, 0.15, 0.02, 0.15, 0.02);
+            }
+        }
+
         hook.setPos(x, y, z);
         hook.setDeltaMovement(Vec3.ZERO);
         hookAcc.deepfishing$setNibble(20);
@@ -523,7 +586,7 @@ public final class FishFight {
 
     private void sendState(boolean active) {
         PacketDistributor.sendToPlayer(player,
-                new FightStatePayload(active, tension, progress, lat / MAX_LAT,
+                new FightStatePayload(active, Math.max(tension, strain), progress, lat / MAX_LAT,
                         (byte) phase, (byte) (phase == PHASE_WARN ? 1 : 0)));
     }
 
@@ -590,6 +653,7 @@ public final class FishFight {
     }
 
     private void cleanup(boolean keepFish) {
+        FightManager.lockCast(player);
         if (visual != null) {
             FightManager.LIVE_VISUALS.remove(visual.getUUID());
             boolean keep = real && keepFish && !visual.isRemoved();

@@ -7,7 +7,7 @@ import java.util.*;
 public final class TreeCategoryManager {
     private TreeCategoryManager() {}
 
-    public static final int CATEGORY_COUNT = 3;
+    public static final int CATEGORY_COUNT = 4;
 
     // category index -> список ИМЁН ФАЙЛОВ деревьев (как в /skill_tree/*.json), а не числовых id
     private static final Map<Integer, List<String>> CATEGORY_FILES = new HashMap<>();
@@ -19,6 +19,7 @@ public final class TreeCategoryManager {
         CATEGORY_FILES.put(0, new ArrayList<>(List.of("alchemy.json")));
         CATEGORY_FILES.put(1, new ArrayList<>(List.of("blocking.json", "shooting.json")));
         CATEGORY_FILES.put(2, new ArrayList<>(List.of("enchantment.json")));
+        CATEGORY_FILES.put(3, new ArrayList<>(List.of("gathering.json")));
     }
 
     public static void setCategoryFiles(int category, List<String> fileNames) {

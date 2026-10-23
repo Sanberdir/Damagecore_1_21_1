@@ -93,6 +93,9 @@
   "damagecore.skilltree.node.economical_enchantment": "Economical Enchantment",
   "damagecore.skilltree.node.excess": "Excess",
 
+  "damagecore.skilltree.node.gathering_experience": "Gathering Experience",
+
+
   "damagecore.skilltree.node.alchemy_experience.desc": "Player gains experience for brewing potions",
   "damagecore.skilltree.node.swift_brewing.desc": "Increases potion brewing speed",
   "damagecore.skilltree.node.potion_master.desc": "Increases potion yield per craft",
