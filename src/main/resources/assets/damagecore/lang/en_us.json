@@ -7,6 +7,9 @@
   "damagecore.attack_speed": "Attack speed: %s",
   "damagecore.damage.fire": "Fire damage: %s",
 
+  "message.damagecore.enchanting_locked": "You don't know how to use this",
+
+
   "damagecore.characteristics": "Characteristics: ",
 
   "damage_type.bludgeoning": "Bludgeoning damage",

@@ -85,11 +85,6 @@ public final class FightClient {
         }
     }
 
-    public static void addMouse(double dx, double dy) {
-        pendingDx += dx;
-        pendingDy += dy;
-    }
-
     public static double[] consumeMouse() {
         double[] r = {pendingDx, pendingDy};
         pendingDx = 0;

@@ -38,6 +38,11 @@ public final class FightKeys {
         if (mc.player == null) { hadRod = false; blockCast = false; return; }
 
         boolean locked = rodLocked(mc);
+        // бой/зацеп не может идти без поплавка: если сервер не прислал active=false, сбрасываем сами
+        if (FightClient.active && mc.player.fishing == null) {
+            FightClient.reset();
+            locked = rodLocked(mc);
+        }
         if (mc.player.fishing == null && !FightClient.active) {
             attackOk = !mc.options.keyAttack.isDown();
         }
@@ -100,6 +105,8 @@ public final class FightKeys {
             e.setSwingHand(false);
             return;
         }
+        // подмотка/подсечка: клик уходит на сервер, но рука не машет
+
         if (!FightClient.active) return;
         e.setCanceled(true);
         e.setSwingHand(false);

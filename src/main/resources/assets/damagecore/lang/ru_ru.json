@@ -6,6 +6,8 @@
   "damagecore.damage.fire": "Огненный урон: %s",
   "damagecore.attack_speed": "Скорость атаки: %s",
 
+  "message.damagecore.enchanting_locked": "Вы не знаете, как этим пользоваться",
+
   "damage_type.bludgeoning": "Дробящий урон",
   "damage_type.piercing": "Колющий урон",
   "damage_type.slashing": "Режущий урон",
