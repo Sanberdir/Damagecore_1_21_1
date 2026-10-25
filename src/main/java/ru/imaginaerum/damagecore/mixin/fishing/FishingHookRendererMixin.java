@@ -31,12 +31,12 @@ public abstract class FishingHookRendererMixin {
     private static final float DF_VIB_LIN  = 0.030f;
     private static final float DF_VIB_QUAD = 0.080f;
     private static final float DF_VIB_FREQ = 0.036f;   // ≈ 5,7 Гц
-
+    private static final float DF_ATTACH = 0.05f;
     private static boolean dfUnder;
     private static float dfTaut;        // натянутость 0..1 для текущей лески
     private static float dfTautSmooth;  // сглаженное значение для лески игрока
     private static float dfSurfRel;     // высота поверхности относительно точки привязки лески
-
+    private static long dfLastMs;
     @Shadow
     private static void stringVertex(float x, float y, float z, VertexConsumer consumer,
                                      PoseStack.Pose pose, float frac, float nextFrac) {
@@ -51,9 +51,17 @@ public abstract class FishingHookRendererMixin {
 
         // натянутость: только у лески самого игрока и пока идёт бой
         if (hook.getPlayerOwner() == mc.player) {
-            float target = FightClient.active ? Mth.clamp(FightClient.tension, 0f, 1f) : 0f;
-            dfTautSmooth += (target - dfTautSmooth) * 0.2f;
-            if (dfTautSmooth < 0.01f) dfTautSmooth = 0f;
+            long now = net.minecraft.Util.getMillis();
+            float dt = dfLastMs == 0 ? 0.016f : Math.min(0.1f, (now - dfLastMs) / 1000f);
+            dfLastMs = now;
+
+            float raw = FightClient.active ? Mth.clamp(FightClient.tension, 0f, 1f) : 0f;
+            // мёртвая зона: до 0.35 форма не меняется, к 0.9 леска полностью выпрямлена
+            float target = dfSmoothstep(0.35f, 0.9f, raw);
+            // нарастает за ~0,6 с, отпускает ещoe медленнее (~1 с)
+            float rate = target > dfTautSmooth ? 1.6f : 1.0f;
+            dfTautSmooth += (target - dfTautSmooth) * Math.min(1f, rate * dt);
+            if (dfTautSmooth < 0.005f) dfTautSmooth = 0f;
             dfTaut = dfTautSmooth;
         } else {
             dfTaut = 0f;
@@ -62,7 +70,10 @@ public abstract class FishingHookRendererMixin {
         dfUnder = false;
         Level level = hook.level();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos(hook.getX(), hook.getY(), hook.getZ());
-        if (!level.getFluidState(p).is(FluidTags.WATER)) return;
+        if (!level.getFluidState(p).is(FluidTags.WATER)) {
+            p.move(0, -1, 0);
+            if (!level.getFluidState(p).is(FluidTags.WATER)) return;
+        }
 
         for (int i = 0; i < 64 && level.getFluidState(p.above()).is(FluidTags.WATER); i++) {
             p.move(0, 1, 0);
@@ -73,12 +84,13 @@ public abstract class FishingHookRendererMixin {
         // та же точка, что в ванили: lerp(hook.y) + 0.25
         double originY = Mth.lerp(pt, hook.yo, hook.getY()) + 0.25;
         float rel = (float) (surfaceY - originY);
-        if (rel > 0.15f) {
-            dfUnder = true;
-            dfSurfRel = rel;
-        }
+        dfUnder = true;
+        dfSurfRel = Math.max(rel, 0.15f);   // у поверхности держим минимальный вертикальный участок, иначе изгиб дёргается от покачивания поплавка
     }
-
+    private static float dfSmoothstep(float a, float b, float x) {
+        float t = Mth.clamp((x - a) / (b - a), 0f, 1f);
+        return t * t * (3f - 2f * t);
+    }
     @Inject(method = "render(Lnet/minecraft/world/entity/projectile/FishingHook;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("RETURN"))
     private void deepfishing$tail(FishingHook hook, float yaw, float pt, PoseStack ps,
@@ -92,10 +104,6 @@ public abstract class FishingHookRendererMixin {
                     target = "Lnet/minecraft/client/renderer/entity/FishingHookRenderer;stringVertex(FFFLcom/mojang/blaze3d/vertex/VertexConsumer;Lcom/mojang/blaze3d/vertex/PoseStack$Pose;FF)V"))
     private static void deepfishing$string(float x, float y, float z, VertexConsumer consumer,
                                            PoseStack.Pose pose, float frac, float nextFrac) {
-        if (!dfUnder && dfTaut <= 0f) {
-            stringVertex(x, y, z, consumer, pose, frac, nextFrac);
-            return;
-        }
         float[] a = dfPoint(x, y, z, frac);
         float[] b = dfPoint(x, y, z, nextFrac);
         float nx = b[0] - a[0], ny = b[1] - a[1], nz = b[2] - a[2];
@@ -152,6 +160,9 @@ public abstract class FishingHookRendererMixin {
             px += hx * wave2 * amp * 0.7f;
             pz += hz * wave2 * amp * 0.7f;
         }
+        // начало лески чуть утоплено в поплавок, смещение гаснет за первую шестую часть лески
+        float a = Math.max(0f, 1f - u * 6f);
+        py -= DF_ATTACH * a * a;
         // страховка: леска никогда не уходит выше руки/поверхности (и NaN не пропускаем)
         float maxY = Math.max(y, dfUnder ? dfSurfRel : y) + 0.25f + 0.05f;
         if (!Float.isFinite(py) || py > maxY) py = Math.min(maxY, Float.isFinite(py) ? py : maxY);
