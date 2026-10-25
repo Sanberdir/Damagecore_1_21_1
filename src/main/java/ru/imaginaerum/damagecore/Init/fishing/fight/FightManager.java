@@ -362,7 +362,8 @@ public final class FightManager {
             int steps = Math.max(1, a.wait - a.age++);
             double fx = a.fish.getX(), fy = a.fish.getY(), fz = a.fish.getZ();
             double dx = (hook.getX() - fx) / steps;
-            double dy = (hook.getY() - 0.28 - fy) / steps;
+            double targetY = approachY(player.serverLevel(), hook, a.fish);
+            double dy = (targetY - fy) / steps;
             double dz = (hook.getZ() - fz) / steps;
             if (dx * dx + dz * dz > 1.0E-6) {
                 a.yaw = (float) (Mth.atan2(-dx, dz) * 180.0 / Math.PI);
@@ -384,6 +385,12 @@ public final class FightManager {
             if (nibble > 0) acc.deepfishing$setNibble(0);
         } else {
             ServerLevel lv = player.serverLevel();
+
+            // рыба во время клёва держится под поплавком, под водой
+            double ty = approachY(lv, hook, a.fish);
+            a.fish.setPos(hook.getX(), ty, hook.getZ());
+            a.fish.setDeltaMovement(Vec3.ZERO);
+
             if (a.biteAge == 0) {
                 a.window = BITE_WINDOW_MIN + player.getRandom().nextInt(BITE_WINDOW_VAR + 1);
                 // момент поклёвки: поплавок резко ныряет, плеск и брызги — «подсекай!»
@@ -410,7 +417,18 @@ public final class FightManager {
             }
         }
     }
-
+    /** Высота, на которой рыба подплывает к крючку: целиком под водой, верх хитбокса ниже поверхности. */
+    private static double approachY(ServerLevel level, FishingHook hook, Entity fish) {
+        BlockPos.MutableBlockPos p = hook.blockPosition().mutable();
+        if (!level.getFluidState(p).is(FluidTags.WATER)) {
+            p.move(0, -1, 0);
+            if (!level.getFluidState(p).is(FluidTags.WATER)) return hook.getY() - 0.28;
+        }
+        for (int i = 0; i < 64 && level.getFluidState(p.above()).is(FluidTags.WATER); i++) p.move(0, 1, 0);
+        double surf = p.getY() + level.getFluidState(p).getHeight(level, p);
+        // верх хитбокса на 0.25 ниже поверхности
+        return surf - fish.getBbHeight() - 0.25;
+    }
     /** Пустая подтяжка: просто вытаскиваем крючок, без добычи. */
     static void retrieve(ServerPlayer player, FishingHook hook, InteractionHand hand, float pitch) {
         ServerLevel level = player.serverLevel();

@@ -6,6 +6,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightInputPayload;
@@ -28,7 +29,16 @@ public final class ClientEvents {
             double[] m = FightClient.consumeMouse();
             PacketDistributor.sendToServer(new FightInputPayload((float) m[0], (float) m[1]));
         }
-
+        /** Рыба на крючке не должна выходить из воды: при отрисовке прижимаем её под поверхность. */
+        @SubscribeEvent
+        public static void onRenderFish(RenderLivingEvent.Pre<?, ?> e) {
+            var en = e.getEntity();
+            double top = FightClient.maxTopY(en);
+            if (Double.isNaN(top)) top = FightClient.maxTopYNearHook(en);
+            if (Double.isNaN(top)) return;
+            double over = (en.getY() + en.getBbHeight()) - top;
+            if (over > 0) e.getPoseStack().translate(0.0, -over, 0.0);
+        }
         @SubscribeEvent
         public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
             FightClient.reset();

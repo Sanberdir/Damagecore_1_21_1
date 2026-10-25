@@ -15,6 +15,14 @@ public class DCSoundEvents {
     // В NeoForge используется DeferredHolder вместо RegistryObject
     public static final DeferredHolder<SoundEvent, SoundEvent> LEARNING_SKILL =
             registerSoundEvents("learning_skill");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TENSION_0 =
+            registerSoundEvents("tension_0");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TENSION_1 =
+            registerSoundEvents("tension_1");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TENSION_2 =
+            registerSoundEvents("tension_2");
+    public static final DeferredHolder<SoundEvent, SoundEvent> TENSION_3 =
+            registerSoundEvents("tension_3");
 
     private static DeferredHolder<SoundEvent, SoundEvent> registerSoundEvents(String name) {
         // Ньюанс 1.21+: 'new ResourceLocation()' теперь приватный, используем .fromNamespaceAndPath()

@@ -23,6 +23,7 @@
     "damage_poison_mixins.PoisonEffectsMixin",
     "damage_poison_mixins.PoisonTickMixin",
     "fishing.AbstractSchoolingFishMixin",
+    "fishing.EntityWetMixin",
     "fishing.FishingHookAccessor",
     "fishing.FishingHookBiteMixin",
     "fishing.LivingEntityRodSwingMixin",

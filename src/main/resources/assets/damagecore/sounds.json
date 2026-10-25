@@ -6,5 +6,37 @@
         "name": "damagecore:learning_skill"
       }
     ]
+  },
+  "tension_0": {
+    "subtitle": "sounds.damagecore.tension_0",
+    "sounds": [
+      {
+        "name": "damagecore:tension_0"
+      }
+    ]
+  },
+  "tension_1": {
+    "subtitle": "sounds.damagecore.tension_1",
+    "sounds": [
+      {
+        "name": "damagecore:tension_1"
+      }
+    ]
+  },
+  "tension_2": {
+    "subtitle": "sounds.damagecore.tension_2",
+    "sounds": [
+      {
+        "name": "damagecore:tension_2"
+      }
+    ]
+  },
+  "tension_3": {
+    "subtitle": "sounds.damagecore.tension_3",
+    "sounds": [
+      {
+        "name": "damagecore:tension_3"
+      }
+    ]
   }
 }

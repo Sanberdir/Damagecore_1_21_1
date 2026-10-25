@@ -7,6 +7,7 @@
       "parents": ["start"],
       "gridX": 0,
       "gridY": 0,
+      "requiredTreeLevel": 5,
       "xpCost": 2
     },
     {

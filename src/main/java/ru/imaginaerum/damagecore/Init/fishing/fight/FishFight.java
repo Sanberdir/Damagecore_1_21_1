@@ -36,6 +36,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightPosPayload;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
 import ru.imaginaerum.damagecore.mixin.fishing.FishingHookAccessor;
+import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -94,7 +95,8 @@ public final class FishFight {
     static final float TIRED_THRESHOLD   = 0.35f;
     static final float STAMINA_PER_TICK  = 0.008f;   // при полном counter
     static final int   REEL_GRACE        = 5;        // тиков после старта struggle, когда reel не рвёт
-
+    static final float[] CREAK_AT = {0.40f, 0.58f, 0.74f, 0.90f};   // четыре ступени
+    private int creakStage;
     private final ServerPlayer player;
     private final ServerLevel level;
     private final FishingHook hook;
@@ -374,13 +376,15 @@ public final class FishFight {
         over = (tension > SNAP_LEVEL && !grace) ? over + 1 : Math.max(0, over - 2);
         if (strain >= 1f || over >= SNAP_TICKS) { snap(); return false; }
 
-        float stress = Math.max(strain, reelLoad);
-        if (stress > 0.2f && ticks % Math.max(2, (int) (8 - stress * 6)) == 0) {
-            level.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
-                    SoundEvents.TRIPWIRE_CLICK_ON, SoundSource.NEUTRAL,
-                    0.4f + 0.4f * stress, 0.7f + 0.9f * stress);
+        // звук зарядки арбалета, пока леска натягивается: по ступеням вверх, при ослаблении сбрасывается
+        float load = Math.max(tension, Math.max(strain, reelLoad));
+        while (creakStage < CREAK_AT.length && load >= CREAK_AT[creakStage]) {
+            playCreak(creakStage);
+            creakStage++;
         }
-
+        while (creakStage > 0 && load < CREAK_AT[creakStage - 1] - 0.12f) {
+            creakStage--;   // запас 0.12, чтобы звук не дребезжал на границе
+        }
         // ── fish movement ──
         Vec3 o = player.position();
         float fishPower = dashPower * strength * ramp * shore
@@ -422,25 +426,28 @@ public final class FishFight {
         float  nl = lat  + latVel;
         double nd = dist + distVel;
 
-        // при подмотке рыба тянется строго к игроку: боковое смещение гасим
         boolean pulling = reeling || jerkTicks > 0;
-        if (!struggling || pulling) {
-            float k = pulling ? (struggling ? 0.03f : 0.10f) : 0.04f;
-            nl -= nl * k;
+        if (pulling) {
+            // подтягиваем вдоль линии к игроку, но боковое смещение почти не трогаем
+            nl -= nl * (struggling ? 0.01f : 0.02f);
         }
 
         if (!waterAt(o, nd, nl)) {
+            // победа только если рыба реально рядом с игроком, а не просто упёрлась в берег
+            double real = Math.sqrt(nd * nd + (double) nl * nl);
+            if (distVel < 0 && real < endDist + 2.5) { win(); return false; }
+
             boolean dOk = waterAt(o, nd, lat);
             boolean lOk = waterAt(o, dist, nl);
             if (dOk) {
                 nl = lat; latVel *= -0.4f;
             } else if (lOk) {
-                if (distVel < 0) { win(); return false; }
                 nd = dist; distVel *= -0.3f;
             } else {
-                if (distVel < 0) { win(); return false; }
                 nl = lat; nd = dist;
                 latVel *= -0.4f; distVel *= -0.3f;
+                // упёрлись в берег: плавно уходим к оси, если там вода
+                if (waterAt(o, dist, lat * 0.9f)) nl = lat * 0.9f;
             }
         }
         lat = nl;
@@ -564,7 +571,16 @@ public final class FishFight {
         level.sendParticles(ParticleTypes.SPLASH,
                 hook.getX(), hook.getY(), hook.getZ(), 12, 0.3, 0.05, 0.3, 0.1);
     }
-
+    private void playCreak(int stage) {
+        var snd = switch (stage) {
+            case 0 -> DCSoundEvents.TENSION_0;
+            case 1 -> DCSoundEvents.TENSION_1;
+            case 2 -> DCSoundEvents.TENSION_2;
+            default -> DCSoundEvents.TENSION_3;
+        };
+        level.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
+                snd, SoundSource.NEUTRAL, 0.5f + 0.1f * stage, 0.85f + 0.1f * stage);
+    }
     private void playWarnCue() {
         level.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
                 SoundEvents.TRIPWIRE_CLICK_ON, SoundSource.NEUTRAL, 0.5f, 1.6f);
