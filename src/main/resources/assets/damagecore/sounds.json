@@ -38,5 +38,22 @@
         "name": "damagecore:tension_3"
       }
     ]
+  },
+  "reel": {
+    "subtitle": "sounds.damagecore.reel",
+    "sounds": [
+      {
+        "name": "damagecore:reel_0"
+      },
+      {
+        "name": "damagecore:reel_1"
+      },
+      {
+        "name": "damagecore:reel_2"
+      },
+      {
+        "name": "damagecore:reel_3"
+      }
+    ]
   }
 }

@@ -6,8 +6,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -26,9 +28,16 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.Init.fishing.net.FightPosPayload;
+import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
+import ru.imaginaerum.damagecore.Init.items.DCItems;
+import ru.imaginaerum.damagecore.entity.ModEntities;
+import ru.imaginaerum.damagecore.entity.sunken_lockbox.SunkenLockboxEntity;
 import ru.imaginaerum.damagecore.mixin.fishing.FishingHookAccessor;
+import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -53,25 +62,49 @@ public final class FightManager {
     static final double SCARE_PUSH = 0.22;         // физический толчок рыбы прочь
     private record Flee(Vec3 to, long until) {}
     static final Map<UUID, Flee> FLEEING = new HashMap<>();
-
+    static final Map<UUID, Long> REEL_SND = new HashMap<>();
+    static final int REEL_SND_INTERVAL = 4;   // тиков между повторами звука
     static final int BITE_COOLDOWN_TICKS = 60;     // пауза после упущенной рыбы
     static final int BITE_WINDOW_MIN = 20;         // ваниль: 20
     static final int BITE_WINDOW_VAR = 20;         // ваниль: 20 (получается 20–40 тиков)
     static final Map<UUID, Long> BITE_COOLDOWN = new HashMap<>();
-
+    static final float CHEST_CHANCE = 0.15f;   // 15% забросов
+    static final float CHEST_LUCK_BONUS = 0.05f;  // прибавка за каждый уровень Морской удачи
+    static final float CHEST_CHANCE_MAX = 0.40f;  // потолок
+    static final Map<UUID, Integer> CHEST_ROLLED = new HashMap<>();   // id крючка, для которого уже кидали шанс
+    static final boolean CHEST_OCEAN_ONLY = false;  // true, если нужен только океан
+    static final int CHEST_LINGER = 25;   // пауза у крючка перед клёвом, ~1,2 с
+    static final double CHEST_PULL        = 0.035;  // как скорость подплывания, ~0,7 блока/с
+    static final float  CHEST_LOAD_RISE   = 0.010f; // за тик при зажатом ПКМ, ~5 с до предела
+    static final float  CHEST_LOAD_FALL   = 0.020f; // за тик, когда отпустил
+    static final float  CHEST_SNAP_LEVEL  = 0.92f;
+    static final int    CHEST_SNAP_TICKS  = 15;     // тиков выше предела до обрыва
     private FightManager() {}
+    static void reelSound(ServerPlayer p, float pitch) {
+        long now = p.serverLevel().getGameTime();
+        Long last = REEL_SND.get(p.getUUID());
+        if (last != null && now - last < REEL_SND_INTERVAL) return;
+        REEL_SND.put(p.getUUID(), now);
+        p.serverLevel().playSound(null, p.getX(), p.getY(), p.getZ(),
+                DCSoundEvents.REEL.get(), SoundSource.PLAYERS, 0.6f, pitch);
+    }
 
     public static void lockCast(ServerPlayer p) {
         CAST_LOCK.put(p.getUUID(), p.serverLevel().getGameTime() + 8);
     }
-
+    private static void sendChestState(ServerPlayer p, boolean active, float tension, float progress) {
+        PacketDistributor.sendToPlayer(p, new FightStatePayload(active, tension, progress, 0f, (byte) 3, (byte) 0));
+    }
     public static void onInput(ServerPlayer player, float dx, float dy) {
         FishFight fight = FIGHTS.get(player.getUUID());
         if (fight != null) {
             fight.addInput(dx, dy);
         }
     }
-
+    private static float chestChance(FishingHook hook, ServerPlayer player) {
+        int luck = ((FishingHookAccessor) hook).deepfishing$getLuck();
+        return Math.min(CHEST_CHANCE_MAX, CHEST_CHANCE + luck * CHEST_LUCK_BONUS);
+    }
     private static double scareRadius(ServerPlayer p) {
         return p.isSprinting() ? SCARE_RUN : SCARE_NEAR;
     }
@@ -103,7 +136,7 @@ public final class FightManager {
         double rSq = r * r;
 
         Approach a = APPROACH.get(id);
-        if (a != null && a.fish != null && !a.fish.isRemoved()
+        if (a != null && a.real && a.fish != null && !a.fish.isRemoved()
                 && a.fish.distanceToSqr(player) <= rSq) {
             FishingHook hook = player.fishing;
             if (hook != null && !hook.isRemoved()) {
@@ -220,8 +253,17 @@ public final class FightManager {
         float yaw;
         int age, wait;
         int window;
+        double chestY = Double.NaN;
         int biteAge;
+        int linger;
         boolean arrived;
+
+        ServerPlayer owner;
+        float load;
+        int over, creak;
+        double startDist;
+        boolean stateOn;
+
         Approach(Entity fish, List<ItemStack> loot, boolean real) {
             this.fish = fish;
             this.loot = loot;
@@ -233,6 +275,10 @@ public final class FightManager {
     private static void dropApproach(UUID id) {
         Approach a = APPROACH.remove(id);
         if (a == null || a.fish == null) return;
+        if (a.stateOn && a.owner != null && a.owner.connection != null) {
+            sendChestState(a.owner, false, 0f, 0f);
+        }
+        a.stateOn = false;
         if (a.real && !a.fish.isRemoved()) {
             releaseFish(a.fish);
         } else {
@@ -242,9 +288,15 @@ public final class FightManager {
     }
 
     /** Холостая подтяжка поплавка: тянем к игроку, у берега вытаскиваем пустой крючок. */
+    /** Холостая подтяжка поплавка: тянем к игроку, у берега вытаскиваем пустой крючок. */
     private static void tickReel(ServerPlayer player) {
         UUID id = player.getUUID();
         if (!REELING.contains(id) || FIGHTS.containsKey(id)) return;
+
+        // сундук ещё плывёт или висит на крючке: подтяжкой занимается tickApproach
+        Approach ap = APPROACH.get(id);
+        if (ap != null && !ap.real) return;
+
         FishingHook hook = player.fishing;
         if (hook == null || hook.isRemoved() || hook.getHookedIn() != null || isBiting(hook)) return;
 
@@ -253,7 +305,7 @@ public final class FightManager {
 
         // в полёте не трогаем
         if (!hook.isInWater() && !hook.onGround()) return;
-
+        reelSound(player, 1.0f);
         double dx = player.getX() - hook.getX();
         double dz = player.getZ() - hook.getZ();
         double d = Math.sqrt(dx * dx + dz * dz);
@@ -275,7 +327,13 @@ public final class FightManager {
         Vec3 v = hook.getDeltaMovement();
         hook.setDeltaMovement(nx * REEL_PULL, v.y, nz * REEL_PULL);
     }
-
+    private static void sendHookPos(FishingHook hook) {
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(hook, new FightPosPayload(
+                hook.getId(), -1,
+                hook.getX(), hook.getY(), hook.getZ(),
+                hook.getX(), hook.getY(), hook.getZ(),
+                0f));
+    }
     private static InteractionHand rodHand(ServerPlayer p) {
         if (p.getMainHandItem().getItem() instanceof FishingRodItem) return InteractionHand.MAIN_HAND;
         if (p.getOffhandItem().getItem() instanceof FishingRodItem) return InteractionHand.OFF_HAND;
@@ -326,30 +384,47 @@ public final class FightManager {
         if (a == null) {
             // ванильную поклёвку глушим всегда: клюёт только подплывшая рыба
             if (nibble > 0) acc.deepfishing$setNibble(0);
-            if (hook.tickCount < 40 || !hook.isInWater()) return;
-            if (hook.tickCount % 20 != 0) return;
+            if (hook.tickCount < 20 || !hook.isInWater()) return;   // 1 секунда после заброса
+            if (hook.tickCount % 5 != 0) return;                    // проверка 4 раза в секунду
             Long cd = BITE_COOLDOWN.get(id);
             if (cd != null && player.serverLevel().getGameTime() < cd) return;
-            if (player.getRandom().nextFloat() > 0.35f) return;
-
             ServerLevel level = player.serverLevel();
-            AbstractFish f = findFish(player, level, hook, 8.0);
-            if (f == null) return;            // рядом нет рыбы: клёва нет
 
-            f.setNoAi(true);
-            f.setNoGravity(true);
-            f.setInvulnerable(true);
-            f.setSilent(true);
-            f.setPersistenceRequired();
-            f.addTag(TAG);
-            LIVE_VISUALS.add(f.getUUID());
-            detachSchool(f);
+            // шанс на сундук кидаем один раз на заброс, а не при каждой проверке
+            boolean rolled = CHEST_ROLLED.getOrDefault(id, -1) == hook.getId();
+            if (!rolled) CHEST_ROLLED.put(id, hook.getId());
 
-            List<ItemStack> loot = new ArrayList<>();
-            loot.add(itemOf(f));
-            a = new Approach(f, loot, true);
-            a.wait = Math.max(20, (int) (f.distanceTo(hook) * 10));
-            APPROACH.put(id, a);
+            if (!rolled && player.getRandom().nextFloat() < chestChance(hook, player)
+                    && (!CHEST_OCEAN_ONLY || level.getBiome(hook.blockPosition()).is(BiomeTags.IS_OCEAN))) {
+                Entity chest = spawnChest(level, hook, player);
+                if (chest != null) {
+                    LIVE_VISUALS.add(chest.getUUID());
+
+                    a = new Approach(chest, List.of(new ItemStack(DCItems.SUNKEN_LOCKBOX.get())), false);
+                    a.owner = player;
+                    a.wait = Math.max(120, (int) (chest.distanceTo(hook) * 28)); // медленно: около 20 секунд
+                    APPROACH.put(id, a);
+                }
+            }
+            if (a == null) {
+                AbstractFish f = findFish(player, level, hook, 8.0);
+                if (f == null) return;
+
+                f.setNoAi(true);
+                f.setNoGravity(true);
+                f.setInvulnerable(true);
+                f.setSilent(true);
+                f.setPersistenceRequired();
+                f.addTag(TAG);
+                LIVE_VISUALS.add(f.getUUID());
+                detachSchool(f);
+
+                List<ItemStack> loot = new ArrayList<>();
+                loot.add(itemOf(f));
+                a = new Approach(f, loot, true);
+                a.wait = Math.max(20, (int) (f.distanceTo(hook) * 10));
+                APPROACH.put(id, a);
+            }
         }
         if (a.fish.isRemoved()) {
             APPROACH.remove(id);
@@ -361,10 +436,12 @@ public final class FightManager {
         if (!a.arrived) {
             int steps = Math.max(1, a.wait - a.age++);
             double fx = a.fish.getX(), fy = a.fish.getY(), fz = a.fish.getZ();
-            double dx = (hook.getX() - fx) / steps;
+            double tgtX = hook.getX(), tgtZ = hook.getZ();
+            a.fish.setDeltaMovement(Vec3.ZERO);
+            double dx = (tgtX - fx) / steps;
             double targetY = approachY(player.serverLevel(), hook, a.fish);
             double dy = (targetY - fy) / steps;
-            double dz = (hook.getZ() - fz) / steps;
+            double dz = (tgtZ - fz) / steps;
             if (dx * dx + dz * dz > 1.0E-6) {
                 a.yaw = (float) (Mth.atan2(-dx, dz) * 180.0 / Math.PI);
             }
@@ -385,40 +462,216 @@ public final class FightManager {
             if (nibble > 0) acc.deepfishing$setNibble(0);
         } else {
             ServerLevel lv = player.serverLevel();
+            double ty;
+            if (!a.real) {
+                if (Double.isNaN(a.chestY)) a.chestY = approachY(lv, hook, a.fish);
+                ty = a.chestY;
+            } else {
+                ty = approachY(lv, hook, a.fish);
+            }
 
-            // рыба во время клёва держится под поплавком, под водой
-            double ty = approachY(lv, hook, a.fish);
+            if (a.real) {
+                // рыба: как раньше, с окном подсечки
+                a.fish.setPos(hook.getX(), ty, hook.getZ());
+                a.fish.setDeltaMovement(Vec3.ZERO);
+
+                if (a.biteAge == 0) {
+                    a.window = BITE_WINDOW_MIN + player.getRandom().nextInt(BITE_WINDOW_VAR + 1);
+                    Vec3 dm = hook.getDeltaMovement();
+                    hook.setDeltaMovement(dm.x, -0.25, dm.z);
+                    lv.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
+                            SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.NEUTRAL, 0.9f, 1.4f);
+                    lv.playSound(null, player.getX(), player.getY(), player.getZ(),
+                            SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.35f, 1.8f);
+                    lv.sendParticles(ParticleTypes.FISHING, hook.getX(), hook.getY(), hook.getZ(),
+                            8, 0.2, 0.02, 0.2, 0.04);
+                    lv.sendParticles(ParticleTypes.SPLASH, hook.getX(), hook.getY(), hook.getZ(),
+                            10, 0.25, 0.05, 0.25, 0.1);
+                }
+                if (++a.biteAge > a.window) {
+                    acc.deepfishing$setNibble(0);
+                    dropApproach(id);
+                    BITE_COOLDOWN.put(id, lv.getGameTime() + BITE_COOLDOWN_TICKS);
+                    lv.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
+                            SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.NEUTRAL, 0.4f, 0.7f);
+                } else {
+                    acc.deepfishing$setNibble(Math.max(nibble, 20));
+                }
+                return;
+            }
+
+            // ── сундук: тяжёлый, тянется медленно, леска нагружается и может порваться ──
+            boolean pulling = false;
+            InteractionHand hand = rodHand(player);
+            boolean reeling = REELING.contains(id) && hand != null;
+
+            double cdx = player.getX() - hook.getX();
+            double cdz = player.getZ() - hook.getZ();
+            double cd = Math.max(1.0E-4, Math.sqrt(cdx * cdx + cdz * cdz));
+            double cnx = cdx / cd, cnz = cdz / cd;
+            if (a.startDist <= 0) a.startDist = cd;
+
+// у берега нагрузка слабее
+            float shoreK = (float) Mth.clamp((cd - 1.5) / 5.0, 0.5, 1.0);
+            if (reeling) {
+                reelSound(player, 0.7f);
+                a.load += CHEST_LOAD_RISE * shoreK;
+            } else {
+                a.load -= CHEST_LOAD_FALL;
+            }
+            a.load = Mth.clamp(a.load, 0f, 1f);
+
+// обрыв: слишком долго тянешь без передышки
+            a.over = a.load > CHEST_SNAP_LEVEL ? a.over + 1 : Math.max(0, a.over - 2);
+            if (a.over >= CHEST_SNAP_TICKS) {
+                snapChest(player, hook, a);
+                return;
+            }
+
+            if (reeling) {
+                boolean shore = cd < 1.5
+                        || !waterAt(lv, hook.getX() + cnx * SHORE_DIST, hook.getY(), hook.getZ() + cnz * SHORE_DIST);
+                if (shore) {
+                    catchChest(player, hook, hand, a);
+                    return;
+                }
+                // чем сильнее нагрузка, тем медленнее идёт
+                double pull = CHEST_PULL * (1.0 - 0.5 * a.load);
+                hook.setPos(hook.getX() + cnx * pull, hook.getY(), hook.getZ() + cnz * pull);
+                hook.setDeltaMovement(0, hook.getDeltaMovement().y, 0);
+                pulling = true;
+            }
+
+// скрип лески по ступеням, как в бою
+            while (a.creak < FishFight.CREAK_AT.length && a.load >= FishFight.CREAK_AT[a.creak]) {
+                var snd = switch (a.creak) {
+                    case 0 -> DCSoundEvents.TENSION_0;
+                    case 1 -> DCSoundEvents.TENSION_1;
+                    case 2 -> DCSoundEvents.TENSION_2;
+                    default -> DCSoundEvents.TENSION_3;
+                };
+                lv.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
+                        snd, SoundSource.NEUTRAL, 0.5f + 0.1f * a.creak, 0.85f + 0.1f * a.creak);
+                a.creak++;
+            }
+            while (a.creak > 0 && a.load < FishFight.CREAK_AT[a.creak - 1] - 0.12f) a.creak--;
+
+// центр сундука = крючок по X/Z, считаем после сдвига крючка
             a.fish.setPos(hook.getX(), ty, hook.getZ());
             a.fish.setDeltaMovement(Vec3.ZERO);
+            if (pulling) sendHookPos(hook);
+
+// натяг и прогресс на клиент: пока тянешь или леска ещё нагружена
+            boolean stateNow = reeling || a.load > 0.02f;
+            if (stateNow) {
+                if (player.tickCount % 2 == 0) {
+                    float prog = (float) Mth.clamp(1.0 - cd / a.startDist, 0.0, 1.0);
+                    sendChestState(player, true, 0.30f + 0.70f * a.load, prog);
+                }
+                a.stateOn = true;
+            } else if (a.stateOn) {
+                sendChestState(player, false, 0f, 0f);
+                a.stateOn = false;
+            }
+            if (pulling) sendHookPos(hook);
+
+            if (a.linger < CHEST_LINGER) {
+                a.linger++;
+                if (nibble > 0) acc.deepfishing$setNibble(0);
+                return;
+            }
 
             if (a.biteAge == 0) {
-                a.window = BITE_WINDOW_MIN + player.getRandom().nextInt(BITE_WINDOW_VAR + 1);
-                // момент поклёвки: поплавок резко ныряет, плеск и брызги — «подсекай!»
-                Vec3 dm = hook.getDeltaMovement();
-                hook.setDeltaMovement(dm.x, -0.25, dm.z);
+                a.biteAge = 1;   // сигнал клёва один раз
                 lv.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
-                        SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.NEUTRAL, 0.9f, 1.4f);
-                lv.playSound(null, player.getX(), player.getY(), player.getZ(),
-                        SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.35f, 1.8f);
+                        SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.NEUTRAL, 0.6f, 1.2f);
                 lv.sendParticles(ParticleTypes.FISHING, hook.getX(), hook.getY(), hook.getZ(),
-                        8, 0.2, 0.02, 0.2, 0.04);
-                lv.sendParticles(ParticleTypes.SPLASH, hook.getX(), hook.getY(), hook.getZ(),
-                        10, 0.25, 0.05, 0.25, 0.1);
+                        6, 0.2, 0.02, 0.2, 0.03);
             }
-            if (++a.biteAge > a.window) {
-                // не успел: рыба срывается и уплывает
-                acc.deepfishing$setNibble(0);
-                dropApproach(id);
-                BITE_COOLDOWN.put(id, lv.getGameTime() + BITE_COOLDOWN_TICKS);
-                lv.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
-                        SoundEvents.FISHING_BOBBER_SPLASH, SoundSource.NEUTRAL, 0.4f, 0.7f);
-            } else {
-                acc.deepfishing$setNibble(Math.max(nibble, 20));   // окно подсечки
-            }
+            acc.deepfishing$setNibble(Math.max(nibble, 20));
         }
     }
+
+    /** Сундук дотянут до берега: выдаём предмет игроку, без боя и ванильного лута. */
+    private static void catchChest(ServerPlayer player, FishingHook hook, InteractionHand hand, Approach a) {
+        UUID id = player.getUUID();
+        ServerLevel level = player.serverLevel();
+        ItemStack rod = player.getItemInHand(hand);
+
+        REELING.remove(id);
+        APPROACH.remove(id);
+        if (a.stateOn) { sendChestState(player, false, 0f, 0f); a.stateOn = false; }
+        LIVE_VISUALS.remove(a.fish.getUUID());
+        a.fish.discard();
+
+        ItemStack s = new ItemStack(DCItems.SUNKEN_LOCKBOX.get());
+        player.getInventory().add(s);
+        if (!s.isEmpty()) player.drop(s, false);
+        player.giveExperiencePoints(level.getRandom().nextInt(6) + 1);
+
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.4f, 1.0f + level.getRandom().nextFloat() * 0.4f);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.NEUTRAL, 1.0f, 0.8f);
+
+        lockCast(player);
+        hook.discard();
+        rod.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+    }
+    private static void snapChest(ServerPlayer player, FishingHook hook, Approach a) {
+        UUID id = player.getUUID();
+        ServerLevel level = player.serverLevel();
+        REELING.remove(id);
+        dropApproach(id);   // сундук уходит на дно, клиенту уходит active=false
+        BITE_COOLDOWN.put(id, level.getGameTime() + BITE_COOLDOWN_TICKS);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.8f, 1.2f);
+        InteractionHand hand = rodHand(player);
+        lockCast(player);
+        hook.discard();
+        if (hand != null) {
+            player.getItemInHand(hand).hurtAndBreak(2, player, LivingEntity.getSlotForHand(hand));
+        }
+    }
+    @Nullable
+    private static Entity spawnChest(ServerLevel level, FishingHook hook, ServerPlayer player) {
+        RandomSource r = player.getRandom();
+        for (int i = 0; i < 8; i++) {
+            float yaw = player.getYRot() + (r.nextBoolean() ? 1 : -1) * (35f + r.nextFloat() * 25f);
+            double dist = 12 + r.nextDouble() * 6;
+            double rad = Math.toRadians(yaw);
+            double x = player.getX() - Math.sin(rad) * dist;
+            double z = player.getZ() + Math.cos(rad) * dist;
+
+            if (!level.hasChunk(((int) x) >> 4, ((int) z) >> 4)) continue;
+
+            // путь от точки появления до крючка целиком по воде
+            boolean clear = true;
+            for (int s = 0; s <= 6 && clear; s++) {
+                double k = s / 6.0;
+                clear = waterAt(level, x + (hook.getX() - x) * k, hook.getY(), z + (hook.getZ() - z) * k);
+            }
+            if (!clear) continue;
+
+            BlockPos.MutableBlockPos p = BlockPos.containing(x, hook.getY(), z).mutable();
+            for (int u = 0; u < 8 && level.getFluidState(p.above()).is(FluidTags.WATER); u++) p.move(0, 1, 0);
+            double surf = p.getY() + level.getFluidState(p).getHeight(level, p);
+
+            SunkenLockboxEntity chest = ModEntities.SUNKEN_LOCKBOX.get().create(level);
+            if (chest == null) return null;
+            chest.setFishingVisual(true);
+            chest.setPos(x, surf - 0.35, z);
+            chest.setYRot(r.nextFloat() * 360f);
+
+            chest.addTag(TAG);
+            LIVE_VISUALS.add(chest.getUUID());   // до addFreshEntity, иначе onJoin его отменит
+            level.addFreshEntity(chest);
+            return chest;
+        }
+        return null;
+    }
     /** Высота, на которой рыба подплывает к крючку: целиком под водой, верх хитбокса ниже поверхности. */
-    private static double approachY(ServerLevel level, FishingHook hook, Entity fish) {
+    static double approachY(ServerLevel level, FishingHook hook, Entity fish) {
         BlockPos.MutableBlockPos p = hook.blockPosition().mutable();
         if (!level.getFluidState(p).is(FluidTags.WATER)) {
             p.move(0, -1, 0);
@@ -427,6 +680,7 @@ public final class FightManager {
         for (int i = 0; i < 64 && level.getFluidState(p.above()).is(FluidTags.WATER); i++) p.move(0, 1, 0);
         double surf = p.getY() + level.getFluidState(p).getHeight(level, p);
         // верх хитбокса на 0.25 ниже поверхности
+        if (fish instanceof SunkenLockboxEntity) return surf - 0.35;
         return surf - fish.getBbHeight() - 0.25;
     }
     /** Пустая подтяжка: просто вытаскиваем крючок, без добычи. */
@@ -556,6 +810,13 @@ public final class FightManager {
         FishingHook hook = player.fishing;
 
         if (hook != null && isBiting(hook)) {
+            Approach peek = APPROACH.get(player.getUUID());
+            if (peek != null && !peek.real) {
+                // сундук: подсечки нет, клик ничего не делает, тянет удержание ПКМ
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.FAIL);
+                return;
+            }
             Approach pre = APPROACH.remove(player.getUUID());
             if (pre == null) {
                 ((FishingHookAccessor) hook).deepfishing$setNibble(0);
@@ -584,6 +845,7 @@ public final class FightManager {
         UUID pid = event.getEntity().getUUID();
         REELING.remove(pid);
         ATTACK_HELD.remove(pid);
+        CHEST_ROLLED.remove(pid);
         YANK_TICKS.remove(pid);
         BITE_COOLDOWN.remove(pid);
         FishFight fight = FIGHTS.remove(pid);

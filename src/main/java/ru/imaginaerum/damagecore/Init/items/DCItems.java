@@ -4,7 +4,9 @@ import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
 import ru.imaginaerum.damagecore.Init.items.custom.ChainLightningArrowItem;
+import ru.imaginaerum.damagecore.Init.items.custom.SunkenLockboxBlockItem;
 import ru.imaginaerum.damagecore.Init.items.custom.TomeOfAttainingMeanings;
 
 public class DCItems {
@@ -16,4 +18,6 @@ public class DCItems {
             () -> new TomeOfAttainingMeanings(new Item.Properties()));
     public static final DeferredItem<Item> CHAIN_LIGHT_ARROW = ITEMS.register("chain_light_arrow",
             () -> new ChainLightningArrowItem(new Item.Properties()));
+    public static final DeferredItem<Item> SUNKEN_LOCKBOX = ITEMS.register("sunken_lockbox",
+            () -> new SunkenLockboxBlockItem(BlocksDC.SUNKEN_LOCKBOX.get(), new Item.Properties()));
 }

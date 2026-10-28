@@ -3,7 +3,6 @@ package ru.imaginaerum.damagecore.Init.fishing.fight;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -35,6 +34,7 @@ import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightPosPayload;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
+import ru.imaginaerum.damagecore.entity.sunken_lockbox.SunkenLockboxEntity;
 import ru.imaginaerum.damagecore.mixin.fishing.FishingHookAccessor;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
@@ -56,6 +56,12 @@ import java.util.List;
  */
 public final class FishFight {
     // ── tunables ──
+    static final double MIN_FIGHT_DIST = 14.0;   // минимум, до которого рыба разматывает леску
+    static final double UNSPOOL_VAR    = 6.0;    // + случайно 0..6 блоков
+    static final float  UNSPOOL_SPEED  = 0.45f;  // блоков/тик (~9 блоков/с)
+
+    private boolean unspooling = true;
+    private final double unspoolTarget;
     static final float BASE_TENSION = 0.42f;
     static final float SNAP_LEVEL   = 0.92f;
     static final int    SNAP_TICKS        = 22;    // было 15
@@ -108,7 +114,7 @@ public final class FishFight {
     private final float strength;
     private final Vec3 baseDir;
     private final Vec3 right;
-    private final double startDist;
+    private double startDist;
     private final double endDist;
     private final double baseY;
     private final boolean real;
@@ -172,6 +178,8 @@ public final class FishFight {
         this.dist      = startDist;
         this.phase     = PHASE_WARN;
         this.phaseTicks = WARN_TICKS;
+        this.unspoolTarget = Math.max(startDist + 3.0,
+                MIN_FIGHT_DIST + player.getRandom().nextDouble() * UNSPOOL_VAR);
     }
 
     @Nullable
@@ -278,7 +286,7 @@ public final class FishFight {
         }
 
         ticks++;
-        updateFish(player.getRandom());
+        if (!unspooling) updateFish(player.getRandom());
 
         boolean struggling = phase == PHASE_STRUGGLE;
         boolean warn       = phase == PHASE_WARN;
@@ -350,7 +358,7 @@ public final class FishFight {
         strain = Mth.clamp(strain, 0f, 1f);
 
         // ── нагрузка от подмотки (окно и разминка): тянешь без передышки, леска рвётся ──
-        boolean loading = reeling && !struggling;
+        boolean loading = reeling && !struggling && !unspooling;
         if (loading) {
             reelLoad += REEL_LOAD_RISE * strength * shore * (warn ? 0.5f : 1f);
         } else {
@@ -405,19 +413,27 @@ public final class FishFight {
 
         // ПКМ: плавная подмотка
         if (reeling) {
+            FightManager.reelSound(player, 0.9f + 0.3f * tension);
             if (window || passive)      vOut -= REEL_SPEED;
             else if (warn)              vOut -= REEL_SPEED * 0.5f;
             else if (struggling)        vOut -= REEL_SPEED * 0.15f;
         }
 
         // ЛКМ: резкий рывок
+
         if (jerkTicks > 0) {
             jerkTicks--;
             if (window || passive)  vOut -= JERK_SPEED;
             else if (warn)          vOut -= JERK_SPEED * 0.5f;
             else                    vOut -= JERK_SPEED * 0.2f;
         }
-
+        if (unspooling) {
+            float left = (float) (unspoolTarget - dist);
+            // в конце размотки рыба замедляется
+            vOut = Math.min(UNSPOOL_SPEED, Math.max(0.08f, left * 0.25f));
+            vLat = 0f;
+            FightManager.reelSound(player, 0.6f);   // леска стравливается
+        }
         // A/D/S/W рыбу НЕ двигают: они только сопротивляются рывку и меняют натяг
 
         latVel  = latVel  * 0.65f + vLat  * 0.35f;
@@ -431,7 +447,7 @@ public final class FishFight {
             // подтягиваем вдоль линии к игроку, но боковое смещение почти не трогаем
             nl -= nl * (struggling ? 0.01f : 0.02f);
         }
-
+        boolean blockedOut = unspooling && !waterAt(o, nd, nl);
         if (!waterAt(o, nd, nl)) {
             // победа только если рыба реально рядом с игроком, а не просто упёрлась в берег
             double real = Math.sqrt(nd * nd + (double) nl * nl);
@@ -452,8 +468,15 @@ public final class FishFight {
         }
         lat = nl;
         dist = nd;
-
-        if (dist > startDist + MAX_OUT) {
+        if (unspooling && (blockedOut || dist >= unspoolTarget - 0.3)) {
+            unspooling = false;
+            startDist = dist;          // прогресс считается от новой дистанции
+            phase = PHASE_WARN;
+            phaseTicks = WARN_TICKS;
+            distVel = 0f;
+            playWarnCue();
+        }
+        if (!unspooling && dist > startDist + MAX_OUT) {
             escape(); return false;
         }
         if (Math.abs(lat) > MAX_LAT) {
@@ -472,7 +495,9 @@ public final class FishFight {
         double dip = struggling
                 ? 0.03 * (1f - Mth.cos(ticks * 0.4f))
                 : 0.01 * (1f - Mth.cos(ticks * 0.15f));
-        double y = baseY + (tension - 0.4f) * 0.15 - dip;
+        double y = (visual instanceof SunkenLockboxEntity)
+                ? FightManager.approachY(level, hook, visual) + 0.35 + 0.02 * (1f - Mth.cos(ticks * 0.15f))
+                : baseY + (tension - 0.4f) * 0.15 - dip;
 
 // дрожь от натяжения: медленные наложенные волны + сглаживание вместо случайного шума
         double amp = SHAKE_AMP * tension * tension * 0.5;
@@ -614,8 +639,12 @@ public final class FishFight {
 
         vx = hx; vy = hy; vz = hz;
         if (visual == null || visual.isRemoved()) return;
-
-        if (visual instanceof ItemEntity) {
+        if (visual instanceof SunkenLockboxEntity) {
+            // центр сундука = крючок по X/Z; высота от поверхности воды
+            vx = hx;
+            vy = FightManager.approachY(level, hook, visual);
+            vz = hz;
+        } else if (visual instanceof ItemEntity) {
             vy = hy - 0.25;
         } else {
             double rad = Math.toRadians(vyaw);

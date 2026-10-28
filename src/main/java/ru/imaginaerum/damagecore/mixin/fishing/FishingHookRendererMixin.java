@@ -39,6 +39,7 @@ public abstract class FishingHookRendererMixin {
     private static float dfTaut;
     /** Провис лески в покое (0..1 от DF_SAG_DEPTH); при выдохшейся рыбе будет глубже. */
     private static final float DF_SAG_IDLE = 0.5f;
+    private static final float DF_SAG_FLIGHT = 0.45f;   // провис лески в полёте, когда крючок уже замедлился
     private static float dfSlackUse;   // значение, которое реально применяется к текущей леске// натянутость 0..1 для текущей лески
     /** Максимальная стрела прогиба лески (блоки) при полном провисании. */
     private static float dfSurfRel;     // высота поверхности относительно точки привязки лески
@@ -62,23 +63,51 @@ public abstract class FishingHookRendererMixin {
 
         boolean mine = hook.getPlayerOwner() == mc.player;
         boolean landedNow = hook.isInWater() || hook.onGround() || hook.getHookedIn() != null;
+        boolean justLanded = landedNow && !ln.landed;     // сюда
         if (landedNow) ln.landed = true;
         boolean landed = ln.landed;
 
-        float targetSlack;
-        float rate;
-        if (mine && FightClient.active) {
-            targetSlack = 1f - dfSmoothstep(0.05f, 0.80f, Mth.clamp(FightClient.tension, 0f, 1f));
-            rate = targetSlack < ln.slack ? 2.7f : 1.0f;   // было 8 и 3: втрое медленнее
-        } else if (landed) {
-            targetSlack = DF_SAG_IDLE;
-            rate = 1.2f;            // после приводнения леска оседает медленно, ~1,5 с
-        } else {
-            targetSlack = 0f;       // пока крючок летит, леска прямая
-            rate = 6f;
+        float speed = (float) hook.getDeltaMovement().length();
+        if (!ln.landed && !landedNow) ln.flightSpeed = speed;   // запоминаем скорость полёта
+        if (justLanded) {
+            // крючок резко встал, а леска по инерции продолжает идти вниз
+            ln.slackVel += Mth.clamp(ln.flightSpeed, 0f, 1.5f) * 3.0f;
         }
-        ln.slack += (targetSlack - ln.slack) * Math.min(1f, rate * dt);
-        if (ln.slack < 0.005f) ln.slack = 0f;
+
+        if (mine && FightClient.active) {
+            // бой: как раньше, плавное следование натяжению
+            float targetSlack = 1f - dfSmoothstep(0.05f, 0.80f, Mth.clamp(FightClient.tension, 0f, 1f));
+            float rate = targetSlack < ln.slack ? 2.7f : 1.0f;
+            ln.slack += (targetSlack - ln.slack) * Math.min(1f, rate * dt);
+            ln.slackVel = 0f;
+            if (ln.slack < 0.005f) ln.slack = 0f;
+        } else {
+            // пружина: в полёте жёсткая и почти критически задемпфированная (леска прямая),
+            // после приводнения мягкая и с недодемпфированием (проваливается и качается)
+            float target, omega, zeta;
+            if (landed) {
+                target = DF_SAG_IDLE;
+                omega = 7.0f;
+                zeta = 0.30f;
+            } else {
+                float flightTarget = DF_SAG_FLIGHT * (1f - dfSmoothstep(0.35f, 1.2f, speed));
+                target = flightTarget;
+                omega = 6.0f;
+                zeta = 0.55f;
+            }
+            float acc = omega * omega * (target - ln.slack) - 2f * zeta * omega * ln.slackVel;
+            ln.slackVel += acc * dt;
+            ln.slack += ln.slackVel * dt;
+            if (ln.slack < 0f) {
+                ln.slack = 0f;
+                ln.slackVel = Math.max(0f, ln.slackVel);
+            }
+            ln.slack = Math.min(ln.slack, 1.3f);
+            if (ln.slack < 0.003f && Math.abs(ln.slackVel) < 0.01f) {
+                ln.slack = 0f;
+                ln.slackVel = 0f;
+            }
+        }
         dfSlackUse = ln.slack;
         dfSwayAmt = (mine && FightClient.active) ? 0f : 1f;
         dfSwayPhase = now * 0.0018f + hook.getId() * 1.7f;   // у каждого крючка своя фаза

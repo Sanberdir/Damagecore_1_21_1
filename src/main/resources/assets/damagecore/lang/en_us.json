@@ -16,7 +16,9 @@
   "damage_type.piercing": "Piercing damage",
   "damage_type.slashing": "Slashing damage",
   "damage_type.fire": "Fire damage",
-
+  "block.damagecore.sunken_lockbox": "Sunken Lockbox",
+  "entity.damagecore.sunken_lockbox": "Sunken Lockbox",
+  "block.damagecore.sunken_lockbox.tooltip": "Found in the ocean",
   "damagecore.immunity_tab.header": "Immunity",
   "damagecore.armor_tab.header": "Armor",
 

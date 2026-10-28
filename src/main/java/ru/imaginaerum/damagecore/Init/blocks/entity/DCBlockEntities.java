@@ -5,6 +5,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
+import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenLockboxEntity;
 
 import java.util.function.Supplier;
 
@@ -16,4 +17,9 @@ public class DCBlockEntities {
             BLOCK_ENTITIES.register("structure_be", () ->
                     BlockEntityType.Builder.of(StructureBlockEntity::new,
                             BlocksDC.STRUCTURE_BLOCK_AND_ENTITY.get()).build(null));   // блок обязательно здесь
+
+    public static final Supplier<BlockEntityType<SunkenLockboxEntity>> SUNKEN_LOCKBOX =
+            BLOCK_ENTITIES.register("sunken_lockbox", () ->
+                    BlockEntityType.Builder.of(SunkenLockboxEntity::new,
+                            BlocksDC.SUNKEN_LOCKBOX.get()).build(null));
 }

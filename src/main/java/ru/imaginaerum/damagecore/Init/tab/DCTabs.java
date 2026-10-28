@@ -20,6 +20,7 @@ public class DCTabs {
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept(DCItems.BIRCH_LEAF.get());
             event.accept(DCItems.TOME_OF_ATTAINING_MEANINGS.get());
+            event.accept(DCItems.SUNKEN_LOCKBOX.get());
         }
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(BlocksDC.STRUCTURE_BLOCK_AND_ENTITY.get());

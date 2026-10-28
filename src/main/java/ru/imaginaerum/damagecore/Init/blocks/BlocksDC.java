@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenLockboxBlock;
 import ru.imaginaerum.damagecore.Init.blocks.custom.StructureBlocksAndEntity;
 import ru.imaginaerum.damagecore.Init.items.DCItems;
 
@@ -20,6 +21,12 @@ public class BlocksDC {
             () -> new StructureBlocksAndEntity(BlockBehaviour.Properties.of()
                     .strength(2.0F)
                     .sound(SoundType.STONE)));
+
+    public static final DeferredBlock<Block> SUNKEN_LOCKBOX = BLOCKS.register("sunken_lockbox",
+            () -> new SunkenLockboxBlock(BlockBehaviour.Properties.of()
+                    .strength(1.5F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()));
 
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);

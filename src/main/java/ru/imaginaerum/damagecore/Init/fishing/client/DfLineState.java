@@ -8,6 +8,8 @@ public final class DfLineState {
     public float slack;
     public long ms;
     public boolean landed;
+    public float slackVel;     // скорость изменения провиса
+    public float flightSpeed;  // последняя скорость крючка в полёте
     private static final Map<Integer, DfLineState> LINES = new HashMap<>();
 
     private DfLineState() {}
