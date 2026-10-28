@@ -12,6 +12,7 @@ import net.minecraft.world.item.Items;
 import ru.imaginaerum.damagecore.api.skill_tree.categories.TreeCategoryManager;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.Render;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.SideTabsRenderer;
+import ru.imaginaerum.damagecore.client.TitleTabRenderer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +46,8 @@ public final class DamageBookRenderer {
     private static final int CATEGORY_TAB_X_OFFSET = -3;
     // Смещение по Y относительно верха панели.
     private static final int CATEGORY_TAB_Y_OFFSET = 6;
-
+    private static final int TITLE_ICON_DX = 1;   // сдвиг по X, подберите под текстуру вкладки
+    private static final int TITLE_ICON_DY = 0;   // сдвиг по Y, если понадобится
     public static int bottomLeft()  { return 0; }
     public static int bottomRight() { return TABS_PER_ROW - 1; }
     public static int bottomMiddle(int i) { return 1 + i; }
@@ -70,7 +72,8 @@ public final class DamageBookRenderer {
     }
     private static final ResourceLocation DAMAGE_CORE_INTERFACE =
             ResourceLocation.fromNamespaceAndPath("damagecore", "textures/gui/container/creative_inventory/damage_core_interface.png");
-
+    private static final ResourceLocation TITLE_TAB_ICON =
+            ResourceLocation.fromNamespaceAndPath("damagecore", "textures/gui/title/title_defender.png");
     private static void renderCategoryTabs(GuiGraphics gui, int panelLeft, int panelTop, int panelW, int mouseX, int mouseY) {
         final int TAB_W_IDLE = 30;
         final int TAB_H_IDLE = 28;
@@ -258,12 +261,16 @@ public final class DamageBookRenderer {
 
         gui.blit(DAMAGE_CORE_INTERFACE, x, y + yOffset, u, v, tabW, h, 512, 512);
 
+        int ix = x + (tabW - 16) / 2;
+        int iy = y + yOffset + (h - 16) / 2;
+
+        if (tabId == TitleTabRenderer.TAB_ID) {
+            gui.blit(TITLE_TAB_ICON, ix + TITLE_ICON_DX, iy + TITLE_ICON_DY, 0, 0, 16, 16, 16, 16);
+            return;
+        }
         ItemStack icon = tabId == SideTabsRenderer.TAB_ARMOR
                 ? new ItemStack(Items.DIAMOND_CHESTPLATE)
                 : new ItemStack(Items.POTION);
-
-        int ix = x + (tabW - 16) / 2;
-        int iy = y + yOffset + (h - 16) / 2;
         gui.renderItem(icon, ix, iy);
     }
 
@@ -300,7 +307,8 @@ public final class DamageBookRenderer {
                 SideTabsRenderer.TAB_ARMOR, activeSideTab, 89, mouseX, mouseY);
         drawTopUtilityTab(gui, panelLeft + TAB_W + TOP_TAB_GAP, TOP_Y, TAB_W,
                 SideTabsRenderer.TAB_POTION, activeSideTab, 116, mouseX, mouseY);
-
+        drawTopUtilityTab(gui, panelLeft + 2 * (TAB_W + TOP_TAB_GAP), TOP_Y, TAB_W,
+                TitleTabRenderer.TAB_ID, activeSideTab, 116, mouseX, mouseY);
         int totalTrees = SkillTreeRenderer.getTotalTrees();
         int pageCount = Math.max(1, (totalTrees + PAGE_SIZE - 1) / PAGE_SIZE);
 

@@ -268,5 +268,27 @@
   "weapon.type.spear":    "Копьё",
   "weapon.type.blunt":    "Дробящее оружие",
   "weapon.type.bow":      "Лук",
-  "weapon.type.crossbow": "Арбалет"
+  "weapon.type.crossbow": "Арбалет",
+
+
+  "title.damagecore.guardian": "Хранитель первозданного порядка",
+  "title.damagecore.defender": "Защитник угнетённых",
+  "title.damagecore.drifter": "Плывущий по течению",
+  "title.damagecore.withering": "Увядающий",
+  "title.damagecore.light_warrior": "Воин света",
+  "title.damagecore.seeker_of_justice": "Тянущийся к справедливости",
+  "title.damagecore.vicious": "Порочный",
+  "title.damagecore.lost": "Потерянный",
+  "title.damagecore.penitent": "Кающийся",
+  "title.damagecore.traitor": "Предатель",
+  "title.damagecore.hardened": "Тёртый калач",
+  "title.damagecore.absolute_evil": "Абсолютное зло",
+  "gui.damagecore.title.none": "Титул ещё не получен",
+  "gui.damagecore.title.outcome.1": "Пленник выжил",
+  "gui.damagecore.title.outcome.2": "Благая цель, но что-то пошло не так",
+  "gui.damagecore.title.outcome.3": "Ужасный поступок",
+  "gui.damagecore.title.light.0": "Свет",
+  "gui.damagecore.title.light.1": "Почти свет",
+  "gui.damagecore.title.light.2": "Почти тьма",
+  "gui.damagecore.title.light.3": "Тьма"
 }

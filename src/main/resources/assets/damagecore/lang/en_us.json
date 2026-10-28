@@ -275,5 +275,26 @@
   "weapon.type.spear":    "Spear",
   "weapon.type.blunt":    "Blunt Weapon",
   "weapon.type.bow":      "Bow",
-  "weapon.type.crossbow": "Crossbow"
+  "weapon.type.crossbow": "Crossbow",
+
+  "title.damagecore.guardian": "Guardian of the Primal Order",
+  "title.damagecore.defender": "Defender of the Oppressed",
+  "title.damagecore.drifter": "Drifter",
+  "title.damagecore.withering": "The Withering",
+  "title.damagecore.light_warrior": "Warrior of Light",
+  "title.damagecore.seeker_of_justice": "Seeker of Justice",
+  "title.damagecore.vicious": "The Vicious",
+  "title.damagecore.lost": "The Lost",
+  "title.damagecore.penitent": "The Penitent",
+  "title.damagecore.traitor": "Traitor",
+  "title.damagecore.hardened": "Hardened Rogue",
+  "title.damagecore.absolute_evil": "Absolute Evil",
+  "gui.damagecore.title.none": "No title earned yet",
+  "gui.damagecore.title.outcome.1": "The captive survived",
+  "gui.damagecore.title.outcome.2": "A noble goal, but something went wrong",
+  "gui.damagecore.title.outcome.3": "A terrible deed",
+  "gui.damagecore.title.light.0": "Light",
+  "gui.damagecore.title.light.1": "Near Light",
+  "gui.damagecore.title.light.2": "Near Darkness",
+  "gui.damagecore.title.light.3": "Darkness"
 }

@@ -51,6 +51,9 @@ public class TomeEvents {
             // <-- ВОТ ЭТОГО НЕ ХВАТАЛО
             player.setData(ModAttachments.TOME_STEP, 10);
         }
+        if (step >= TomeRewards.FINAL_STEP) {
+            TomeRewards.grantFinal(player);
+        }
     }
     /** Вызывать в момент открытия клетки (там, где житель начинает следовать за игроком). */
     public static void markRescuer(LivingEntity villager, ServerPlayer player) {

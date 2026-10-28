@@ -23,6 +23,7 @@ import ru.imaginaerum.damagecore.api.skill_tree.save_changes.SaveConfirmDialog;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.Render;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.tabs.SideTabsRenderer;
 import ru.imaginaerum.damagecore.api.skill_tree.skill_tree_renderer.StatsPanelRenderer;
+import ru.imaginaerum.damagecore.client.TitleTabRenderer;
 import ru.imaginaerum.damagecore.library_stats.StatChangePacket;
 import ru.imaginaerum.damagecore.library_stats.StatsType;
 import ru.imaginaerum.damagecore.mixin.AbstractContainerScreenAccessor;
@@ -186,8 +187,12 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
                     }
                 }
 
-                SideTabsRenderer.render(gui, panelScreenX, panelScreenY,
-                        damagecore$activeSideTab, mouseX, mouseY, previewArmorStack);
+                if (damagecore$activeSideTab == TitleTabRenderer.TAB_ID) {
+                    TitleTabRenderer.render(gui, panelScreenX, panelScreenY, mouseX, mouseY);
+                } else {
+                    SideTabsRenderer.render(gui, panelScreenX, panelScreenY,
+                            damagecore$activeSideTab, mouseX, mouseY, previewArmorStack);
+                }
             } else {
                 SkillTreeRenderer.mouseDragged(mouseX, mouseY, 0, panelScreenX, panelScreenY);
                 Render.currentHoveredNode = Render.getHoveredNodeUnderMouse(mouseX, mouseY);
@@ -228,6 +233,14 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
         if (mouseX >= potionTabX && mouseX < potionTabX + TAB_W
                 && mouseY >= hitY && mouseY < hitY + hitH) {
             toggleSideTab(SideTabsRenderer.TAB_POTION);
+            cir.setReturnValue(true);
+            return;
+        }
+
+        int titleTabX = panelLeft + 2 * (TAB_W + TOP_TAB_GAP);
+        if (mouseX >= titleTabX && mouseX < titleTabX + TAB_W
+                && mouseY >= hitY && mouseY < hitY + hitH) {
+            toggleSideTab(TitleTabRenderer.TAB_ID);
             cir.setReturnValue(true);
         }
     }
