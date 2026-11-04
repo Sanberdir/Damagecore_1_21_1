@@ -23,6 +23,9 @@ public final class FightClient {
     private static double pendingDy;
     public static float rodBend;   // 0..~0.4 в единицах модели
     public static float tipDx, tipDy, tipDz;
+    public static float rodSide;                 // боковой изгиб, -1..1 в единицах модели
+    public static float inSide;                  // -1 = A, +1 = D
+    public static boolean inTighten, inSlack;    // S / W
     private FightClient() {}
     private static final java.util.Map<Integer, Pos> POS = new java.util.HashMap<>();
 
@@ -43,15 +46,22 @@ public final class FightClient {
 
         float tp = 0f, tr = 0f;
         float tb = 0f;
+        float ts = 0f;
         if (active) {
             float k = net.minecraft.util.Mth.clamp((tensionShown - 0.25f) / 0.70f, 0f, 1f);
             tb = k * 0.32f;
-            // лёгкое подрагивание кончика на большом натяге
             long t = net.minecraft.client.Minecraft.getInstance().level != null
                     ? net.minecraft.client.Minecraft.getInstance().level.getGameTime() : 0;
             tb += k * k * 0.02f * net.minecraft.util.Mth.sin(t * 2.3f);
+
+            // клавиши
+            if (inTighten) tb += 0.10f;          // S: сильнее выгибаем
+            if (inSlack)   tb -= 0.06f;          // W: ослабляем
+            tb = Math.max(0f, tb);
+            ts = inSide * 0.22f;                 // A/D: гнём вбок
         }
         rodBend += (tb - rodBend) * 0.25f;
+        rodSide += (ts - rodSide) * 0.25f;
         rodPitch += (tp - rodPitch) * 0.2f;
         rodRoll  += (tr - rodRoll)  * 0.2f;
     }
@@ -185,6 +195,7 @@ public final class FightClient {
         lateral = 0;
         dash = 0;
         warn = 0;
+        inSide = 0; inTighten = false; inSlack = false;
         pendingDx = 0;
         pendingDy = 0;
     }

@@ -50,7 +50,7 @@ public abstract class FishingHookRendererMixin {
     @Unique private static float df$tipX, df$tipY, df$tipZ;
     @Unique private static final float DF_TIP_FWD  = 0.40f;
     @Unique private static final float DF_TIP_DOWN = 0.28f;   // меньше, чем FWD
-
+    @Unique private static final float DF_TIP_SIDE = 0.35f;   // смещение кончика вбок, подбери на глаз
     /** Смещение кончика в блоках на 1.0 rodBend (масштаб модели в руке ~0.68 * 0.7071). Подбери на глаз. */
     @Unique private static final float DF_TIP_SCALE = 0.48f;
     @Inject(method = "render(Lnet/minecraft/world/entity/projectile/FishingHook;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
@@ -94,14 +94,17 @@ public abstract class FishingHookRendererMixin {
         if (own && mc.options.getCameraType().isFirstPerson()) {
             df$tipX = FightClient.tipDx; df$tipY = FightClient.tipDy; df$tipZ = FightClient.tipDz;
         }
-        if (own && mc.options.getCameraType().isFirstPerson() && Math.abs(FightClient.rodBend) > 0.002f) {
+        if (own && mc.options.getCameraType().isFirstPerson()
+                && (Math.abs(FightClient.rodBend) > 0.002f || Math.abs(FightClient.rodSide) > 0.002f)) {
             var cam = mc.gameRenderer.getMainCamera();
-            org.joml.Vector3f look = cam.getLookVector();   // вперёд
-            org.joml.Vector3f up   = cam.getUpVector();     // вверх
+            org.joml.Vector3f look = cam.getLookVector();
+            org.joml.Vector3f up   = cam.getUpVector();
+            org.joml.Vector3f left = cam.getLeftVector();
             float b = FightClient.rodBend;
-            df$tipX = look.x * b * DF_TIP_FWD - up.x * b * DF_TIP_DOWN;
-            df$tipY = look.y * b * DF_TIP_FWD - up.y * b * DF_TIP_DOWN;
-            df$tipZ = look.z * b * DF_TIP_FWD - up.z * b * DF_TIP_DOWN;
+            float s = FightClient.rodSide;   // + = вправо
+            df$tipX = look.x * b * DF_TIP_FWD - up.x * b * DF_TIP_DOWN - left.x * s * DF_TIP_SIDE;
+            df$tipY = look.y * b * DF_TIP_FWD - up.y * b * DF_TIP_DOWN - left.y * s * DF_TIP_SIDE;
+            df$tipZ = look.z * b * DF_TIP_FWD - up.z * b * DF_TIP_DOWN - left.z * s * DF_TIP_SIDE;
         }
 // накапливаем фазу: чем больше натяг, тем чаще колебания
         float now = hook.tickCount + pt;

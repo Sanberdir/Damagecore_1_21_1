@@ -28,7 +28,7 @@ public abstract class ItemRendererMixin {
         // только своя удочка в руке от первого лица
         df$active = ctx.firstPerson()
                 && stack.getItem() instanceof FishingRodItem
-                && Math.abs(FightClient.rodBend) > 0.002f;
+                && (Math.abs(FightClient.rodBend) > 0.002f || Math.abs(FightClient.rodSide) > 0.002f);
     }
 
     @Inject(method = "render", at = @At("RETURN"))
@@ -40,18 +40,19 @@ public abstract class ItemRendererMixin {
     private void df$tip(BakedModel model, ItemStack stack, int light, int overlay,
                         PoseStack ps, VertexConsumer c, CallbackInfo ci) {
         if (!df$active) { FightClient.tipDx = FightClient.tipDy = FightClient.tipDz = 0f; return; }
-        float tu = 0.94f, tv = 0.94f;                 // позиция кончика на спрайте, где крепится леска
-        float off = BendConsumer.offsetAt(FightClient.rodBend, tu, tv);
+        float tu = 0.94f, tv = 0.94f;
+        float off  = BendConsumer.offsetAt(FightClient.rodBend, tu, tv);
+        float offZ = BendConsumer.sideAt(FightClient.rodSide, tu, tv);
         org.joml.Matrix4f m = ps.last().pose();
         org.joml.Vector3f p0 = m.transformPosition(tu, tv, 0.5f, new org.joml.Vector3f());
-        org.joml.Vector3f p1 = m.transformPosition(tu + off, tv - off, 0.5f, new org.joml.Vector3f());
-        p1.sub(p0);   // смещение в пространстве вида
+        org.joml.Vector3f p1 = m.transformPosition(tu + off, tv - off, 0.5f + offZ, new org.joml.Vector3f());
+        p1.sub(p0);
         net.minecraft.client.Camera cam = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera();
         cam.rotation().transform(p1);                 // вид -> мир
         FightClient.tipDx = p1.x; FightClient.tipDy = p1.y; FightClient.tipDz = p1.z;
     }
     @ModifyVariable(method = "renderModelLists", at = @At("HEAD"), argsOnly = true)
     private VertexConsumer df$wrap(VertexConsumer c) {
-        return df$active ? new BendConsumer(c, FightClient.rodBend) : c;
+        return df$active ? new BendConsumer(c, FightClient.rodBend, FightClient.rodSide) : c;
     }
 }

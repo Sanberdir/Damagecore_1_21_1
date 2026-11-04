@@ -36,7 +36,7 @@ public final class FightKeys {
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) { hadRod = false; blockCast = false; return; }
-
+        FightClient.inSide = 0; FightClient.inTighten = false; FightClient.inSlack = false;
         boolean locked = rodLocked(mc);
         // бой/зацеп не может идти без поплавка: если сервер не прислал active=false, сбрасываем сами
         if (FightClient.active && mc.player.fishing == null) {
@@ -60,7 +60,10 @@ public final class FightKeys {
             tighten = mc.options.keyDown.isDown() || raw(mc, GLFW.GLFW_KEY_DOWN);   // S = сопротивление
             slack   = mc.options.keyUp.isDown()   || raw(mc, GLFW.GLFW_KEY_UP);     // W = ослабить
             reel    = mc.options.keyUse.isDown();                                    // ПКМ = катушка
-            attack  = mc.options.keyAttack.isDown();                                 // ЛКМ: тап = рывок, удержание = отпустить
+            attack  = mc.options.keyAttack.isDown();
+            FightClient.inSide = side;
+            FightClient.inTighten = tighten;
+            FightClient.inSlack = slack;// ЛКМ: тап = рывок, удержание = отпустить
             if (mc.player.isSprinting()) mc.player.setSprinting(false);
         } else if (mc.screen == null && mc.player.fishing != null) {
             reel = mc.options.keyUse.isDown();
