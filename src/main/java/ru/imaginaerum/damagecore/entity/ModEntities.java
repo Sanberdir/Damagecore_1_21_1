@@ -5,6 +5,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import ru.imaginaerum.damagecore.entity.sunken_lockbox.SunkenBottleEntity;
 import ru.imaginaerum.damagecore.entity.sunken_lockbox.SunkenLockboxEntity;
 
 import static ru.imaginaerum.damagecore.Damagecore_1_21_1_neo.MODID;
@@ -20,4 +21,11 @@ public class ModEntities {
                             .clientTrackingRange(10)
                             .updateInterval(1)
                             .build("sunken_lockbox"));
+    public static final DeferredHolder<EntityType<?>, EntityType<SunkenBottleEntity>> SUNKEN_BOTTLE =
+            ENTITY_TYPES.register("sunken_bottle", () ->
+                    EntityType.Builder.<SunkenBottleEntity>of(SunkenBottleEntity::new, MobCategory.MISC)
+                            .sized(0.5f, 0.9f)
+                            .clientTrackingRange(10)
+                            .updateInterval(1)
+                            .build("sunken_bottle"));
 }

@@ -25,6 +25,12 @@ public class DCSoundEvents {
             registerSoundEvents("tension_3");
     public static final DeferredHolder<SoundEvent, SoundEvent> REEL =
             registerSoundEvents("reel");
+    public static final DeferredHolder<SoundEvent, SoundEvent> FISH =
+            registerSoundEvents("fish");
+    public static final DeferredHolder<SoundEvent, SoundEvent> FISH_IS_TIRED =
+            registerSoundEvents("fish_is_tired");
+    public static final DeferredHolder<SoundEvent, SoundEvent> STRONG_TENSION =
+            registerSoundEvents("strong_tension");
 
     private static DeferredHolder<SoundEvent, SoundEvent> registerSoundEvents(String name) {
         // Ньюанс 1.21+: 'new ResourceLocation()' теперь приватный, используем .fromNamespaceAndPath()

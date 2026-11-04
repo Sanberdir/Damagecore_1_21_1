@@ -7,10 +7,15 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 
+import java.util.function.Supplier;
+
 public class DCParticles {
     public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
             DeferredRegister.create(BuiltInRegistries.PARTICLE_TYPE, Damagecore_1_21_1_neo.MODID);
-
+    public static final Supplier<SimpleParticleType> GLOW_FOG =
+            PARTICLE_TYPES.register("glow_fog", () -> new SimpleParticleType(false));
+    public static final Supplier<SimpleParticleType> GLOW_RAY =
+            PARTICLE_TYPES.register("glow_ray", () -> new SimpleParticleType(false));
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> STUN =
             PARTICLE_TYPES.register("stun", () -> new SimpleParticleType(true));
 }

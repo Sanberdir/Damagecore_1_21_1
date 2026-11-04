@@ -215,6 +215,13 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
         int imageWidth = ((AbstractContainerScreenAccessor) screen).damagecore$getImageWidth();
 
         int panelLeft = leftPos + imageWidth + 2;
+        if (damagecore$activeSideTab == TitleTabRenderer.TAB_ID
+                && TitleTabRenderer.mouseClicked(panelLeft, topPos, mouseX, mouseY, button)) {
+            Minecraft.getInstance().getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            cir.setReturnValue(true);
+            return;
+        }
         int TOP_Y     = topPos - 25;
         int TAB_W     = 28;
         int TOP_TAB_GAP = 2;
@@ -248,7 +255,7 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
     @Unique
     private void toggleSideTab(int tab) {
         if (damagecore$activeSideTab == tab) return; // клик по активной — no-op
-
+        TitleTabRenderer.resetSelection();
         damagecore$activeSideTab = tab;
         DamageBookRenderer.clearSelectedTree();     // нижний ряд теряет выделение
         SkillTreeRenderer.resetTreePosition();
@@ -441,7 +448,7 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
     private void damagecore$resetSyncFlagOnInit(CallbackInfo ci) {
         ClientSyncState.syncRequested = false;
     }
-
+    @Unique private boolean damagecore$titleResetDone = false;
     @Inject(method = "init", at = @At("TAIL"))
     private void damagecore$init(CallbackInfo ci) {
         InventoryScreen screen = (InventoryScreen) (Object) this;
@@ -450,7 +457,10 @@ public abstract class InventoryScreenMixin implements ISkillTreeAccessor {
         // Получаем координаты левого и верхнего угла экрана напрямую через ванильные методы
         int leftPos = screen.getGuiLeft();
         int topPos  = screen.getGuiTop();
-
+        if (!damagecore$titleResetDone) {
+            TitleTabRenderer.resetSelection();
+            damagecore$titleResetDone = true;
+        }
         for (var child : screen.children()) {
             if (child instanceof ImageButton btn
                     && btn.getWidth()  == BUTTON_WIDTH

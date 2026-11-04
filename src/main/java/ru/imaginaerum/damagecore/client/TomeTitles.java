@@ -14,7 +14,11 @@ public final class TomeTitles {
             {"light_warrior", "seeker_of_justice", "vicious",  "lost"},
             {"penitent",      "traitor",           "hardened", "absolute_evil"}
     };
-
+    public static final String[] ALL = {
+            "guardian", "defender", "drifter", "withering",
+            "light_warrior", "seeker_of_justice", "vicious", "lost",
+            "penitent", "traitor", "hardened", "absolute_evil"
+    };
     private TomeTitles() {}
 
     @Nullable

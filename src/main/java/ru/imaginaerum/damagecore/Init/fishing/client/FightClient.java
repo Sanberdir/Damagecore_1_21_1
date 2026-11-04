@@ -21,7 +21,8 @@ public final class FightClient {
     public static final float BOBBER_RAISE = 0.18f;
     private static double pendingDx;
     private static double pendingDy;
-
+    public static float rodBend;   // 0..~0.4 в единицах модели
+    public static float tipDx, tipDy, tipDz;
     private FightClient() {}
     private static final java.util.Map<Integer, Pos> POS = new java.util.HashMap<>();
 
@@ -32,6 +33,27 @@ public final class FightClient {
         if (mc.level == null) return;
         POS.put(p.hookId(), new Pos(p, mc.level.getGameTime()));
         apply(mc.level, p);
+    }
+    public static float tensionShown;
+
+    public static float rodPitch, rodRoll;
+
+    public static void smoothTick() {
+        tensionShown += (tension - tensionShown) * 0.35f;
+
+        float tp = 0f, tr = 0f;
+        float tb = 0f;
+        if (active) {
+            float k = net.minecraft.util.Mth.clamp((tensionShown - 0.25f) / 0.70f, 0f, 1f);
+            tb = k * 0.32f;
+            // лёгкое подрагивание кончика на большом натяге
+            long t = net.minecraft.client.Minecraft.getInstance().level != null
+                    ? net.minecraft.client.Minecraft.getInstance().level.getGameTime() : 0;
+            tb += k * k * 0.02f * net.minecraft.util.Mth.sin(t * 2.3f);
+        }
+        rodBend += (tb - rodBend) * 0.25f;
+        rodPitch += (tp - rodPitch) * 0.2f;
+        rodRoll  += (tr - rodRoll)  * 0.2f;
     }
 
     /** Повторяет последние позиции каждый клиентский тик. */
@@ -49,6 +71,7 @@ public final class FightClient {
             else apply(mc.level, e.p());
         }
     }
+
     /** Высота поверхности воды над точкой, NaN если воды нет. */
     private static double waterSurfaceY(Level level, double x, double y, double z) {
         BlockPos.MutableBlockPos p = BlockPos.containing(x, y, z).mutable();
@@ -158,6 +181,7 @@ public final class FightClient {
         active = false;
         tension = 0;
         progress = 0;
+        tensionShown = 0;
         lateral = 0;
         dash = 0;
         warn = 0;

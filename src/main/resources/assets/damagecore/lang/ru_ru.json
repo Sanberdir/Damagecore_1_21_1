@@ -9,7 +9,10 @@
   "block.damagecore.sunken_lockbox": "Затонувшая шкатулка",
   "entity.damagecore.sunken_lockbox": "Затонувшая шкатулка",
   "block.damagecore.sunken_lockbox.tooltip": "Найден в океане",
-
+  "block.damagecore.sunken_bottle": "Затонувшая бутылка",
+  "entity.damagecore.sunken_bottle": "Затонувшая бутылка",
+  "block.damagecore.sunken_bottle.tooltip": "Найден в океане",
+  "tooltip.damagecore.fish_weight": "Вес: %s кг",
   "message.damagecore.enchanting_locked": "Вы не знаете, как этим пользоваться",
 
   "damage_type.bludgeoning": "Дробящий урон",

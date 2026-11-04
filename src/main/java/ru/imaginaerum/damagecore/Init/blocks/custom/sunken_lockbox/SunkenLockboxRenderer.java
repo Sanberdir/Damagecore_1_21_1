@@ -13,16 +13,19 @@ public class SunkenLockboxRenderer extends GeoBlockRenderer<SunkenLockboxEntity>
     public SunkenLockboxRenderer() {
         super(new DefaultedEntityGeoModel<>(
                 ResourceLocation.fromNamespaceAndPath(Damagecore_1_21_1_neo.MODID, "sunken_lockbox")));
+        addRenderLayer(new SunkenLockboxGlowLayer(this));
     }
 
     @Override
     public void render(SunkenLockboxEntity be, float partialTick, PoseStack poseStack,
                        MultiBufferSource buffer, int light, int overlay) {
         int segment = be.getBlockState().getValue(SunkenLockboxBlock.ROTATION);
+        float s = be.getOpenScale();
 
         poseStack.pushPose();
         poseStack.translate(0.5, 0, 0.5);
         poseStack.mulPose(Axis.YP.rotationDegrees(-RotationSegment.convertToDegrees(segment)));
+        poseStack.scale(s, s, s);
         poseStack.translate(-0.5, 0, -0.5);
         super.render(be, partialTick, poseStack, buffer, light, overlay);
         poseStack.popPose();

@@ -1,0 +1,104 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.Model_luta_rybalki_i_prochego_melkogo_dekora_bbmodel (1) - Converted",
+				"texture_width": 64,
+				"texture_height": 64,
+				"visible_bounds_width": 2,
+				"visible_bounds_height": 2.5,
+				"visible_bounds_offset": [0, 0.75, 0]
+			},
+			"bones": [
+				{
+					"name": "bottle",
+					"pivot": [1, 0, -2],
+					"cubes": [
+						{
+							"origin": [-1, 15, -1],
+							"size": [2, 1, 2],
+							"uv": {
+								"north": {"uv": [12, 14], "uv_size": [4, 2]},
+								"east": {"uv": [16, 14], "uv_size": [-4, 2]},
+								"south": {"uv": [12, 10], "uv_size": [-4, 2]},
+								"west": {"uv": [8, 10], "uv_size": [4, 2]},
+								"up": {"uv": [12, 16], "uv_size": [-4, -4]},
+								"down": {"uv": [12, 30], "uv_size": [-4, -4]}
+							}
+						},
+						{
+							"origin": [-2, 0, -2],
+							"size": [4, 9, 4],
+							"uv": {
+								"north": {"uv": [8, 34], "uv_size": [-8, 18]},
+								"east": {"uv": [0, 34], "uv_size": [8, 18]},
+								"south": {"uv": [8, 0], "uv_size": [-8, 18]},
+								"west": {"uv": [0, 0], "uv_size": [8, 18]},
+								"up": {"uv": [8, 26], "uv_size": [-8, -8]},
+								"down": {"uv": [8, 34], "uv_size": [-8, -8]}
+							}
+						},
+						{
+							"origin": [-1, 9, -1],
+							"size": [2, 5, 2],
+							"uv": {
+								"north": {"uv": [12, 16], "uv_size": [-4, 10]},
+								"east": {"uv": [8, 16], "uv_size": [4, 10]},
+								"south": {"uv": [8, 0], "uv_size": [4, 10]},
+								"west": {"uv": [12, 0], "uv_size": [-4, 10]},
+								"up": {"uv": [12, 30], "uv_size": [-4, -4]},
+								"down": {"uv": [12, 30], "uv_size": [-4, -4]}
+							}
+						},
+						{
+							"origin": [-1.5, 14, -1.5],
+							"size": [3, 1, 3],
+							"uv": {
+								"north": {"uv": [24, 0], "uv_size": [-6, 2]},
+								"east": {"uv": [18, 0], "uv_size": [6, 2]},
+								"south": {"uv": [18, 0], "uv_size": [-6, 2]},
+								"west": {"uv": [12, 0], "uv_size": [6, 2]},
+								"up": {"uv": [18, 8], "uv_size": [-6, -6]},
+								"down": {"uv": [18, 14], "uv_size": [-6, -6]}
+							}
+						}
+					]
+				},
+				{
+					"name": "layer",
+					"parent": "bottle",
+					"pivot": [1, 0, -2],
+					"cubes": [
+						{
+							"origin": [-2, 0, -2],
+							"size": [4, 9, 4],
+							"inflate": 0.2,
+							"uv": {
+								"north": {"uv": [32, 0], "uv_size": [-8, 18]},
+								"east": {"uv": [16, 16], "uv_size": [8, 18]},
+								"south": {"uv": [48, 10], "uv_size": [-8, 18]},
+								"west": {"uv": [32, 10], "uv_size": [8, 18]},
+								"up": {"uv": [32, 26], "uv_size": [-8, -8]},
+								"down": {"uv": [32, 34], "uv_size": [-8, -8]}
+							}
+						},
+						{
+							"origin": [-1, 9, -1],
+							"size": [2, 5, 2],
+							"inflate": 0.2,
+							"uv": {
+								"north": {"uv": [36, 0], "uv_size": [-4, 10]},
+								"east": {"uv": [40, 0], "uv_size": [4, 10]},
+								"south": {"uv": [44, 0], "uv_size": [4, 10]},
+								"west": {"uv": [40, 0], "uv_size": [-4, 10]},
+								"up": {"uv": [12, 30], "uv_size": [-4, -4]},
+								"down": {"uv": [12, 30], "uv_size": [-4, -4]}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

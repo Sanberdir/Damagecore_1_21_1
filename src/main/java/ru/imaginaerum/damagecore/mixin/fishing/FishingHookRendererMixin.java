@@ -2,217 +2,189 @@ package ru.imaginaerum.damagecore.mixin.fishing;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.FishingHookRenderer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.projectile.FishingHook;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.material.FluidState;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.imaginaerum.damagecore.Init.fishing.client.DfLineState;
 import ru.imaginaerum.damagecore.Init.fishing.client.FightClient;
 
 @Mixin(FishingHookRenderer.class)
 public abstract class FishingHookRendererMixin {
+    /** Сколько тиков после заброса леска остаётся прямой, а потом плавно провисает. */
+    @Unique private static final float DF_SAG_DELAY = 22f;
+    /** 1 = леска прямая, 0 = ванильный провис. */
+    @Unique private static float df$straight;
+    @Unique private static final float DF_BOBBER_DY = -0.05f;
+    @Unique private static final float DF_TENSION_SLACK = 0.30f;
+    @Unique private static final float DF_TENSION_TAUT  = 0.55f;
+    /** Плавность перехода между прямой и провисшей (0..1 за кадр). */
+    @Unique private static final float DF_SMOOTH = 0.2f;
+    @Unique private static float df$own = 0f;
+    /** Сила дрожи лески 0..1 (сглаженная). */
+    @Unique private static float df$shake = 0f;
+    /** Время в тиках с долей, для фазы колебаний. */
+    @Unique private static final float DF_SHAKE_START = 0.30f;  // с какого натяга начинается дрожь
+    @Unique private static final float DF_SHAKE_FULL  = 0.95f;  // максимум
+    @Unique private static final float DF_SHAKE_AMP_MIN = 0.013f;  // было 0.020f
+    @Unique private static final float DF_SHAKE_AMP_MAX = 0.057f;  // было 0.085f
+    @Unique private static final float DF_SHAKE_FREQ_MIN = 1.2f;  // рад/тик (~4 Гц)
+    @Unique private static final float DF_SHAKE_FREQ_MAX = 3.4f;  // рад/тик (~11 Гц)
+    @Unique private static float df$time = 0f;
+    @Unique private static final float DF_SHAKE_AMP  = 0.022f;  // макс. отклонение середины, блоков
+    @Unique private static final float DF_SHAKE_FREQ = 4.2f;
+    /** Глубина провиса как доля горизонтальной длины лески. */
+    @Unique private static final float DF_SLACK_DEPTH = 0.05f;  // было 0.20
+    @Unique private static final float DF_SLACK_MAX   = 0.45f;  // было 1.8
+    /** Текущая степень слабины 0..1 (сглаженная). */
+    @Unique private static float df$phase = 0f;     // накопленная фаза
+    @Unique private static float df$lastTime = 0f;
+    @Unique private static float df$level = 0f;     // 0..1, сглаженный уровень натяга для дрожи
+    @Unique private static float df$curShake = 0f;  // значение для текущей отрисовки (0 для чужих крючков)
+    @Unique private static float df$slack = 0f;
+    @Unique private static float df$tipX, df$tipY, df$tipZ;
+    @Unique private static final float DF_TIP_FWD  = 0.40f;
+    @Unique private static final float DF_TIP_DOWN = 0.28f;   // меньше, чем FWD
 
-    private static final float DF_BOBBER_RAISE = 0.12f;
-    private static float dfRaise;   // текущий подъём поплавка, 0 если нет боя
-    private static final float DF_SAG_DEPTH = 1.6f;    // было 0.9
-    private static final float DF_VIB_LIN   = 0.006f;
-    private static final float DF_VIB_QUAD  = 0.030f;  // дрожь заметно растёт только у предела
-
-    private static final float DF_VIB_FREQ = 0.075f;   // было 0.030, ≈ 12 Гц
-    private static float dfTautSmooth;                 // сглаженная дрожь 0..1
-    private static float dfTautUse;                    // применяется к текущей леске
-    /** Вибрация струны: амплитуда (блоки) = LIN * taut + QUAD * taut², частота в рад/мс. */
-    private static float dfSwayAmt;     // 1 в покое, 0 в бою
-    private static float dfSwayPhase;
-    private static final float DF_ATTACH = 0.05f;
-    private static boolean dfUnder;
-    private static float dfTaut;
-    /** Провис лески в покое (0..1 от DF_SAG_DEPTH); при выдохшейся рыбе будет глубже. */
-    private static final float DF_SAG_IDLE = 0.5f;
-    private static final float DF_SAG_FLIGHT = 0.45f;   // провис лески в полёте, когда крючок уже замедлился
-    private static float dfSlackUse;   // значение, которое реально применяется к текущей леске// натянутость 0..1 для текущей лески
-    /** Максимальная стрела прогиба лески (блоки) при полном провисании. */
-    private static float dfSurfRel;     // высота поверхности относительно точки привязки лески
-    private static long dfLastMs;
-    @Shadow
-    private static void stringVertex(float x, float y, float z, VertexConsumer consumer,
-                                     PoseStack.Pose pose, float frac, float nextFrac) {
-        throw new AssertionError();
-    }
-
+    /** Смещение кончика в блоках на 1.0 rodBend (масштаб модели в руке ~0.68 * 0.7071). Подбери на глаз. */
+    @Unique private static final float DF_TIP_SCALE = 0.48f;
     @Inject(method = "render(Lnet/minecraft/world/entity/projectile/FishingHook;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("HEAD"))
-    private void deepfishing$head(FishingHook hook, float yaw, float pt, PoseStack ps,
-                                  MultiBufferSource buf, int light, CallbackInfo ci) {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+    private void df$begin(FishingHook hook, float yaw, float pt, PoseStack ps,
+                          MultiBufferSource buf, int light, CallbackInfo ci) {
+        float t = Mth.clamp((hook.tickCount + pt) / DF_SAG_DELAY, 0f, 1f);
+        float k = 1f - t * t * (3f - 2f * t);
 
-        long now = net.minecraft.Util.getMillis();
-        DfLineState ln = DfLineState.get(hook.getId(), now);
-        float dt = ln.ms == 0 ? 0.016f : Math.min(0.1f, (now - ln.ms) / 1000f);
-        ln.ms = now;
+        Minecraft mc = Minecraft.getInstance();
+        boolean own = mc.player != null && hook.getPlayerOwner() == mc.player;
+        float shakeTarget = 0f;
+        float slackTarget = 0f;
+        float levelTarget = 0f;
+        if (own) {
+            float target = 0f;
+            if (FightClient.active) {
+                float ts = FightClient.tensionShown;
+                float s = Mth.clamp((ts - DF_TENSION_SLACK) / (DF_TENSION_TAUT - DF_TENSION_SLACK), 0f, 1f);
+                target = s * s * (3f - 2f * s);
 
-        boolean mine = hook.getPlayerOwner() == mc.player;
-        boolean landedNow = hook.isInWater() || hook.onGround() || hook.getHookedIn() != null;
-        boolean justLanded = landedNow && !ln.landed;     // сюда
-        if (landedNow) ln.landed = true;
-        boolean landed = ln.landed;
+                levelTarget = Mth.clamp((ts - DF_SHAKE_START) / (DF_SHAKE_FULL - DF_SHAKE_START), 0f, 1f);
+                shakeTarget = 1f;
 
-        float speed = (float) hook.getDeltaMovement().length();
-        if (!ln.landed && !landedNow) ln.flightSpeed = speed;   // запоминаем скорость полёта
-        if (justLanded) {
-            // крючок резко встал, а леска по инерции продолжает идти вниз
-            ln.slackVel += Mth.clamp(ln.flightSpeed, 0f, 1.5f) * 3.0f;
-        }
-
-        if (mine && FightClient.active) {
-            // бой: как раньше, плавное следование натяжению
-            float targetSlack = 1f - dfSmoothstep(0.05f, 0.80f, Mth.clamp(FightClient.tension, 0f, 1f));
-            float rate = targetSlack < ln.slack ? 2.7f : 1.0f;
-            ln.slack += (targetSlack - ln.slack) * Math.min(1f, rate * dt);
-            ln.slackVel = 0f;
-            if (ln.slack < 0.005f) ln.slack = 0f;
-        } else {
-            // пружина: в полёте жёсткая и почти критически задемпфированная (леска прямая),
-            // после приводнения мягкая и с недодемпфированием (проваливается и качается)
-            float target, omega, zeta;
-            if (landed) {
-                target = DF_SAG_IDLE;
-                omega = 7.0f;
-                zeta = 0.30f;
-            } else {
-                float flightTarget = DF_SAG_FLIGHT * (1f - dfSmoothstep(0.35f, 1.2f, speed));
-                target = flightTarget;
-                omega = 6.0f;
-                zeta = 0.55f;
+                float sl = Mth.clamp((0.50f - ts) / 0.25f, 0f, 1f);
+                slackTarget = sl * sl * (3f - 2f * sl);
             }
-            float acc = omega * omega * (target - ln.slack) - 2f * zeta * omega * ln.slackVel;
-            ln.slackVel += acc * dt;
-            ln.slack += ln.slackVel * dt;
-            if (ln.slack < 0f) {
-                ln.slack = 0f;
-                ln.slackVel = Math.max(0f, ln.slackVel);
-            }
-            ln.slack = Math.min(ln.slack, 1.3f);
-            if (ln.slack < 0.003f && Math.abs(ln.slackVel) < 0.01f) {
-                ln.slack = 0f;
-                ln.slackVel = 0f;
-            }
-        }
-        dfSlackUse = ln.slack;
-        dfSwayAmt = (mine && FightClient.active) ? 0f : 1f;
-        dfSwayPhase = now * 0.0018f + hook.getId() * 1.7f;   // у каждого крючка своя фаза
-        if (mine) {
-            float rawTaut = FightClient.active
-                    ? dfSmoothstep(0.75f, 1.0f, Mth.clamp(FightClient.tension, 0f, 1f)) * (1f - ln.slack)
-                    : 0f;
-            float tRate = rawTaut > dfTautSmooth ? 6f : 3f;
-            dfTautSmooth += (rawTaut - dfTautSmooth) * Math.min(1f, tRate * dt);
-            if (dfTautSmooth < 0.005f) dfTautSmooth = 0f;
-            dfTautUse = dfTautSmooth;
-            dfRaise = FightClient.active ? DF_BOBBER_RAISE : 0f;
-        } else {
-            dfTautUse = 0f;
-            dfRaise = 0f;
-        }
-        if (dfRaise > 0f) ps.translate(0.0, dfRaise, 0.0);
-        dfUnder = false;
-        Level level = hook.level();
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos(hook.getX(), hook.getY(), hook.getZ());
-        if (!level.getFluidState(p).is(FluidTags.WATER)) {
-            p.move(0, -1, 0);
-            if (!level.getFluidState(p).is(FluidTags.WATER)) return;
-        }
+            df$own += (target - df$own) * DF_SMOOTH;
+            if (df$own < 0.001f) df$own = 0f;
+            k = Math.max(k, df$own);
 
-        for (int i = 0; i < 64 && level.getFluidState(p.above()).is(FluidTags.WATER); i++) {
-            p.move(0, 1, 0);
+            // сглаживаем только для своей лески
+            df$shake += (shakeTarget - df$shake) * 0.25f;
+            if (df$shake < 0.001f) df$shake = 0f;
+            df$level += (levelTarget - df$level) * 0.2f;
+            df$slack += (slackTarget - df$slack) * (slackTarget > df$slack ? 0.10f : 0.35f);
+            if (df$slack < 0.001f) df$slack = 0f;
         }
-        FluidState top = level.getFluidState(p);
-        double surfaceY = p.getY() + top.getHeight(level, p) + 0.02;
+        df$curShake = own ? df$shake * (levelTarget > 0f || df$level > 0.01f ? 1f : 0f) : 0f;
+        df$tipX = df$tipY = df$tipZ = 0f;
+        if (own && mc.options.getCameraType().isFirstPerson()) {
+            df$tipX = FightClient.tipDx; df$tipY = FightClient.tipDy; df$tipZ = FightClient.tipDz;
+        }
+        if (own && mc.options.getCameraType().isFirstPerson() && Math.abs(FightClient.rodBend) > 0.002f) {
+            var cam = mc.gameRenderer.getMainCamera();
+            org.joml.Vector3f look = cam.getLookVector();   // вперёд
+            org.joml.Vector3f up   = cam.getUpVector();     // вверх
+            float b = FightClient.rodBend;
+            df$tipX = look.x * b * DF_TIP_FWD - up.x * b * DF_TIP_DOWN;
+            df$tipY = look.y * b * DF_TIP_FWD - up.y * b * DF_TIP_DOWN;
+            df$tipZ = look.z * b * DF_TIP_FWD - up.z * b * DF_TIP_DOWN;
+        }
+// накапливаем фазу: чем больше натяг, тем чаще колебания
+        float now = hook.tickCount + pt;
+        float dt = now - df$lastTime;
+        if (dt < 0f || dt > 3f) dt = 0f;
+        df$lastTime = now;
+        df$time = now;
+        float freq = Mth.lerp(df$level, DF_SHAKE_FREQ_MIN, DF_SHAKE_FREQ_MAX);
+        df$phase += freq * dt;
 
-        // та же точка, что в ванили: lerp(hook.y) + 0.25
-        double originY = Mth.lerp(pt, hook.yo, hook.getY()) + 0.25;
-        float rel = (float) (surfaceY - originY);
-        dfUnder = true;
-        dfSurfRel = Math.max(rel, 0.15f);   // у поверхности держим минимальный вертикальный участок, иначе изгиб дёргается от покачивания поплавка
-    }
-    private static float dfSmoothstep(float a, float b, float x) {
-        float t = Mth.clamp((x - a) / (b - a), 0f, 1f);
-        return t * t * (3f - 2f * t);
-    }
-    @Inject(method = "render(Lnet/minecraft/world/entity/projectile/FishingHook;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
-            at = @At("RETURN"))
-    private void deepfishing$tail(FishingHook hook, float yaw, float pt, PoseStack ps,
-                                  MultiBufferSource buf, int light, CallbackInfo ci) {
-        if (dfRaise > 0f) ps.translate(0.0, -dfRaise, 0.0);
-        dfRaise = 0f;
-        dfUnder = false;
-        dfTaut = 0f;
+        df$straight = k;
     }
 
-    @Redirect(method = "render(Lnet/minecraft/world/entity/projectile/FishingHook;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/entity/FishingHookRenderer;stringVertex(FFFLcom/mojang/blaze3d/vertex/VertexConsumer;Lcom/mojang/blaze3d/vertex/PoseStack$Pose;FF)V"))
-    private static void deepfishing$string(float x, float y, float z, VertexConsumer consumer,
-                                           PoseStack.Pose pose, float frac, float nextFrac) {
-        float[] a = dfPoint(x, y, z, frac);
-        float[] b = dfPoint(x, y, z, nextFrac);
-        float nx = b[0] - a[0], ny = b[1] - a[1], nz = b[2] - a[2];
-        float len = Mth.sqrt(nx * nx + ny * ny + nz * nz);
-        if (len > 1.0E-6f) { nx /= len; ny /= len; nz /= len; }
-        consumer.addVertex(pose, a[0], a[1], a[2]).setColor(-16777216).setNormal(pose, nx, ny, nz);
-    }
-    private static final float DF_STICK = 0.05f;
-    private static float[] dfPoint(float x, float y, float z, float u) {
-        float px = x * u;
-        float py = y * u + 0.25f - dfRaise * u - DF_STICK * (1f - u);
-        float pz = z * u;
+    @Inject(method = "stringVertex", at = @At("HEAD"), cancellable = true)
+    private static void df$string(float x, float y, float z, VertexConsumer consumer, PoseStack.Pose pose,
+                                  float t0, float t1, CallbackInfo ci) {
+        float k = df$straight;
 
-        // провис: парабола с нулевым прогибом на концах, вниз
-        if (dfSlackUse > 0f) {
-            float len = Mth.sqrt(x * x + y * y + z * z);
-            float sag = Mth.sin(dfSwayPhase) * 0.10f * dfSwayAmt;          // глубина чуть «дышит»
-            float depth = DF_SAG_DEPTH * dfSlackUse * (1f + sag) * Mth.clamp(len / 4f, 0.35f, 1f);
-            float env = 4f * u * (1f - u);                                   // концы неподвижны
-            py -= depth * env;
+        float a0 = 1f - t0, a1 = 1f - t1;
+        float w0 = a0 * a0 * a0 * a0;
+        float w1 = a1 * a1 * a1 * a1;
 
-            // лёгкое боковое покачивание
-            float hl = Mth.sqrt(x * x + z * z);
-            if (hl > 1.0E-4f) {
-                float side = Mth.sin(dfSwayPhase * 0.8f + 1.0f) * 0.025f * dfSwayAmt * dfSlackUse * env;
-                px += (-z / hl) * side;
-                pz += ( x / hl) * side;
+        float x0 = x * t0, z0 = z * t0;
+        float x1 = x * t1, z1 = z * t1;
+
+        float y0 = y * Mth.lerp(k, (t0 * t0 + t0) * 0.5f, t0) + 0.25f + DF_BOBBER_DY * w0;
+        float y1 = y * Mth.lerp(k, (t1 * t1 + t1) * 0.5f, t1) + 0.25f + DF_BOBBER_DY * w1;
+        x0 += df$tipX * t0;  y0 += df$tipY * t0;  z0 += df$tipZ * t0;
+        x1 += df$tipX * t1;  y1 += df$tipY * t1;  z1 += df$tipZ * t1;
+        if (df$shake > 0f) {
+            // направление лески
+            float ll = Mth.sqrt(x * x + y * y + z * z);
+            if (ll > 1.0E-4f) {
+                float dxn = x / ll, dyn = y / ll, dzn = z / ll;
+
+                // p1 = горизонтальный перпендикуляр (d × up), p2 = перпендикуляр к d и p1 (почти вертикаль)
+                float p1x = dzn, p1z = -dxn;
+                float pl = Mth.sqrt(p1x * p1x + p1z * p1z);
+                if (pl < 1.0E-4f) { p1x = 1f; p1z = 0f; pl = 1f; }
+                p1x /= pl; p1z /= pl;
+                float p2x = dyn * p1z;
+                float p2y = dzn * p1x - dxn * p1z;
+                float p2z = -dyn * p1x;
+
+                // колебание: преимущественно в одной плоскости, лёгкая эллиптичность,
+                // медленная модуляция амплитуды (как затухающий щипок)
+                float amp = Mth.lerp(df$level, DF_SHAKE_AMP_MIN, DF_SHAKE_AMP_MAX);
+                float env = amp * df$curShake * (0.85f + 0.15f * Mth.sin(df$time * 0.35f));
+                float c1 = Mth.cos(df$phase);          // основная плоскость (вертикальная)
+                float c2 = 0.3f * Mth.sin(df$phase);   // слабая поперечная составляющая
+
+                float s0 = df$mode(t0), s1 = df$mode(t1);
+                float u0 = env * s0, u1 = env * s1;
+
+                x0 += u0 * (p2x * c1 + p1x * c2);
+                y0 += u0 * (p2y * c1);
+                z0 += u0 * (p2z * c1 + p1z * c2);
+                x1 += u1 * (p2x * c1 + p1x * c2);
+                y1 += u1 * (p2y * c1);
+                z1 += u1 * (p2z * c1 + p1z * c2);
             }
         }
-        // дрожь натянутой струны: у концов амплитуда нулевая и с нулевым наклоном, леска там остаётся прямой
-        float taut = dfTautUse;
-        if (taut > 0.01f) {
-            float amp = DF_VIB_LIN * taut + DF_VIB_QUAD * taut * taut;
-            float w = net.minecraft.Util.getMillis() * DF_VIB_FREQ;
-
-            float fade = dfSmoothstep(0f, 0.3f, u) * dfSmoothstep(0f, 0.15f, 1f - u);
-            float env1 = Mth.sin(u * (float) Math.PI) * fade;
-            float env2 = Mth.sin(u * 2f * (float) Math.PI) * fade;
-            float wave = env1 * Mth.sin(w) + 0.08f * env2 * Mth.sin(w * 1.7f + 1.0f);
-
-            float hl = Mth.sqrt(x * x + z * z);
-            float hx = hl > 1.0E-4f ? -z / hl : 0f;
-            float hz = hl > 1.0E-4f ?  x / hl : 0f;
-            float wave2 = env1 * Mth.cos(w * 0.9f + 0.5f);
-
-            py += wave * amp;
-            px += hx * wave2 * amp * 0.7f;
-            pz += hz * wave2 * amp * 0.7f;
+        if (df$slack > 0f) {
+            float L = Mth.sqrt(x * x + z * z);
+            // лёгкое покачивание провисшей лески, чтобы она выглядела живой
+            float sway = 1f + 0.06f * Mth.sin(df$time * 0.11f);
+            float depth = Math.min(L * DF_SLACK_DEPTH, DF_SLACK_MAX) * df$slack * sway;
+            y0 -= depth * 4f * t0 * (1f - t0);
+            y1 -= depth * 4f * t1 * (1f - t1);
         }
-        return new float[]{px, py, pz};
+        float dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+        float len = Mth.sqrt(dx * dx + dy * dy + dz * dz);
+        if (len < 1.0E-6f) { dx = 0f; dy = 1f; dz = 0f; } else { dx /= len; dy /= len; dz /= len; }
+
+        consumer.addVertex(pose, x0, y0, z0).setColor(-16777216).setNormal(pose, dx, dy, dz);
+        ci.cancel();
+    }
+
+    /** Форма струны: основная полуволна + слабая 2-я гармоника (с узлом в центре, колеблется в противофазе). */
+    @Unique
+    private static float df$mode(float t) {
+        float m1 = Mth.sin(t * Mth.PI);
+        float m2 = Mth.sin(t * Mth.PI * 2f) * 0.25f * Mth.cos(df$phase * 0.5f);
+        return m1 + m2;
     }
 }

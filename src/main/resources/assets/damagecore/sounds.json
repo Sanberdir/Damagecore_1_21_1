@@ -55,5 +55,56 @@
         "name": "damagecore:reel_3"
       }
     ]
+  },
+  "fish": {
+    "subtitle": "sounds.damagecore.fish",
+    "sounds": [
+      {
+        "name": "damagecore:fish_0"
+      },
+      {
+        "name": "damagecore:fish_1"
+      },
+      {
+        "name": "damagecore:fish_2"
+      },
+      {
+        "name": "damagecore:fish_3"
+      }
+    ]
+  },
+  "fish_is_tired": {
+    "subtitle": "sounds.damagecore.fish_is_tired",
+    "sounds": [
+      {
+        "name": "damagecore:fish_is_tired_0"
+      },
+      {
+        "name": "damagecore:fish_is_tired_1"
+      },
+      {
+        "name": "damagecore:fish_is_tired_2"
+      },
+      {
+        "name": "damagecore:fish_is_tired_3"
+      }
+    ]
+  },
+  "strong_tension": {
+    "subtitle": "sounds.damagecore.strong_tension",
+    "sounds": [
+      {
+        "name": "damagecore:strong_tension_0"
+      },
+      {
+        "name": "damagecore:strong_tension_1"
+      },
+      {
+        "name": "damagecore:strong_tension_2"
+      },
+      {
+        "name": "damagecore:strong_tension_3"
+      }
+    ]
   }
 }

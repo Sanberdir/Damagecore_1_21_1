@@ -6,6 +6,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
 import ru.imaginaerum.damagecore.Init.items.custom.ChainLightningArrowItem;
+import ru.imaginaerum.damagecore.Init.items.custom.SunkenBottleBlockItem;
 import ru.imaginaerum.damagecore.Init.items.custom.SunkenLockboxBlockItem;
 import ru.imaginaerum.damagecore.Init.items.custom.TomeOfAttainingMeanings;
 
@@ -20,4 +21,6 @@ public class DCItems {
             () -> new ChainLightningArrowItem(new Item.Properties()));
     public static final DeferredItem<Item> SUNKEN_LOCKBOX = ITEMS.register("sunken_lockbox",
             () -> new SunkenLockboxBlockItem(BlocksDC.SUNKEN_LOCKBOX.get(), new Item.Properties()));
+    public static final DeferredItem<Item> SUNKEN_BOTTLE = ITEMS.register("sunken_bottle",
+            () -> new SunkenBottleBlockItem(BlocksDC.SUNKEN_BOTTLE.get(), new Item.Properties()));
 }

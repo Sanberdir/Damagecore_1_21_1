@@ -45,7 +45,7 @@
 				{
 					"name": "lid",
 					"parent": "crate",
-					"pivot": [9, 0, -8],
+					"pivot": [0, 3.5, 3.5],
 					"cubes": [
 						{
 							"origin": [-6, 5, -4],

@@ -6,7 +6,7 @@
   "damagecore.damage.slashing": "Slashing damage: %s",
   "damagecore.attack_speed": "Attack speed: %s",
   "damagecore.damage.fire": "Fire damage: %s",
-
+  "tooltip.damagecore.fish_weight": "Weight: %s kg",
   "message.damagecore.enchanting_locked": "You don't know how to use this",
 
 
@@ -19,6 +19,9 @@
   "block.damagecore.sunken_lockbox": "Sunken Lockbox",
   "entity.damagecore.sunken_lockbox": "Sunken Lockbox",
   "block.damagecore.sunken_lockbox.tooltip": "Found in the ocean",
+  "block.damagecore.sunken_bottle": "Sunken Bottle",
+  "entity.damagecore.sunken_bottle": "Sunken Bottle",
+  "block.damagecore.sunken_bottle.tooltip": "Found in the ocean",
   "damagecore.immunity_tab.header": "Immunity",
   "damagecore.armor_tab.header": "Armor",
 
