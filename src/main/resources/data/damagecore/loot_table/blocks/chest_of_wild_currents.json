@@ -3,7 +3,7 @@
   "pools": [
     {
       "rolls": 1,
-      "entries": [{ "type": "minecraft:item", "name": "damagecore:sunken_lockbox" }],
+      "entries": [{ "type": "minecraft:item", "name": "damagecore:chest_of_wild_currents" }],
       "conditions": [{ "condition": "minecraft:survives_explosion" }]
     }
   ]

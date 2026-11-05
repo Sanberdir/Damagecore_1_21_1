@@ -9,7 +9,7 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_bottle.SunkenBottleBlock;
-import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenLockboxBlock;
+import ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents.ChestOfWildCurrentsBlock;
 import ru.imaginaerum.damagecore.Init.blocks.custom.StructureBlocksAndEntity;
 import ru.imaginaerum.damagecore.Init.items.DCItems;
 
@@ -23,8 +23,8 @@ public class BlocksDC {
                     .strength(2.0F)
                     .sound(SoundType.STONE)));
 
-    public static final DeferredBlock<Block> SUNKEN_LOCKBOX = BLOCKS.register("sunken_lockbox",
-            () -> new SunkenLockboxBlock(BlockBehaviour.Properties.of()
+    public static final DeferredBlock<Block> CHEST_OF_WILD_CURRENTS = BLOCKS.register("chest_of_wild_currents",
+            () -> new ChestOfWildCurrentsBlock(BlockBehaviour.Properties.of()
                     .strength(1.5F)
                     .sound(SoundType.WOOD)
                     .noOcclusion()));

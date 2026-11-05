@@ -6,8 +6,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
 import ru.imaginaerum.damagecore.Init.items.custom.ChainLightningArrowItem;
+import ru.imaginaerum.damagecore.Init.items.custom.ChestOfWildCurrentsBlockItem;
 import ru.imaginaerum.damagecore.Init.items.custom.SunkenBottleBlockItem;
-import ru.imaginaerum.damagecore.Init.items.custom.SunkenLockboxBlockItem;
 import ru.imaginaerum.damagecore.Init.items.custom.TomeOfAttainingMeanings;
 
 public class DCItems {
@@ -21,8 +21,8 @@ public class DCItems {
             () -> new TomeOfAttainingMeanings(new Item.Properties()));
     public static final DeferredItem<Item> CHAIN_LIGHT_ARROW = ITEMS.register("chain_light_arrow",
             () -> new ChainLightningArrowItem(new Item.Properties()));
-    public static final DeferredItem<Item> SUNKEN_LOCKBOX = ITEMS.register("sunken_lockbox",
-            () -> new SunkenLockboxBlockItem(BlocksDC.SUNKEN_LOCKBOX.get(), new Item.Properties()));
+    public static final DeferredItem<Item> CHEST_OF_WILD_CURRENTS = ITEMS.register("chest_of_wild_currents",
+            () -> new ChestOfWildCurrentsBlockItem(BlocksDC.CHEST_OF_WILD_CURRENTS.get(), new Item.Properties()));
     public static final DeferredItem<Item> SUNKEN_BOTTLE = ITEMS.register("sunken_bottle",
             () -> new SunkenBottleBlockItem(BlocksDC.SUNKEN_BOTTLE.get(), new Item.Properties()));
 }

@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.HoverRays;
+import ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents.HoverRays;
 
 @Mixin(ItemEntityRenderer.class)
 public abstract class ItemEntityRendererMixin {

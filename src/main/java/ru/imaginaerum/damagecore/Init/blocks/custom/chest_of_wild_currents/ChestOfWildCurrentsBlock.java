@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
@@ -10,7 +10,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
@@ -33,8 +32,8 @@ import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
 import java.util.List;
 
-public class SunkenLockboxBlock extends RotatingMultiblock implements EntityBlock {
-    public static final MapCodec<SunkenLockboxBlock> CODEC = simpleCodec(SunkenLockboxBlock::new);
+public class ChestOfWildCurrentsBlock extends RotatingMultiblock implements EntityBlock {
+    public static final MapCodec<ChestOfWildCurrentsBlock> CODEC = simpleCodec(ChestOfWildCurrentsBlock::new);
 
     // Размерность [height (1)][width (3)][depth (1)] для мультиблока 2x1x1
     public static final VoxelShape[][][] SHAPE = new VoxelShape[][][] {
@@ -49,7 +48,7 @@ public class SunkenLockboxBlock extends RotatingMultiblock implements EntityBloc
             }
     };
 
-    public SunkenLockboxBlock(Properties properties) {
+    public ChestOfWildCurrentsBlock(Properties properties) {
         super(MultiblockHandler.MULTIBLOCK_2X1X1, createMultiblockShapeBuilder(MultiblockHandler.MULTIBLOCK_2X1X1, SHAPE), properties);
     }
 
@@ -69,7 +68,7 @@ public class SunkenLockboxBlock extends RotatingMultiblock implements EntityBloc
         BlockPos centerPos = multiblockHandler.getCenterPos(pos, state, state.getValue(FACING));
 
         if (level.isClientSide) return InteractionResult.SUCCESS;
-        if (!(level.getBlockEntity(centerPos) instanceof SunkenLockboxEntity be)) return InteractionResult.PASS;
+        if (!(level.getBlockEntity(centerPos) instanceof ChestOfWildCurrentsEntity be)) return InteractionResult.PASS;
 
         if (!be.isOpened()) {
             // Проверяем наличие ключа в руках игрока
@@ -111,7 +110,7 @@ public class SunkenLockboxBlock extends RotatingMultiblock implements EntityBloc
         List<ItemStack> drops = super.getDrops(state, params);
 
         if (params.getOptionalParameter(LootContextParams.BLOCK_ENTITY)
-                instanceof SunkenLockboxEntity be && be.wasOpened()) {
+                instanceof ChestOfWildCurrentsEntity be && be.wasOpened()) {
 
             for (ItemStack stack : drops) {
                 if (stack.is(asItem())) {
@@ -139,7 +138,7 @@ public class SunkenLockboxBlock extends RotatingMultiblock implements EntityBloc
         );
 
         if (!level.isClientSide()) {
-            if (level.getBlockEntity(centerPos) instanceof SunkenLockboxEntity be) {
+            if (level.getBlockEntity(centerPos) instanceof ChestOfWildCurrentsEntity be) {
                 Containers.dropContents(level, centerPos, be);
                 level.updateNeighbourForOutputSignal(centerPos, this);
             }
@@ -151,7 +150,7 @@ public class SunkenLockboxBlock extends RotatingMultiblock implements EntityBloc
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return multiblockHandler.isCenterState(state) ? new SunkenLockboxEntity(pos, state) : null;
+        return multiblockHandler.isCenterState(state) ? new ChestOfWildCurrentsEntity(pos, state) : null;
     }
 
     @Nullable
@@ -159,8 +158,8 @@ public class SunkenLockboxBlock extends RotatingMultiblock implements EntityBloc
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         if (level.isClientSide) return null;
         return (lvl, pos, st, be) -> {
-            if (be instanceof SunkenLockboxEntity lockboxEntity) {
-                SunkenLockboxEntity.serverTick(lvl, pos, st, lockboxEntity);
+            if (be instanceof ChestOfWildCurrentsEntity lockboxEntity) {
+                ChestOfWildCurrentsEntity.serverTick(lvl, pos, st, lockboxEntity);
             }
         };
     }

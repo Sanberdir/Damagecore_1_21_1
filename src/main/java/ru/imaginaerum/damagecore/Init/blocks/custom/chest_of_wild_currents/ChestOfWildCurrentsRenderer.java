@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.core.Direction;
@@ -10,15 +10,15 @@ import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
 
-public class SunkenLockboxRenderer extends GeoBlockRenderer<SunkenLockboxEntity> {
-    public SunkenLockboxRenderer() {
+public class ChestOfWildCurrentsRenderer extends GeoBlockRenderer<ChestOfWildCurrentsEntity> {
+    public ChestOfWildCurrentsRenderer() {
         super(new DefaultedEntityGeoModel<>(
-                ResourceLocation.fromNamespaceAndPath(Damagecore_1_21_1_neo.MODID, "sunken_lockbox")));
-        addRenderLayer(new SunkenLockboxGlowLayer(this));
+                ResourceLocation.fromNamespaceAndPath(Damagecore_1_21_1_neo.MODID, "chest_of_wild_currents")));
+        addRenderLayer(new ChestOfWildCurrentsGlowLayer(this));
     }
 
     @Override
-    public void render(SunkenLockboxEntity be, float partialTick, PoseStack poseStack,
+    public void render(ChestOfWildCurrentsEntity be, float partialTick, PoseStack poseStack,
                        MultiBufferSource buffer, int light, int overlay) {
         BlockState blockState = be.getBlockState();
 

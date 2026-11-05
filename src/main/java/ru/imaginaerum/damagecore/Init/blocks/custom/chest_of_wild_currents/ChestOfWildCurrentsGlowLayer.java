@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -7,7 +7,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.items_box.DCRenderTypes;
+import ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents.items_box.DCRenderTypes;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.cache.object.GeoCube;
@@ -17,7 +17,7 @@ import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 /** Свет из открытой шкатулки: прямоугольное основание, столб по форме верха ящика и искры. */
-public class SunkenLockboxGlowLayer extends GeoRenderLayer<SunkenLockboxEntity> {
+public class ChestOfWildCurrentsGlowLayer extends GeoRenderLayer<ChestOfWildCurrentsEntity> {
     private static final float BEAM_H = 1.0f;     // высота столба
     private static final float INSET  = 0.04f;    // отступ от краёв ящика
     private static final float LIFT   = 0.003f;   // чтобы не мерцало на поверхности
@@ -35,7 +35,7 @@ public class SunkenLockboxGlowLayer extends GeoRenderLayer<SunkenLockboxEntity> 
     private float cx = 0f, cz = 0f, hx = 0.33f, hz = 0.21f, topY = 0.5625f;
     private boolean measured;
 
-    public SunkenLockboxGlowLayer(GeoRenderer<SunkenLockboxEntity> renderer) {
+    public ChestOfWildCurrentsGlowLayer(GeoRenderer<ChestOfWildCurrentsEntity> renderer) {
         super(renderer);
     }
 
@@ -76,7 +76,7 @@ public class SunkenLockboxGlowLayer extends GeoRenderLayer<SunkenLockboxEntity> 
     }
 
     @Override
-    public void render(PoseStack ps, SunkenLockboxEntity be, BakedGeoModel model,
+    public void render(PoseStack ps, ChestOfWildCurrentsEntity be, BakedGeoModel model,
                        @Nullable RenderType rt, MultiBufferSource buf,
                        @Nullable VertexConsumer vc, float pt, int light, int overlay) {
         float glow = be.getGlow();

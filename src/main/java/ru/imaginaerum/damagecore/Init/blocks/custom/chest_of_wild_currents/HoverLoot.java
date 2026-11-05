@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;

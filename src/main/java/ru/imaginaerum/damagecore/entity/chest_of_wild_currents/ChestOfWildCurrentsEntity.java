@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.entity.sunken_lockbox;
+package ru.imaginaerum.damagecore.entity.chest_of_wild_currents;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -17,21 +17,21 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class SunkenLockboxEntity extends Entity implements GeoEntity {
+public class ChestOfWildCurrentsEntity extends Entity implements GeoEntity {
     private static final double TARGET_DEPTH = 0.35; // насколько сундук погружён в воду
     private static final float BREAK_DAMAGE = 6f;    // накопленный урон до разрушения
     private int openTicks = 0;
     private static final EntityDataAccessor<Float> DATA_SPIN =
-            SynchedEntityData.defineId(SunkenLockboxEntity.class, EntityDataSerializers.FLOAT);
+            SynchedEntityData.defineId(ChestOfWildCurrentsEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> DATA_VISUAL =
-            SynchedEntityData.defineId(SunkenLockboxEntity.class, EntityDataSerializers.BOOLEAN);
+            SynchedEntityData.defineId(ChestOfWildCurrentsEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private float damageTaken = 0f;
     private float spin = 0f; // градусов за тик, считается и на клиенте, и на сервере
     private int lerpSteps;
     private double lerpX, lerpY, lerpZ;
-    public SunkenLockboxEntity(EntityType<?> type, Level level) {
+    public ChestOfWildCurrentsEntity(EntityType<?> type, Level level) {
         super(type, level);
     }
 

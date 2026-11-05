@@ -37,8 +37,8 @@ import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
 import ru.imaginaerum.damagecore.Init.fishing.weight.FishWeight;
 import ru.imaginaerum.damagecore.Init.items.DCItems;
 import ru.imaginaerum.damagecore.entity.ModEntities;
-import ru.imaginaerum.damagecore.entity.sunken_lockbox.SunkenBottleEntity;
-import ru.imaginaerum.damagecore.entity.sunken_lockbox.SunkenLockboxEntity;
+import ru.imaginaerum.damagecore.entity.chest_of_wild_currents.SunkenBottleEntity;
+import ru.imaginaerum.damagecore.entity.chest_of_wild_currents.ChestOfWildCurrentsEntity;
 import ru.imaginaerum.damagecore.mixin.fishing.FishingHookAccessor;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 
@@ -108,7 +108,7 @@ public final class FightManager {
         }
     }
     static boolean isTreasure(Entity e) {
-        return e instanceof SunkenLockboxEntity || e instanceof SunkenBottleEntity;
+        return e instanceof ChestOfWildCurrentsEntity || e instanceof SunkenBottleEntity;
     }
     private static float chestChance(FishingHook hook, ServerPlayer player) {
         int luck = ((FishingHookAccessor) hook).deepfishing$getLuck();
@@ -417,7 +417,7 @@ public final class FightManager {
 
             if (wantChest) {
                 boolean bottle = player.getRandom().nextFloat() < BOTTLE_SHARE;
-                ItemStack prize = new ItemStack(bottle ? DCItems.SUNKEN_BOTTLE.get() : DCItems.SUNKEN_LOCKBOX.get());
+                ItemStack prize = new ItemStack(bottle ? DCItems.SUNKEN_BOTTLE.get() : DCItems.CHEST_OF_WILD_CURRENTS.get());
                 Entity chest = spawnChest(level, hook, player, prize, bottle);
                 if (chest != null) {
                     CHEST_TRIES.remove(id);
@@ -709,7 +709,7 @@ public final class FightManager {
                 b.setYRot(r.nextFloat() * 360f);
                 chest = b;
             } else {
-                SunkenLockboxEntity box = ModEntities.SUNKEN_LOCKBOX.get().create(level);
+                ChestOfWildCurrentsEntity box = ModEntities.CHEST_OF_WILD_CURRENTS.get().create(level);
                 if (box == null) return null;
                 box.setFishingVisual(true);
                 box.setPos(x, surf - 0.35, z);

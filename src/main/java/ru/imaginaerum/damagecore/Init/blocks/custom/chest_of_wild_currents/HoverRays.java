@@ -1,12 +1,11 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
-import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.items_box.DCRenderTypes;
+import ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents.items_box.DCRenderTypes;
 
 /** Маленькие лучи вокруг висящего предмета: веер во все стороны из одной точки. */
 public final class HoverRays {

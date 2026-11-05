@@ -36,7 +36,6 @@ import ru.imaginaerum.damagecore.Init.fishing.food.FishFood;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightPosPayload;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
 import ru.imaginaerum.damagecore.Init.fishing.weight.FishWeight;
-import ru.imaginaerum.damagecore.entity.sunken_lockbox.SunkenLockboxEntity;
 import ru.imaginaerum.damagecore.mixin.fishing.FishingHookAccessor;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 

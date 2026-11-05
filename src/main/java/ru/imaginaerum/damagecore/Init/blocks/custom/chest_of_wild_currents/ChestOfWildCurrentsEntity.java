@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -53,11 +53,11 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
 
-public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implements GeoBlockEntity {
+public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity implements GeoBlockEntity {
     private static final RawAnimation OPEN = RawAnimation.begin().thenPlayAndHold("open");
 
     public static final ResourceKey<LootTable> LOOT = ResourceKey.create(Registries.LOOT_TABLE,
-            ResourceLocation.fromNamespaceAndPath(Damagecore_1_21_1_neo.MODID, "chests/sunken_lockbox"));
+            ResourceLocation.fromNamespaceAndPath(Damagecore_1_21_1_neo.MODID, "chests/chest_of_wild_currents"));
     private long lidOpenedAtMs;
     private static final long FIRST_OPEN_MS = 900L; // длительность first_open в мс, подгони под модель
     static final int MAX_ITEMS      = 8;
@@ -122,7 +122,7 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
         @Override
         protected boolean isOwnContainer(Player player) {
             return player.containerMenu instanceof ChestMenu cm
-                    && cm.getContainer() == SunkenLockboxEntity.this;
+                    && cm.getContainer() == ChestOfWildCurrentsEntity.this;
         }
     };
     @Override
@@ -154,8 +154,8 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
     private NonNullList<ItemStack> items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
 
 
-    public SunkenLockboxEntity(BlockPos pos, BlockState state) {
-        super(DCBlockEntities.SUNKEN_LOCKBOX.get(), pos, state);
+    public ChestOfWildCurrentsEntity(BlockPos pos, BlockState state) {
+        super(DCBlockEntities.CHEST_OF_WILD_CURRENTS.get(), pos, state);
     }
 
     public boolean isOpened()   { return opened; }
@@ -213,7 +213,7 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
 
     // ── сервер: таймлайн ──
     // ── сервер: таймлайн ──
-    public static void serverTick(Level level, BlockPos pos, BlockState state, SunkenLockboxEntity be) {
+    public static void serverTick(Level level, BlockPos pos, BlockState state, ChestOfWildCurrentsEntity be) {
         if (!(level instanceof ServerLevel sl)) return;
         if (be.finished) {
             if (level.getGameTime() % 20 == 0) be.openers.recheckOpeners(level, pos, state);
@@ -349,7 +349,7 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
     // ── контейнер ──
     @Override
     protected Component getDefaultName() {
-        return Component.translatable("block." + Damagecore_1_21_1_neo.MODID + ".sunken_lockbox");
+        return Component.translatable("block." + Damagecore_1_21_1_neo.MODID + ".chest_of_wild_currents");
     }
 
 

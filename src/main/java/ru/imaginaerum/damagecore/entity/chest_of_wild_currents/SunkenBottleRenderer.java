@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.entity.sunken_lockbox;
+package ru.imaginaerum.damagecore.entity.chest_of_wild_currents;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -15,34 +15,34 @@ import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 import static ru.imaginaerum.damagecore.Damagecore_1_21_1_neo.MODID;
 
-public class SunkenLockboxRenderer extends GeoEntityRenderer<SunkenLockboxEntity> {
+public class SunkenBottleRenderer extends GeoEntityRenderer<SunkenBottleEntity> {
     private static final int FADE_TICKS = 40;   // 2 секунды
 
-    public SunkenLockboxRenderer(EntityRendererProvider.Context context) {
+    public SunkenBottleRenderer(EntityRendererProvider.Context context) {
         super(context, new DefaultedEntityGeoModel<>(
-                ResourceLocation.fromNamespaceAndPath(MODID, "sunken_lockbox")));
+                ResourceLocation.fromNamespaceAndPath(MODID, "sunken_bottle")));
         this.shadowRadius = 0.4f;
     }
 
-    private static boolean fading(SunkenLockboxEntity e) {
+    private static boolean fading(SunkenBottleEntity e) {
         return e.isFishingVisual() && e.tickCount < FADE_TICKS;
     }
 
-    private static float fadeAlpha(SunkenLockboxEntity e, float partialTick) {
+    private static float fadeAlpha(SunkenBottleEntity e, float partialTick) {
         float k = Mth.clamp((e.tickCount + partialTick) / FADE_TICKS, 0f, 1f);
         return k * k * (3f - 2f * k);   // плавный старт и финиш
     }
 
     // прозрачный слой только на время появления, потом обычный
     @Override
-    public RenderType getRenderType(SunkenLockboxEntity e, ResourceLocation texture,
+    public RenderType getRenderType(SunkenBottleEntity e, ResourceLocation texture,
                                     @Nullable MultiBufferSource bufferSource, float partialTick) {
         return fading(e) ? RenderType.entityTranslucent(texture)
                 : super.getRenderType(e, texture, bufferSource, partialTick);
     }
 
     @Override
-    public void actuallyRender(PoseStack poseStack, SunkenLockboxEntity e, BakedGeoModel model,
+    public void actuallyRender(PoseStack poseStack, SunkenBottleEntity e, BakedGeoModel model,
                                @Nullable RenderType renderType, MultiBufferSource bufferSource,
                                @Nullable VertexConsumer buffer, boolean isReRender, float partialTick,
                                int packedLight, int packedOverlay, int colour) {
@@ -55,7 +55,7 @@ public class SunkenLockboxRenderer extends GeoEntityRenderer<SunkenLockboxEntity
     }
 
     @Override
-    public void render(SunkenLockboxEntity entity, float entityYaw, float partialTick,
+    public void render(SunkenBottleEntity entity, float entityYaw, float partialTick,
                        PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
         poseStack.pushPose();
 

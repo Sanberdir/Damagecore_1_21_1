@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.entity.sunken_lockbox;
+package ru.imaginaerum.damagecore.entity.chest_of_wild_currents;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
