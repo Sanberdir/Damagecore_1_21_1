@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_bottle;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;

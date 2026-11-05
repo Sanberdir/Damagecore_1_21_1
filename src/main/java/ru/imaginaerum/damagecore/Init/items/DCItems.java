@@ -15,6 +15,8 @@ public class DCItems {
 
     public static final DeferredItem<Item> BIRCH_LEAF = ITEMS.register("birch_leaf",
             () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> KEY_OF_WILD_CURRENTS = ITEMS.register("key_of_wild_currents",
+            () -> new Item(new Item.Properties()));
     public static final DeferredItem<Item> TOME_OF_ATTAINING_MEANINGS = ITEMS.register("tome_of_attaining_meanings",
             () -> new TomeOfAttainingMeanings(new Item.Properties()));
     public static final DeferredItem<Item> CHAIN_LIGHT_ARROW = ITEMS.register("chain_light_arrow",

@@ -22,7 +22,7 @@ public class ClientModEvents {
 
         event.registerEntityRenderer(ModEntities.SUNKEN_BOTTLE.get(), SunkenBottleRenderer::new);
         event.registerBlockEntityRenderer(DCBlockEntities.SUNKEN_BOTTLE.get(),
-                ctx -> new ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenBottleRenderer());
+                ctx -> new ru.imaginaerum.damagecore.Init.blocks.custom.sunken_bottle.SunkenBottleRenderer());
     }
 
 }

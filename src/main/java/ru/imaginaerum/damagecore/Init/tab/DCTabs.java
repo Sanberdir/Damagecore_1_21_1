@@ -21,6 +21,7 @@ public class DCTabs {
             event.accept(DCItems.BIRCH_LEAF.get());
             event.accept(DCItems.TOME_OF_ATTAINING_MEANINGS.get());
             event.accept(DCItems.SUNKEN_LOCKBOX.get());
+            event.accept(DCItems.KEY_OF_WILD_CURRENTS.get());
             event.accept(DCItems.SUNKEN_BOTTLE.get());
         }
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {

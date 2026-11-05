@@ -63,7 +63,7 @@ public final class FightKeys {
             attack  = mc.options.keyAttack.isDown();
             FightClient.inSide = side;
             FightClient.inTighten = tighten;
-            FightClient.inSlack = slack;// ЛКМ: тап = рывок, удержание = отпустить
+            FightClient.inSlack = slack;
             if (mc.player.isSprinting()) mc.player.setSprinting(false);
         } else if (mc.screen == null && mc.player.fishing != null) {
             reel = mc.options.keyUse.isDown();

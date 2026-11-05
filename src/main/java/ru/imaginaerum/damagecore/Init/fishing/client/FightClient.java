@@ -192,10 +192,10 @@ public final class FightClient {
         tension = 0;
         progress = 0;
         tensionShown = 0;
+        inSide = 0; inTighten = false; inSlack = false;
         lateral = 0;
         dash = 0;
         warn = 0;
-        inSide = 0; inTighten = false; inSlack = false;
         pendingDx = 0;
         pendingDy = 0;
     }

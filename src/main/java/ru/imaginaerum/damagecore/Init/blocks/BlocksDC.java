@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
-import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenBottleBlock;
+import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_bottle.SunkenBottleBlock;
 import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenLockboxBlock;
 import ru.imaginaerum.damagecore.Init.blocks.custom.StructureBlocksAndEntity;
 import ru.imaginaerum.damagecore.Init.items.DCItems;

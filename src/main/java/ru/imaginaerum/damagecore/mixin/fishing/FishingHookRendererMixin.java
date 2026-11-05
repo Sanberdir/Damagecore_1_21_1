@@ -53,6 +53,24 @@ public abstract class FishingHookRendererMixin {
     @Unique private static final float DF_TIP_SIDE = 0.35f;   // смещение кончика вбок, подбери на глаз
     /** Смещение кончика в блоках на 1.0 rodBend (масштаб модели в руке ~0.68 * 0.7071). Подбери на глаз. */
     @Unique private static final float DF_TIP_SCALE = 0.48f;
+
+    // ── провис после боя ──
+    /** Множитель провиса после боя: 1 = обычный, 0.5 = вдвое меньше. */
+    @Unique private static float df$sagScale = 1f;
+    /** Сколько тиков (кадров) после окончания боя держится уменьшенный провис. */
+    @Unique private static final int DF_POST_FIGHT_SAG_TICKS = 60;
+    @Unique private static int df$postFightTicks = 0;
+    @Unique private static int df$postFightHookId = -1;
+    @Unique private static boolean df$wasActive = false;
+
+    // ── провис, когда рыба устала (фаза WINDOW = 3) ──
+    /** Во сколько раз уменьшается провис, пока рыба устала. */
+    @Unique private static final float DF_TIRED_SAG_DIV = 1.5f;
+    /** Сглаженная степень усталости 0..1. */
+    @Unique private static float df$tired = 0f;
+    /** Текущий множитель провиса от усталости: 1 -> 1/1.5. */
+    @Unique private static float df$tiredScale = 1f;
+
     @Inject(method = "render(Lnet/minecraft/world/entity/projectile/FishingHook;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("HEAD"))
     private void df$begin(FishingHook hook, float yaw, float pt, PoseStack ps,
@@ -116,6 +134,24 @@ public abstract class FishingHookRendererMixin {
         df$phase += freq * dt;
 
         df$straight = k;
+
+        // ── провис после боя: ловим переход active:true -> false ──
+        boolean nowActive = own && FightClient.active;
+        if (df$wasActive && !nowActive) {
+            df$postFightTicks = DF_POST_FIGHT_SAG_TICKS;
+            df$postFightHookId = hook.getId();
+        }
+        df$wasActive = nowActive;
+        if (df$postFightTicks > 0) df$postFightTicks--;
+        float postFight = (own && df$postFightTicks > 0 && hook.getId() == df$postFightHookId) ? 0.5f : 1f;
+
+        // рыба устала: сервер шлёт фазу 3 (WINDOW)
+        float tiredTarget = (own && FightClient.active && FightClient.dash == 3) ? 1f : 0f;
+        df$tired += (tiredTarget - df$tired) * 0.1f;
+        if (df$tired < 0.001f) df$tired = 0f;
+        df$tiredScale = Mth.lerp(df$tired, 1f, 1f / DF_TIRED_SAG_DIV);
+
+        df$sagScale = postFight * df$tiredScale;
     }
 
     @Inject(method = "stringVertex", at = @At("HEAD"), cancellable = true)
@@ -130,8 +166,15 @@ public abstract class FishingHookRendererMixin {
         float x0 = x * t0, z0 = z * t0;
         float x1 = x * t1, z1 = z * t1;
 
-        float y0 = y * Mth.lerp(k, (t0 * t0 + t0) * 0.5f, t0) + 0.25f + DF_BOBBER_DY * w0;
-        float y1 = y * Mth.lerp(k, (t1 * t1 + t1) * 0.5f, t1) + 0.25f + DF_BOBBER_DY * w1;
+        // форма провиса: f = lerp(k, parabola, t). k=1 -> прямая, k=0 -> ванильный провис.
+        float f0 = Mth.lerp(k, (t0 * t0 + t0) * 0.5f, t0);
+        float f1 = Mth.lerp(k, (t1 * t1 + t1) * 0.5f, t1);
+        // после боя провис вдвое меньше: смешиваем форму с линейной на df$sagScale
+        f0 = t0 + (f0 - t0) * df$sagScale;
+        f1 = t1 + (f1 - t1) * df$sagScale;
+
+        float y0 = y * f0 + 0.25f + DF_BOBBER_DY * w0 * df$sagScale;
+        float y1 = y * f1 + 0.25f + DF_BOBBER_DY * w1 * df$sagScale;
         x0 += df$tipX * t0;  y0 += df$tipY * t0;  z0 += df$tipZ * t0;
         x1 += df$tipX * t1;  y1 += df$tipY * t1;  z1 += df$tipZ * t1;
         if (df$shake > 0f) {
@@ -171,7 +214,7 @@ public abstract class FishingHookRendererMixin {
             float L = Mth.sqrt(x * x + z * z);
             // лёгкое покачивание провисшей лески, чтобы она выглядела живой
             float sway = 1f + 0.06f * Mth.sin(df$time * 0.11f);
-            float depth = Math.min(L * DF_SLACK_DEPTH, DF_SLACK_MAX) * df$slack * sway;
+            float depth = Math.min(L * DF_SLACK_DEPTH, DF_SLACK_MAX) * df$slack * sway * df$tiredScale;
             y0 -= depth * 4f * t0 * (1f - t0);
             y1 -= depth * 4f * t1 * (1f - t1);
         }

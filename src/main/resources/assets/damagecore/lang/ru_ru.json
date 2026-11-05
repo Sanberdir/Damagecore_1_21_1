@@ -14,6 +14,8 @@
   "block.damagecore.sunken_bottle.tooltip": "Найден в океане",
   "tooltip.damagecore.fish_weight": "Вес: %s кг",
   "message.damagecore.enchanting_locked": "Вы не знаете, как этим пользоваться",
+  "block.damagecore.sunken_lockbox.locked": "Вам нужен ключ",
+  "item.damagecore.key_of_wild_currents": "Ключ вольных течений",
 
   "damage_type.bludgeoning": "Дробящий урон",
   "damage_type.piercing": "Колющий урон",

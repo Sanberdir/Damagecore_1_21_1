@@ -7,6 +7,14 @@
       }
     ]
   },
+  "open_chest": {
+    "subtitle": "sounds.damagecore.open_chest",
+    "sounds": [
+      {
+        "name": "damagecore:open_chest"
+      }
+    ]
+  },
   "tension_0": {
     "subtitle": "sounds.damagecore.tension_0",
     "sounds": [

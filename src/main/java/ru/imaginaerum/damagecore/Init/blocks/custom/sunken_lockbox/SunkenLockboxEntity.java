@@ -26,6 +26,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
@@ -57,14 +58,25 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
 
     public static final ResourceKey<LootTable> LOOT = ResourceKey.create(Registries.LOOT_TABLE,
             ResourceLocation.fromNamespaceAndPath(Damagecore_1_21_1_neo.MODID, "chests/sunken_lockbox"));
-
+    private long lidOpenedAtMs;
+    private static final long FIRST_OPEN_MS = 900L; // длительность first_open в мс, подгони под модель
     static final int MAX_ITEMS      = 8;
     static final int SPAWN_AT       = 14;
     static final int DISSOLVE_AT    = 38;   // начинает гаснуть свет
     static final int DISSOLVE_TICKS = 14;   // длительность затухания
-    static final double HOVER_H = 0.75;
-    static final int CONTAINER_SIZE = 27;
+    private static final RawAnimation FIRST_OPEN = RawAnimation.begin().thenPlayAndHold("first_open");
+    private static final RawAnimation DROP       = RawAnimation.begin().thenPlayAndHold("drop");
+    // только клиент, в NBT не сохраняется
+    private boolean lootClaimed;
+    private boolean guiOpen;       // игрок держит GUI
+    private boolean lidWasOpen;
+    // ── поля (добавить к существующим) ──
 
+    private boolean lidOpened;      // крышка реально открылась (синхронизируется)
+    private int lidWaitTicks;       // сколько тиков ждём доигрывания first_open
+    static final int LID_OPEN_TICKS = 18;   // длительность first_open в тиках — подгони под модель
+    // сохраняется: после первого открытия крышка остаётся открытой, пока GUI не откроют и не закроют
+    private boolean lidHeld;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private long openedAtMs, dissolveAtMs, spawnedAtMs;
     private boolean opened;
@@ -72,11 +84,13 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
     private boolean finished;     // теперь обычный сундук
     private boolean spawned;
     private int openTicks;
+    static final int CONTAINER_SIZE = 45;
     private static final RawAnimation CLOSE = RawAnimation.begin().thenPlayAndHold("close");
-
+    public boolean wasOpened() {
+        return opened;
+    }
     // только клиент, в NBT не сохраняется
     private boolean lidOpen;
-    private boolean lidWasOpen;
 
     private final ContainerOpenersCounter openers = new ContainerOpenersCounter() {
         @Override
@@ -91,7 +105,18 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
 
         @Override
         protected void openerCountChanged(Level l, BlockPos p, BlockState s, int old, int now) {
-            l.blockEvent(p, s.getBlock(), 1, now);   // клиенту: сколько игроков держит GUI
+            guiOpen = now > 0;
+
+            if (!l.isClientSide && now == 0 && lidHeld) {
+                lidHeld = false;   // GUI открыли и закрыли — крышка может закрываться
+            }
+
+            l.blockEvent(p, s.getBlock(), 1, now);
+
+            if (!l.isClientSide) {
+                setChanged();
+                l.sendBlockUpdated(p, s, s, 3);
+            }
         }
 
         @Override
@@ -105,19 +130,24 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
         if (!isRemoved() && !p.isSpectator() && level != null)
             openers.incrementOpeners(p, level, worldPosition, getBlockState());
     }
-
+    @Override
+    protected AbstractContainerMenu createMenu(int id, Inventory inv) {
+        return new ChestMenu(MenuType.GENERIC_9x5, id, inv, this, 5);
+    }
     @Override
     public void stopOpen(Player p) {
-        if (!isRemoved() && !p.isSpectator() && level != null)
+        if (!isRemoved() && !p.isSpectator() && level != null) {
             openers.decrementOpeners(p, level, worldPosition, getBlockState());
+        }
     }
 
     @Override
     public boolean triggerEvent(int id, int type) {
         if (id == 1) {
-            lidOpen = type > 0;
+            guiOpen = type > 0;
             return true;
         }
+
         return super.triggerEvent(id, type);
     }
     private final NonNullList<ItemStack> loot = NonNullList.withSize(MAX_ITEMS, ItemStack.EMPTY);
@@ -133,12 +163,23 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
 
     /** Сервер. false, если уже открыт. */
     public boolean open(Player opener) {
-        if (!(level instanceof ServerLevel sl) || opened) return false;
+        if (!(level instanceof ServerLevel sl) || opened) {
+            return false;
+        }
+
         opened = true;
-        rollLoot(sl, opener);
-        chickenSurprise(sl);
+
+        // Лут генерируется только при самом первом открытии.
+        if (!lootClaimed) {
+            lootClaimed = true;
+
+            rollLoot(sl, opener);
+            chickenSurprise(sl);
+        }
+
         setChanged();
         sl.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+
         return true;
     }
     private void chickenSurprise(ServerLevel sl) {
@@ -171,21 +212,31 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
     }
 
     // ── сервер: таймлайн ──
+    // ── сервер: таймлайн ──
     public static void serverTick(Level level, BlockPos pos, BlockState state, SunkenLockboxEntity be) {
         if (!(level instanceof ServerLevel sl)) return;
         if (be.finished) {
-            // если игрок вышел из игры, не закрыв GUI, крышка всё равно закроется
             if (level.getGameTime() % 20 == 0) be.openers.recheckOpeners(level, pos, state);
             return;
         }
         if (!be.opened) return;
+
+        // ждём, пока first_open доиграет — до этого ни лут не вылетает, ни свет не горит
+        if (!be.lidOpened) {
+            if (++be.lidWaitTicks < LID_OPEN_TICKS) return;
+            be.lidOpened = true;
+            be.setChanged();
+            sl.sendBlockUpdated(pos, state, state, 3);
+            // openTicks начинаем считать только теперь
+        }
+
         be.openTicks++;
 
         if (!be.spawned && be.openTicks >= SPAWN_AT) {
             be.spawned = true;
             be.spawnItems(sl);
             be.setChanged();
-            sl.sendBlockUpdated(pos, state, state, 3);   // <- добавлено
+            sl.sendBlockUpdated(pos, state, state, 3);
         }
 
         if (!be.dissolving && be.openTicks >= DISSOLVE_AT) {
@@ -196,7 +247,8 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
         }
 
         if (be.dissolving && be.openTicks - DISSOLVE_AT >= DISSOLVE_TICKS) {
-            be.finished = true;           // сундук остаётся, дальше он обычный
+            be.finished = true;
+            be.lidHeld = true;
             be.setChanged();
             sl.sendBlockUpdated(pos, state, state, 3);
         }
@@ -241,9 +293,13 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
 
     // ── клиент: визуал ──
     /** 0..1: сила лучей. После finished всегда 0. */
+// ── клиент: визуал ──
+    /** 0..1: сила лучей. До открытия крышки и после finished — 0. */
     public float getGlow() {
-        if (!opened || finished) return 0f;
-        float t = Mth.clamp((System.currentTimeMillis() - openedAtMs - 200L) / 450f, 0f, 1f);
+        if (!opened || finished || !lidOpened) return 0f;
+        long now = System.currentTimeMillis();
+        if (now < lidOpenedAtMs) return 0f;
+        float t = Mth.clamp((now - lidOpenedAtMs) / 450f, 0f, 1f);
         return t * (1f - getFade());
     }
 
@@ -256,23 +312,37 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "main", 0, state -> {
+
+            // Сундук ещё не открывали.
             if (!opened) return PlayState.STOP;
-            if (!finished) return state.setAndContinue(OPEN);          // первое открытие
-            if (lidOpen) { lidWasOpen = true; return state.setAndContinue(OPEN); }
-            if (lidWasOpen) return state.setAndContinue(CLOSE);        // GUI закрыли
-            return PlayState.STOP;                                     // установлена закрытой
+
+            // Первоначальное открытие: first_open -> drop.
+            if (!finished) {
+                return state.setAndContinue(spawned ? DROP : FIRST_OPEN);
+            }
+
+            // GUI открыт — open.
+            if (guiOpen) {
+                lidWasOpen = true;
+                return state.setAndContinue(OPEN);
+            }
+
+            // После лута крышка остаётся открытой, пока GUI не откроют и не закроют.
+            if (lidHeld) {
+                return state.setAndContinue(DROP);
+            }
+
+            // GUI только что закрыли — close.
+            if (lidWasOpen) {
+                return state.setAndContinue(CLOSE);
+            }
+
+            // Только что поставили или загрузили чанк — статичная закрытая поза, без анимаций.
+            return PlayState.STOP;
         }));
     }
-    static final long PULSE_DELAY_MS = 150L;  // через сколько после открытия начать
-    static final long PULSE_MS = 400L;  // длительность "пульса"
 
-    /** Клиент. Масштаб сундука при появлении света: сжатие, затем рост с лёгким перелётом до 1.0. */
-    public float getOpenScale() {
-        if (!spawned || finished) return 1f;
-        float t = (System.currentTimeMillis() - spawnedAtMs) / (float) PULSE_MS;
-        if (t <= 0f || t >= 1f) return 1f;
-        return 1f - 0.15f * Mth.sin(t * Mth.TWO_PI) * (1f - t);
-    }
+
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }
 
@@ -282,10 +352,7 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
         return Component.translatable("block." + Damagecore_1_21_1_neo.MODID + ".sunken_lockbox");
     }
 
-    @Override
-    protected AbstractContainerMenu createMenu(int id, Inventory inv) {
-        return ChestMenu.threeRows(id, inv, this);
-    }
+
 
     @Override
     protected NonNullList<ItemStack> getItems() { return items; }
@@ -297,17 +364,25 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
     public int getContainerSize() { return CONTAINER_SIZE; }
 
     // ── NBT и синхронизация ──
+    // ── NBT и синхронизация ──
     private void readState(CompoundTag tag) {
-        boolean wasOpened = opened, wasDissolving = dissolving, wasFinished = finished, wasSpawned = spawned;
-        opened = tag.getBoolean("opened");
+        boolean wasOpened     = opened;
+        boolean wasDissolving = dissolving;
+        boolean wasSpawned    = spawned;
+        boolean wasLidOpened  = lidOpened;
+        guiOpen = tag.getBoolean("guiOpen");
+        opened     = tag.getBoolean("opened");
         dissolving = tag.getBoolean("dissolving");
-        finished = tag.getBoolean("finished");
-        spawned = tag.getBoolean("spawned");
+        finished   = tag.getBoolean("finished");
+        spawned    = tag.getBoolean("spawned");
+        lidOpened  = tag.getBoolean("lidOpened");
+
         if (opened && !wasOpened) openedAtMs = System.currentTimeMillis();
+        if (lidOpened && !wasLidOpened) lidOpenedAtMs = System.currentTimeMillis();
         if (dissolving && !wasDissolving) dissolveAtMs = System.currentTimeMillis();
-        // пульс только если видим сам момент выброса, а не загрузку чанка
         if (spawned && !wasSpawned && wasOpened) spawnedAtMs = System.currentTimeMillis();
-        if (finished && !wasFinished && wasOpened) lidOpen = true;
+
+        lidHeld = tag.getBoolean("lidHeld");
     }
 
     @Override
@@ -317,8 +392,11 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
         tag.putBoolean("dissolving", dissolving);
         tag.putBoolean("finished", finished);
         tag.putBoolean("spawned", spawned);
+        tag.putBoolean("lidOpened", lidOpened);
+        tag.putBoolean("lootClaimed", lootClaimed);
+        tag.putBoolean("lidHeld", lidHeld);
         tag.putInt("openTicks", openTicks);
-
+        tag.putInt("lidWaitTicks", lidWaitTicks);
         CompoundTag lootTag = new CompoundTag();
         ContainerHelper.saveAllItems(lootTag, loot, regs);
         tag.put("Loot", lootTag);
@@ -330,9 +408,9 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider regs) {
         super.loadAdditional(tag, regs);
         readState(tag);
-        spawned = tag.getBoolean("spawned");
-        openTicks = tag.getInt("openTicks");
-
+        openTicks     = tag.getInt("openTicks");
+        lidWaitTicks  = tag.getInt("lidWaitTicks");
+        lootClaimed = tag.getBoolean("lootClaimed");
         loot.clear();
         ContainerHelper.loadAllItems(tag.getCompound("Loot"), loot, regs);
 
@@ -345,31 +423,54 @@ public class SunkenLockboxEntity extends RandomizableContainerBlockEntity implem
         CompoundTag tag = super.getUpdateTag(regs);
         tag.putBoolean("opened", opened);
         tag.putBoolean("dissolving", dissolving);
+        tag.putBoolean("guiOpen", guiOpen);
         tag.putBoolean("finished", finished);
-        tag.putBoolean("spawned", spawned);   // <- добавлено
+        tag.putBoolean("spawned", spawned);
+        tag.putBoolean("lidOpened", lidOpened);   // клиенту нужно знать момент открытия крышки
+        tag.putBoolean("lidHeld", lidHeld);
         return tag;
     }
     // ── перенос состояния в предмет и обратно ──
     @Override
     protected void collectImplicitComponents(DataComponentMap.Builder builder) {
         super.collectImplicitComponents(builder);
-        if (finished) {
-            CompoundTag t = new CompoundTag();
-            t.putBoolean("lockbox_finished", true);
-            builder.set(DataComponents.CUSTOM_DATA, CustomData.of(t));
+
+        if (lootClaimed || opened || spawned || finished) {
+            CompoundTag tag = new CompoundTag();
+            tag.putBoolean("lockbox_opened", true);
+
+            builder.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
     }
 
     @Override
     protected void applyImplicitComponents(BlockEntity.DataComponentInput input) {
         super.applyImplicitComponents(input);
+
         CustomData data = input.get(DataComponents.CUSTOM_DATA);
-        if (data != null && data.copyTag().getBoolean("lockbox_finished")) {
-            opened = true;
-            dissolving = true;
+
+        if (data == null) {
+            return;
+        }
+
+        CompoundTag tag = data.copyTag();
+
+        if (tag.getBoolean("lockbox_opened")) {
+            lootClaimed = true;
             spawned = true;
+
+            opened = true;
+            dissolving = false;
             finished = true;
-            openTicks = DISSOLVE_AT + DISSOLVE_TICKS;
+
+            lidOpened = true;
+            lidHeld = false;
+
+            openTicks = 0;
+            lidWaitTicks = 0;
+
+            lidWasOpen = false;
+            guiOpen = false;
         }
     }
     @Override

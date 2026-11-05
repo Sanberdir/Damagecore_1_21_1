@@ -5,7 +5,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
-import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenBottleEntity;
+import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_bottle.SunkenBottleEntity;
 import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox.SunkenLockboxEntity;
 
 import java.util.function.Supplier;

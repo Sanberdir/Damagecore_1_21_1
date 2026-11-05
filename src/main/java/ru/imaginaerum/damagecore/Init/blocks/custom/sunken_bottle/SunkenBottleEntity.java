@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_lockbox;
+package ru.imaginaerum.damagecore.Init.blocks.custom.sunken_bottle;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;

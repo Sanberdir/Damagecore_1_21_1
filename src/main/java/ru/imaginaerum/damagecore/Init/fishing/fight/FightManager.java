@@ -57,7 +57,7 @@ public final class FightManager {
     static final Set<UUID> ATTACK_HELD = new HashSet<>();
     static final Map<UUID, Integer> YANK_TICKS = new HashMap<>();
     static final Map<UUID, Long> CAST_LOCK = new HashMap<>();
-    static final float CHEST_CHANCE = 0.15f;      // для теста; в релизе 0.15f
+    static final float CHEST_CHANCE = 0.95f;      // для теста; в релизе 0.15f
     static final float BOTTLE_SHARE = 0.5f;
     static final float CHEST_LUCK_BONUS = 0.05f;
     static final float CHEST_CHANCE_MAX = 1.0f;   // для теста; в релизе 0.40f

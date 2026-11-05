@@ -9,9 +9,18 @@ public final class BendConsumer implements VertexConsumer {
     private final VertexConsumer d;
     private final float bend;
     private final float side;
+
     public BendConsumer(VertexConsumer d, float bend) { this(d, bend, 0f); }
     public BendConsumer(VertexConsumer d, float bend, float side) {
         this.d = d; this.bend = bend; this.side = side;
+    }
+
+    /** Боковое смещение кончика (по оси z модели). */
+    public static float sideAt(float side, float x, float y) {
+        float sp = Mth.clamp((x + y) * 0.5f, 0f, 1f);
+        float w = Math.max(0f, (sp - 0.15f) / 0.85f);
+        w = w * w * (0.6f + 0.4f * w);
+        return side * w;
     }
 
     private interface Emit { void accept(BakedQuad q); }
@@ -75,7 +84,6 @@ public final class BendConsumer implements VertexConsumer {
         z += sideAt(side, x, y);   // <-- до x += off, y -= off
         x += off;
         y -= off;
-        z += sideAt(side, x, y);
         int o = idx * 8;
         dst[o]     = Float.floatToRawIntBits(x);
         dst[o + 1] = Float.floatToRawIntBits(y);
@@ -103,12 +111,6 @@ public final class BendConsumer implements VertexConsumer {
     public void putBulkData(PoseStack.Pose pose, BakedQuad quad, float r, float g, float b, float a,
                             int light, int overlay, boolean readAlpha) {
         tessellate(quad, q -> d.putBulkData(pose, q, r, g, b, a, light, overlay, readAlpha));
-    }
-    public static float sideAt(float side, float x, float y) {
-        float sp = Mth.clamp((x + y) * 0.5f, 0f, 1f);
-        float w = Math.max(0f, (sp - 0.15f) / 0.85f);
-        w = w * w * (0.6f + 0.4f * w);
-        return side * w;
     }
     @Override
     public void putBulkData(PoseStack.Pose pose, BakedQuad quad, float[] brightness,
