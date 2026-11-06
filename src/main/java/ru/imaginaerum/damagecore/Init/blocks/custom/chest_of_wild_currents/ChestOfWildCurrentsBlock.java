@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -78,7 +79,7 @@ public class ChestOfWildCurrentsBlock extends RotatingMultiblock implements Enti
             if (!hasKey) {
                 // Звук закрытого замка / щелчка механизма и сообщение
                 level.playSound(null, centerPos, SoundEvents.TRIPWIRE_CLICK_OFF, SoundSource.BLOCKS, 0.8f, 0.6f);
-                player.displayClientMessage(Component.translatable("block.damagecore.sunken_lockbox.locked"), true);
+                player.displayClientMessage(Component.translatable("block.damagecore.chest_of_wild_currents.locked"), true);
                 return InteractionResult.CONSUME;
             }
 
@@ -100,7 +101,19 @@ public class ChestOfWildCurrentsBlock extends RotatingMultiblock implements Enti
         }
         return InteractionResult.CONSUME;
     }
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (level.isClientSide || multiblockHandler.isCenterState(state)) return;
 
+        BlockPos center = multiblockHandler.getCenterPos(pos, state, state.getValue(FACING));
+        if (level.getBlockEntity(center) instanceof ChestOfWildCurrentsEntity be) {
+            be.applyComponents(stack.getComponents(), stack.getComponentsPatch());
+            be.setChanged();
+            BlockState cs = level.getBlockState(center);
+            level.sendBlockUpdated(center, cs, cs, 3);
+        }
+    }
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         if (!multiblockHandler.isCenterState(state)) {

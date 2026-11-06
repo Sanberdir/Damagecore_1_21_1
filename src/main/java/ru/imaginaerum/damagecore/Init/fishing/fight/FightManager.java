@@ -57,7 +57,7 @@ public final class FightManager {
     static final Set<UUID> ATTACK_HELD = new HashSet<>();
     static final Map<UUID, Integer> YANK_TICKS = new HashMap<>();
     static final Map<UUID, Long> CAST_LOCK = new HashMap<>();
-    static final float CHEST_CHANCE = 0.95f;      // для теста; в релизе 0.15f
+    static final float CHEST_CHANCE = 0.15f;      // для теста; в релизе 0.15f
     static final float BOTTLE_SHARE = 0.5f;
     static final float CHEST_LUCK_BONUS = 0.05f;
     static final float CHEST_CHANCE_MAX = 1.0f;   // для теста; в релизе 0.40f
@@ -559,9 +559,9 @@ public final class FightManager {
 
             // обрыв: слишком долго тянешь без передышки
             a.over = a.load > CHEST_SNAP_LEVEL ? a.over + 1 : Math.max(0, a.over - 2);
-            if (a.over >= CHEST_SNAP_TICKS) {
-                snapChest(player, hook, a);
-                return;
+            if (a.over == CHEST_SNAP_TICKS - 5) {
+                lv.playSound(null, player.getX(), player.getY(), player.getZ(),
+                        DCSoundEvents.TENSION_3.get(), SoundSource.NEUTRAL, 0.9f * FishFight.ROD_VOL, 1.0f);
             }
 
             if (reeling) {
@@ -578,25 +578,26 @@ public final class FightManager {
                 pulling = true;
             }
 
-            // скрип лески по ступеням, как в бою
             while (a.creak < FishFight.CREAK_AT.length && a.load >= FishFight.CREAK_AT[a.creak]) {
-                if (a.creak >= 3) {
-                    lv.playSound(null, player.getX(), player.getY(), player.getZ(),
-                            DCSoundEvents.STRONG_TENSION.get(), SoundSource.NEUTRAL,
-                            0.9f * FishFight.STRONG_VOL, 1.0f);
-                } else {
-                    var snd = switch (a.creak) {
-                        case 0 -> DCSoundEvents.TENSION_0;
-                        case 1 -> DCSoundEvents.TENSION_1;
-                        default -> DCSoundEvents.TENSION_2;
-                    };
-                    lv.playSound(null, player.getX(), player.getY(), player.getZ(),
-                            snd.get(), SoundSource.NEUTRAL,
-                            (0.5f + 0.1f * a.creak) * FishFight.ROD_VOL, 0.85f + 0.1f * a.creak);
-                }
+                var snd = switch (a.creak) {
+                    case 0 -> DCSoundEvents.TENSION_0;
+                    case 1 -> DCSoundEvents.TENSION_1;
+                    default -> DCSoundEvents.TENSION_2;
+                };
+                lv.playSound(null, player.getX(), player.getY(), player.getZ(),
+                        snd.get(), SoundSource.NEUTRAL,
+                        (0.5f + 0.1f * a.creak) * FishFight.ROD_VOL, 0.85f + 0.1f * a.creak);
                 a.creak++;
             }
             while (a.creak > 0 && a.load < FishFight.CREAK_AT[a.creak - 1] - 0.12f) a.creak--;
+
+// STRONG со ступени 2, с повтором
+            if (a.load >= FishFight.CREAK_AT[FishFight.STRONG_STAGE]
+                    && player.tickCount % FishFight.STRONG_REPEAT == 0) {
+                lv.playSound(null, player.getX(), player.getY(), player.getZ(),
+                        DCSoundEvents.STRONG_TENSION.get(), SoundSource.NEUTRAL,
+                        0.9f * FishFight.STRONG_VOL, 1.0f);
+            }
 
             // центр сокровища = крючок по X/Z, считаем после сдвига крючка
             a.fish.setPos(hook.getX(), ty, hook.getZ());

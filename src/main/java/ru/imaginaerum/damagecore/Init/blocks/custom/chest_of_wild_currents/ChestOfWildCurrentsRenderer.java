@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.AABB;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
 import software.bernie.geckolib.renderer.GeoBlockRenderer;
@@ -42,5 +43,10 @@ public class ChestOfWildCurrentsRenderer extends GeoBlockRenderer<ChestOfWildCur
         }
 
         super.render(be, partialTick, poseStack, buffer, light, overlay);
+    }
+    @Override
+    public AABB getRenderBoundingBox(ChestOfWildCurrentsEntity be) {
+        // модель занимает 2 блока и смещена, берём с запасом
+        return new AABB(be.getBlockPos()).inflate(2.0);
     }
 }

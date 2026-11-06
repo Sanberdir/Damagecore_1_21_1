@@ -109,7 +109,10 @@ public final class FishFight {
     static final float TIRED_THRESHOLD   = 0.35f;
     static final float STAMINA_PER_TICK  = 0.008f;   // при полном counter
     static final int   REEL_GRACE        = 5;        // тиков после старта struggle, когда reel не рвёт
-    static final float[] CREAK_AT = {0.36f, 0.44f, 0.52f, 0.54f};
+    static final float[] CREAK_AT = {0.50f, 0.62f, 0.76f};  // 0=T0, 1=T1, 2=STRONG
+    static final int STRONG_STAGE = 2;
+    static final int FINAL_WARN_TICKS = 10;
+    private boolean finalWarned;
     static final int STRONG_REPEAT = 30;   // тиков между повторами в критической зоне
     private int strongCd;
     private int creakStage;
@@ -425,19 +428,31 @@ public final class FishFight {
         float load = Math.max(tension, Math.max(strain, reelLoad));
         while (creakStage < CREAK_AT.length && load >= CREAK_AT[creakStage]) {
             playCreak(creakStage);
-            if (creakStage == 3) strongCd = STRONG_REPEAT;
+            if (creakStage == STRONG_STAGE) {
+                playStrong();
+                strongCd = STRONG_REPEAT;
+            }
             creakStage++;
         }
         while (creakStage > 0 && load < CREAK_AT[creakStage - 1] - 0.12f) {
             creakStage--;
         }
-        if (load >= CREAK_AT[3]) {
+        if (load >= CREAK_AT[STRONG_STAGE]) {
             if (--strongCd <= 0) {
-                playCreak(3);
+                playStrong();
                 strongCd = STRONG_REPEAT;
             }
         } else {
             strongCd = 0;
+        }
+
+// ── последний сигнал прямо перед обрывом ──
+        boolean imminent = over >= SNAP_TICKS - FINAL_WARN_TICKS || strain >= 0.80f;
+        if (imminent && !finalWarned) {
+            playNear(DCSoundEvents.TENSION_3.get(), SoundSource.NEUTRAL, 1.0f * ROD_VOL, 1.0f);
+            finalWarned = true;
+        } else if (over == 0 && strain < 0.6f) {
+            finalWarned = false;
         }
 
         // ── fish movement: тяжёлая рыба рвётся сильнее ──
@@ -573,7 +588,18 @@ public final class FishFight {
         if (ticks % 2 == 0) sendState(true);
         return true;
     }
+    private void playCreak(int stage) {
+        var snd = switch (stage) {
+            case 0 -> DCSoundEvents.TENSION_0;
+            case 1 -> DCSoundEvents.TENSION_1;
+            default -> DCSoundEvents.TENSION_2;
+        };
+        playNear(snd.get(), SoundSource.NEUTRAL, (0.5f + 0.1f * stage) * ROD_VOL, 0.85f + 0.1f * stage);
+    }
 
+    private void playStrong() {
+        playNear(DCSoundEvents.STRONG_TENSION.get(), SoundSource.NEUTRAL, 0.9f * STRONG_VOL, 1.0f);
+    }
     private boolean waterAt(Vec3 o, double d, double l) {
         return isWater(o.x + baseDir.x * d + right.x * l, o.z + baseDir.z * d + right.z * l);
     }
@@ -654,18 +680,6 @@ public final class FishFight {
         double k = len > 3.0 ? 3.0 / len : 1.0;
         level.playSound(null, p.x + d.x * k, p.y + 1.0 + d.y * k, p.z + d.z * k,
                 snd, src, vol, pitch);
-    }
-    private void playCreak(int stage) {
-        if (stage >= 3) {
-            playNear(DCSoundEvents.STRONG_TENSION.get(), SoundSource.NEUTRAL, 0.9f * STRONG_VOL, 1.0f);
-            return;
-        }
-        var snd = switch (stage) {
-            case 0 -> DCSoundEvents.TENSION_0;
-            case 1 -> DCSoundEvents.TENSION_1;
-            default -> DCSoundEvents.TENSION_2;
-        };
-        playNear(snd.get(), SoundSource.NEUTRAL, (0.5f + 0.1f * stage) * ROD_VOL, 0.85f + 0.1f * stage);
     }
     private void playWarnCue() {
 

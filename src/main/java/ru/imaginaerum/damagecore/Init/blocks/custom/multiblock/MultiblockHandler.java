@@ -151,25 +151,44 @@ public class MultiblockHandler {
         return mutableBlockState;
     }
 
-    public void onBlockPlaced(Level level, BlockPos pos, BlockState blockState, Direction direction) {
-        final BlockPos center = getCenterPos(pos, blockState, direction);
+    @Nullable
+    public BlockState getStateForPlacement(BlockPlaceContext context, BlockState blockState, Direction facing) {
+        final Level level = context.getLevel();
+        final BlockPos clicked = context.getClickedPos();
+
+        // 1) кликнутая клетка = главная часть (как раньше)
+        if (fits(context, clicked, facing)) {
+            return getCenterState(blockState);
+        }
+
+        // 2) кликнутая клетка = любая другая часть, центр сдвигается на её индекс
+        final BlockState[] result = {null};
         iterateIndices(index -> {
-            if (index.equals(CENTER_INDEX)) return;
+            if (result[0] != null || index.equals(CENTER_INDEX)) return;
+            Vec3i idx = new Vec3i(index.getX(), index.getY(), index.getZ()); // index - переиспользуемый mutable
+            BlockPos center = getCenterPos(clicked, idx, facing);
+            if (fits(context, center, facing)) {
+                result[0] = getIndexedState(blockState, idx);
+            }
+        });
+        return result[0];
+    }
+
+    private boolean fits(BlockPlaceContext context, BlockPos center, Direction facing) {
+        final Level level = context.getLevel();
+        return allPositions(center, facing, p -> level.isInWorldBounds(p) && level.getBlockState(p).canBeReplaced(context));
+    }
+
+    public void onBlockPlaced(Level level, BlockPos pos, BlockState blockState, Direction direction) {
+        final Vec3i placedIndex = getIndex(blockState);
+        final BlockPos center = getCenterPos(pos, placedIndex, direction);
+        iterateIndices(index -> {
+            if (index.equals(placedIndex)) return;   // эту часть уже поставил предмет
             BlockPos p = center.offset(indexToOffset(index, direction));
             boolean waterlogged = level.getFluidState(p).getType() == Fluids.WATER;
             final BlockState state = getIndexedState(blockState.setValue(BlockStateProperties.WATERLOGGED, waterlogged), index);
             level.setBlock(p, state, Block.UPDATE_ALL);
         });
-    }
-
-    @Nullable
-    public BlockState getStateForPlacement(BlockPlaceContext context, BlockState blockState, Direction facing) {
-        final Level level = context.getLevel();
-        final BlockPos center = context.getClickedPos();
-        if (!allPositions(center, facing, p -> level.isInWorldBounds(p) && level.getBlockState(p).canBeReplaced(context))) {
-            return null;
-        }
-        return getCenterState(blockState);
     }
 
     public boolean canSurvive(final BlockState blockState, final LevelReader level, final BlockPos pos, final Direction facing) {

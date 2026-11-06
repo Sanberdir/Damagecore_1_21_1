@@ -12,6 +12,12 @@ import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
 
 /** Client-side mirror of the fight state. */
 public final class FightClient {
+    private static float pBend, pSide, pFwd, pBaseSide;
+
+    public static float bendAt(float pt)     { return net.minecraft.util.Mth.lerp(pt, pBend, rodBend); }
+    public static float sideAt(float pt)     { return net.minecraft.util.Mth.lerp(pt, pSide, rodSide); }
+    public static float fwdAt(float pt)      { return net.minecraft.util.Mth.lerp(pt, pFwd, baseFwd); }
+    public static float baseSideAt(float pt) { return net.minecraft.util.Mth.lerp(pt, pBaseSide, baseSide); }
     public static volatile boolean active;
     public static float tension;
     public static float progress;
@@ -26,6 +32,10 @@ public final class FightClient {
     public static float rodSide;                 // боковой изгиб, -1..1 в единицах модели
     public static float inSide;                  // -1 = A, +1 = D
     public static boolean inTighten, inSlack;    // S / W
+    public static float baseFwd;   // сдвиг основания вперёд/назад, модельные единицы
+    public static float baseSide;  // сдвиг основания влево/вправо
+    public static float rodBendVel, rodSideVel;   // скорости пружин кончика
+    public static float baseFwdVel, baseSideVel;  // скорости рукояти
     private FightClient() {}
     private static final java.util.Map<Integer, Pos> POS = new java.util.HashMap<>();
 
@@ -42,28 +52,61 @@ public final class FightClient {
     public static float rodPitch, rodRoll;
 
     public static void smoothTick() {
+        pBend = rodBend; pSide = rodSide; pFwd = baseFwd; pBaseSide = baseSide;
         tensionShown += (tension - tensionShown) * 0.35f;
 
-        float tp = 0f, tr = 0f;
-        float tb = 0f;
-        float ts = 0f;
-        if (active) {
-            float k = net.minecraft.util.Mth.clamp((tensionShown - 0.25f) / 0.70f, 0f, 1f);
-            tb = k * 0.32f;
-            long t = net.minecraft.client.Minecraft.getInstance().level != null
-                    ? net.minecraft.client.Minecraft.getInstance().level.getGameTime() : 0;
-            tb += k * k * 0.02f * net.minecraft.util.Mth.sin(t * 2.3f);
+        float tb = 0f, ts = 0f, tbf = 0f, tbs = 0f;
+        float t = net.minecraft.client.Minecraft.getInstance().level != null
+                ? net.minecraft.client.Minecraft.getInstance().level.getGameTime() : 0;
 
-            // клавиши
-            if (inTighten) tb += 0.10f;          // S: сильнее выгибаем
-            if (inSlack)   tb -= 0.06f;          // W: ослабляем
-            tb = Math.max(0f, tb);
-            ts = inSide * 0.22f;                 // A/D: гнём вбок
+        if (active) {
+            // 1) Рука игрока: A/D ведут рукоять вбок, S/W двигают её от себя / к себе
+            tbs = inSide * 0.20f;
+            if (inTighten)    tbf =  0.12f;
+            else if (inSlack) tbf = -0.10f;
+
+            // 2) Сила, с которой рыба тянет кончик. В рывке сильнее, когда устала, слабее
+            float k = net.minecraft.util.Mth.clamp((tensionShown - 0.25f) / 0.70f, 0f, 1f);
+            float phaseK = dash == 2 ? 1.0f : (dash == 3 ? 0.45f : 0.70f);
+            float pull = k * phaseK;
+
+            // вперёд-вниз, к воде
+            tb = 0.34f * pull;
+            if (inTighten) tb += 0.08f * (0.4f + pull);   // придержал леску: удилище нагружается
+            if (inSlack)   tb -= 0.06f;
+
+            // вбок: кончик тянется в сторону рыбы (lateral > 0 = вправо)
+            float fishSide = net.minecraft.util.Mth.clamp(lateral * 2.5f, -1f, 1f) * 0.30f * pull;
+            ts = fishSide;
+            // тянешь против рыбы - нагрузка растёт
+            if (inSide != 0 && Math.signum(fishSide) == -inSide) ts += fishSide * 0.35f;
+            // инерция: рукоять ушла вбок, кончик отстаёт и прогибается в обратную сторону
+            ts -= baseSideVel * 3.0f;
+
+            // дрожь, пока рыба рвётся
+            if (dash == 2) {
+                tb += net.minecraft.util.Mth.sin(t * 1.7f) * 0.015f * pull;
+                ts += net.minecraft.util.Mth.sin(t * 2.3f + 1f) * 0.020f * pull;
+            }
+            tb = net.minecraft.util.Mth.clamp(tb, 0f, 0.42f);
+            ts = net.minecraft.util.Mth.clamp(ts, -0.42f, 0.42f);
         }
-        rodBend += (tb - rodBend) * 0.25f;
-        rodSide += (ts - rodSide) * 0.25f;
-        rodPitch += (tp - rodPitch) * 0.2f;
-        rodRoll  += (tr - rodRoll)  * 0.2f;
+
+        // рукоять: быстрая, хорошо задемпфированная пружина
+        float oldF = baseFwd, oldS = baseSide;
+        baseFwdVel  += (tbf - baseFwd)  * 0.22f; baseFwdVel  *= 0.70f; baseFwd  += baseFwdVel;
+        baseSideVel += (tbs - baseSide) * 0.22f; baseSideVel *= 0.70f; baseSide += baseSideVel;
+        baseFwdVel = baseFwd - oldF;
+        baseSideVel = baseSide - oldS;
+
+        // кончик: упругая пружина с лёгким перелётом (отдача после рывка и обрыва)
+        rodBendVel  += (tb - rodBend) * 0.20f; rodBendVel  *= 0.74f; rodBend += rodBendVel;
+        rodSideVel  += (ts - rodSide) * 0.18f; rodSideVel  *= 0.72f; rodSide += rodSideVel;
+        rodBend = net.minecraft.util.Mth.clamp(rodBend, -0.04f, 0.45f);
+        rodSide = net.minecraft.util.Mth.clamp(rodSide, -0.45f, 0.45f);
+
+        rodPitch += (0f - rodPitch) * 0.2f;
+        rodRoll  += (0f - rodRoll)  * 0.2f;
     }
 
     /** Повторяет последние позиции каждый клиентский тик. */
@@ -198,5 +241,9 @@ public final class FightClient {
         warn = 0;
         pendingDx = 0;
         pendingDy = 0;
+        baseFwd = 0f;
+        baseSide = 0f;
+        rodBendVel = 0f; rodSideVel = 0f;
+        baseFwdVel = 0f; baseSideVel = 0f;
     }
 }

@@ -13,6 +13,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.lwjgl.glfw.GLFW;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.Init.fishing.client.FightClient;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAttackAnimationHandler;
 
 @EventBusSubscriber(modid = Damagecore_1_21_1_neo.MODID, value = Dist.CLIENT)
@@ -50,6 +51,7 @@ public class BackstepHandler {
 
     private static void tryBackstep(LocalPlayer player) {
         if (Minecraft.getInstance().screen != null) return;
+        if (player.fishing != null || FightClient.active) return;
         if (!player.onGround() || player.isInWater() || player.isPassenger()
                 || player.getAbilities().flying || player.isFallFlying()) return;
 

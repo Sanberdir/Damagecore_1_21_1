@@ -24,32 +24,26 @@ import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 
 import java.util.*;
 
-/**
- * Заселение воды рыбой независимо от игрока.
- *  1) Загруженный чанк через 2 с сканируется: если в нём есть вода, он попадает в список водных
- *     и сразу заселяется рыбой (работает и в уже сгенерированных мирах).
- *  2) Из списка водных чанков периодически выбираются случайные и пополняются.
- *  Рыба помечается постоянной, чтобы не исчезала вдали от игрока; число ограничено CHUNK_CAP.
- */
 @EventBusSubscriber(modid = Damagecore_1_21_1_neo.MODID)
 public final class FishSpawner {
+    static final int   INIT_FILL     = 1;       // было 2
+    static final float REFILL_CHANCE = 0.15f;   // было 0.25
+    static final int   CHUNK_CAP     = 3;       // было 6
+    static final int   PLAYER_CAP    = 18;      // рыбы вокруг игрока, как мобкап
+    static final double PLAYER_RANGE = 48.0;
     // сканирование и первичное заселение
-    static final int   INIT_FILL     = 2;      // было 6
-    static final int   REFILL_CHUNKS = 6;      // было 10
-    static final float REFILL_CHANCE = 0.25f;  // было 0.9f
-    static final int   REFILL_MAX    = 1;      // было 2
-    static final int   CHUNK_CAP     = 3;      // было 12
-    static final int SCAN_DELAY    = 40;   // тиков после загрузки (даём подгрузиться сущностям)
-    static final int SCAN_PER_TICK = 6;    // чанков из очереди за тик
+    static final int   REFILL_CHUNKS = 1;      // сколько УНИКАЛЬНЫХ чанков пополнять за тик пополнения
+    static final int   REFILL_MAX    = 1;      // максимум рыб за одно пополнение чанка
+    static final int SCAN_DELAY    = 40;
+    static final int SCAN_PER_TICK = 6;
 
     // пополнение
-    static final int   REFILL_PERIOD = 20;    // раз в секунду
+    static final int   REFILL_PERIOD = 40;   // раз в 2 секунды
     static final int TRIES     = 8;
-    static final int MIN_DEPTH = 1;    // минимальная глубина воды
+    static final int MIN_DEPTH = 1;
 
     private record Pending(ResourceKey<Level> dim, long chunk, long readyAt) {}
 
-    /** Список водных чанков с O(1) случайным выбором и удалением. */
     private static final class Water {
         final ArrayList<Long> keys = new ArrayList<>();
         final HashMap<Long, Integer> index = new HashMap<>();
@@ -118,7 +112,7 @@ public final class FishSpawner {
             QUEUE.poll();
 
             ChunkPos cp = new ChunkPos(p.chunk());
-            if (level.getChunkSource().getChunkNow(cp.x, cp.z) == null) continue;   // уже выгружен
+            if (level.getChunkSource().getChunkNow(cp.x, cp.z) == null) continue;
 
             int[] cols = scan(level, cp);
             Water w = WATER.computeIfAbsent(p.dim(), k -> new Water());
@@ -127,14 +121,22 @@ public final class FishSpawner {
             populate(level, cp, cols, INIT_FILL, 1.0f);
         }
 
-        // пополнение случайных водных чанков
+        // пополнение: раз в REFILL_PERIOD тиков, по REFILL_CHUNKS УНИКАЛЬНЫМ чанкам
         if (server.getTickCount() % REFILL_PERIOD != 0) return;
         for (ServerLevel level : server.getAllLevels()) {
             Water w = WATER.get(level.dimension());
             if (w == null || w.keys.isEmpty()) continue;
             RandomSource r = level.getRandom();
-            for (int i = 0; i < REFILL_CHUNKS; i++) {
-                long key = w.keys.get(r.nextInt(w.keys.size()));
+
+            int total = w.keys.size();
+            int n2 = Math.min(REFILL_CHUNKS, total);
+            // частичный Фишер-Йейтс: n2 уникальных индексов без возврата
+            int[] idx = new int[total];
+            for (int i = 0; i < total; i++) idx[i] = i;
+            for (int i = 0; i < n2; i++) {
+                int j = i + r.nextInt(total - i);
+                int t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+                long key = w.keys.get(idx[i]);
                 ChunkPos cp = new ChunkPos(key);
                 if (!level.isPositionEntityTicking(cp.getMiddleBlockPosition(level.getSeaLevel()))) continue;
                 int[] cols = w.cols.get(key);
@@ -145,7 +147,6 @@ public final class FishSpawner {
     }
 
     // ── сканирование ──
-    /** Выбирает по одной точке в каждой клетке 4×4 блока и оставляет те, где достаточно воды. */
     private static int[] scan(ServerLevel level, ChunkPos cp) {
         RandomSource r = level.getRandom();
         int[] tmp = new int[16];
@@ -173,15 +174,32 @@ public final class FishSpawner {
 
     // ── заселение ──
     private static void populate(ServerLevel level, ChunkPos cp, int[] cols, int max, float chance) {
+        AABB area = new AABB(cp.getMinBlockX(), level.getMinBuildHeight(), cp.getMinBlockZ(),
+                cp.getMaxBlockX() + 1, level.getMaxBuildHeight(), cp.getMaxBlockZ() + 1)
+                .inflate(8, 0, 8);   // учитываем рыбу у границ, чтобы миграция не обходила кап
+        int have = level.getEntitiesOfClass(AbstractFish.class, area).size();
+
+        // кап зависит от количества воды в чанке: пруд = 1 рыба, океан = до CHUNK_CAP
+        int cap = Math.max(1, Math.min(CHUNK_CAP, cols.length / 4));
+        int room = cap - have;
+        if (room <= 0) return;
+
+        // общий лимит рыбы вокруг ближайшего игрока
+        var pl = level.getNearestPlayer(cp.getMiddleBlockX(), level.getSeaLevel(), cp.getMiddleBlockZ(),
+                PLAYER_RANGE + 16, false);
+        if (pl != null) {
+            int near = level.getEntitiesOfClass(AbstractFish.class,
+                    pl.getBoundingBox().inflate(PLAYER_RANGE)).size();
+            if (near >= PLAYER_CAP) return;
+        }
+
         RandomSource r = level.getRandom();
         if (r.nextFloat() > chance) return;
 
-        AABB area = new AABB(cp.getMinBlockX() - 8, level.getMinBuildHeight(), cp.getMinBlockZ() - 8,
-                cp.getMaxBlockX() + 9, level.getMaxBuildHeight(), cp.getMaxBlockZ() + 9);
-        int have = level.getEntitiesOfClass(AbstractFish.class, area).size();
+        int limit = Math.min(max, room);
         int spawned = 0;
 
-        for (int i = 0; i < TRIES && spawned < max && have + spawned < CHUNK_CAP; i++) {
+        for (int i = 0; i < TRIES && spawned < limit; i++) {
             int c = cols[r.nextInt(cols.length)];
             int x = cp.getMinBlockX() + (c >> 4);
             int z = cp.getMinBlockZ() + (c & 15);
@@ -193,12 +211,10 @@ public final class FishSpawner {
             boolean grass = st.is(Blocks.SEAGRASS) || st.is(Blocks.TALL_SEAGRASS);
             boolean river = level.getBiome(floor).is(BiomeTags.IS_RIVER);
 
-            // на голой воде реже: растения предпочтительнее
             if (!kelp && !grass && r.nextFloat() > 0.3f) continue;
 
             EntityType<? extends AbstractFish> type = pickFish(kelp, grass, river, r);
 
-            // поднимаем над дном на 1–3 блока, пока вокруг вода
             BlockPos at = floor;
             int lift = 1 + r.nextInt(3);
             for (int k = 0; k < lift; k++) {
@@ -209,7 +225,6 @@ public final class FishSpawner {
 
             AbstractFish f = type.spawn(level, at, MobSpawnType.EVENT);
             if (f != null) {
-                f.setPersistenceRequired();   // не исчезает вдали от игрока; число ограничено CHUNK_CAP
                 spawned++;
             }
         }
@@ -221,22 +236,21 @@ public final class FishSpawner {
 
     private static EntityType<? extends AbstractFish> pickFish(boolean kelp, boolean grass, boolean river, RandomSource r) {
         float f = r.nextFloat();
-        if (kelp) {                                   // ламинарии: лосось и «экзотика»
+        if (kelp) {
             if (f < 0.45f) return EntityType.SALMON;
             if (f < 0.70f) return EntityType.TROPICAL_FISH;
             if (f < 0.90f) return EntityType.PUFFERFISH;
             return EntityType.COD;
         }
-        if (grass) {                                  // трава: в основном треска
+        if (grass) {
             if (f < 0.70f) return EntityType.COD;
             if (f < 0.85f) return EntityType.SALMON;
             if (f < 0.95f) return EntityType.TROPICAL_FISH;
             return EntityType.PUFFERFISH;
         }
-        if (river) {                                  // голая вода в реке
+        if (river) {
             return f < 0.55f ? EntityType.SALMON : EntityType.COD;
         }
-        // голая вода в океане
         if (f < 0.60f) return EntityType.COD;
         if (f < 0.85f) return EntityType.SALMON;
         return EntityType.TROPICAL_FISH;

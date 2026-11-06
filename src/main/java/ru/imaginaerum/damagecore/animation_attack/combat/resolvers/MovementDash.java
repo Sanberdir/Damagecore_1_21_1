@@ -1,6 +1,7 @@
 package ru.imaginaerum.damagecore.animation_attack.combat.resolvers;
 
 import net.minecraft.util.Mth;
+import ru.imaginaerum.damagecore.Init.fishing.client.FightClient;
 import ru.imaginaerum.damagecore.animation_attack.WeaponAnimationManager.AnimEntry;
 import ru.imaginaerum.damagecore.animation_attack.combat.CombatContext;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.MoveDirection;
@@ -25,7 +26,9 @@ public final class MovementDash {
             this.dirZ = dirZ;
         }
     }
-
+    private static boolean isFishing(CombatContext ctx) {
+        return ctx.player.fishing != null || FightClient.active;
+    }
     /** Планирует рывок, если у записи анимации задана moveDistance. Направление и yaw фиксируются в момент вызова. */
     public static void scheduleFromEntry(CombatContext ctx, AnimEntry entry, long now) {
         if (entry.moveDistance() == null || entry.moveDistance() <= 0) return;
@@ -40,7 +43,7 @@ public final class MovementDash {
     public static void schedule(CombatContext ctx, double distanceBlocks, MoveDirection direction,
                                 long delayMs, long durationMs, long now) {
         if (distanceBlocks <= 0 || durationMs <= 0) return;
-
+        if (isFishing(ctx)) return;
         float yawRad = ctx.player.getYRot() * Mth.DEG_TO_RAD;
         double fwdX = -Mth.sin(yawRad), fwdZ = Mth.cos(yawRad);
         double rightX = Mth.cos(yawRad), rightZ = Mth.sin(yawRad);
@@ -65,7 +68,7 @@ public final class MovementDash {
     public static void tick(CombatContext ctx, long now) {
         ActiveMove m = ctx.activeMove;
         if (m == null) return;
-
+        if (isFishing(ctx)) { ctx.activeMove = null; return; }
         if (now > m.endAt) { ctx.activeMove = null; return; }
         if (now < m.startAt) return;
 

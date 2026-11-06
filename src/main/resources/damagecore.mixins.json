@@ -59,6 +59,7 @@
     "keys_left_hand.MinecraftKeybindsMixin",
     "keys_left_hand.RemoveVanillaOffhandKeyMixin",
     "keys_left_hand.SwapOffhandKeyMixin",
+    "multiblock.MultiPlayerGameModeMixin",
     "tree_mixins.shooting.ItemPropertiesMixin"
   ],
   "injectors": {

@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.Init.fishing.weight;
+package ru.imaginaerum.damagecore.Init.fishing.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;

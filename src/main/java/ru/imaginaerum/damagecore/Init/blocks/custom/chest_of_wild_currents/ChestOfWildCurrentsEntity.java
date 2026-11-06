@@ -45,10 +45,7 @@ import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.blocks.entity.DCBlockEntities;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimatableManager;
-import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.PlayState;
-import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
@@ -65,13 +62,15 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
     static final int DISSOLVE_AT    = 38;   // начинает гаснуть свет
     static final int DISSOLVE_TICKS = 14;   // длительность затухания
     private static final RawAnimation FIRST_OPEN = RawAnimation.begin().thenPlayAndHold("first_open");
-    private static final RawAnimation DROP       = RawAnimation.begin().thenPlayAndHold("drop");
+    private static final RawAnimation DROP = RawAnimation.begin().thenPlayAndHold("drop");
+    private static final RawAnimation SPIT = RawAnimation.begin().then("spit", Animation.LoopType.PLAY_ONCE);
     // только клиент, в NBT не сохраняется
     private boolean lootClaimed;
     private boolean guiOpen;       // игрок держит GUI
     private boolean lidWasOpen;
     // ── поля (добавить к существующим) ──
-
+    static final int SPIT_INTERVAL = 20;   // пауза между типами предметов в тиках
+    private int spitCooldown;
     private boolean lidOpened;      // крышка реально открылась (синхронизируется)
     private int lidWaitTicks;       // сколько тиков ждём доигрывания first_open
     static final int LID_OPEN_TICKS = 18;   // длительность first_open в тиках — подгони под модель
@@ -81,9 +80,11 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
     private long openedAtMs, dissolveAtMs, spawnedAtMs;
     private boolean opened;
     private boolean dissolving;   // свет гаснет
+    private int dissolveStartTick;
     private boolean finished;     // теперь обычный сундук
     private boolean spawned;
     private int openTicks;
+    static final float BONUS_CHANCE = 0.6f;
     static final int CONTAINER_SIZE = 45;
     private static final RawAnimation CLOSE = RawAnimation.begin().thenPlayAndHold("close");
     public boolean wasOpened() {
@@ -150,7 +151,7 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
 
         return super.triggerEvent(id, type);
     }
-    private final NonNullList<ItemStack> loot = NonNullList.withSize(MAX_ITEMS, ItemStack.EMPTY);
+    private final NonNullList<ItemStack> loot = NonNullList.withSize(MAX_ITEMS + 2, ItemStack.EMPTY);
     private NonNullList<ItemStack> items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
 
 
@@ -209,6 +210,15 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
         LootTable table = sl.getServer().reloadableRegistries().getLootTable(LOOT);
         List<ItemStack> rolled = table.getRandomItems(b.create(LootContextParamSets.CHEST));
         for (int i = 0; i < Math.min(MAX_ITEMS, rolled.size()); i++) loot.set(i, rolled.get(i));
+        var rnd = sl.getRandom();
+
+// слоты MAX_ITEMS и MAX_ITEMS + 1 идут после основного лута
+        if (rnd.nextFloat() < BONUS_CHANCE) {
+            loot.set(MAX_ITEMS, new ItemStack(Items.GOLD_INGOT, 2 + rnd.nextInt(5)));      // 2–6
+        }
+        if (rnd.nextFloat() < BONUS_CHANCE) {
+            loot.set(MAX_ITEMS + 1, new ItemStack(Items.EMERALD, 1 + rnd.nextInt(5)));     // 1–5
+        }
     }
 
     // ── сервер: таймлайн ──
@@ -232,69 +242,91 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
 
         be.openTicks++;
 
+        // Начало вылета: включаем анимацию drop
         if (!be.spawned && be.openTicks >= SPAWN_AT) {
             be.spawned = true;
-            be.spawnItems(sl);
+            be.spitCooldown = 0;
             be.setChanged();
             sl.sendBlockUpdated(pos, state, state, 3);
         }
-
-        if (!be.dissolving && be.openTicks >= DISSOLVE_AT) {
+// Выплёвываем по одному типу за раз
+        if (be.spawned && !be.lootEmpty()) {
+            if (be.spitCooldown > 0) {
+                be.spitCooldown--;
+            } else {
+                be.spitNext(sl);
+                be.spitCooldown = SPIT_INTERVAL;
+                be.setChanged();
+            }
+        }
+        if (!be.dissolving && be.spawned && be.lootEmpty() && be.openTicks >= DISSOLVE_AT) {
             be.dissolving = true;
+            be.dissolveStartTick = be.openTicks;
             be.setChanged();
             sl.sendBlockUpdated(pos, state, state, 3);
             sl.playSound(null, pos, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.BLOCKS, 0.8f, 1.4f);
         }
 
-        if (be.dissolving && be.openTicks - DISSOLVE_AT >= DISSOLVE_TICKS) {
+        if (be.dissolving && be.openTicks - be.dissolveStartTick >= DISSOLVE_TICKS) {
             be.finished = true;
-            be.lidHeld = true;
             be.setChanged();
             sl.sendBlockUpdated(pos, state, state, 3);
         }
     }
 
-    private void spawnItems(ServerLevel sl) {
-        int n = 0;
-        for (ItemStack s : loot) if (!s.isEmpty()) n++;
-        if (n == 0) return;
+    private boolean lootEmpty() {
+        for (ItemStack s : loot) if (!s.isEmpty()) return false;
+        return true;
+    }
 
-        double cx = worldPosition.getX() + 0.5, cz = worldPosition.getZ() + 0.5;
-        double y = worldPosition.getY() + 0.4;   // примерно уровень проёма
-        var rnd = sl.getRandom();
-        double offset = rnd.nextDouble() * Math.PI * 2;   // общий поворот разлёта
-        int i = 0;
-
+    /** Выплёвывает следующий непустой слот лута. */
+    private void spitNext(ServerLevel sl) {
         for (int k = 0; k < loot.size(); k++) {
             ItemStack s = loot.get(k);
             if (s.isEmpty()) continue;
 
-            double ang = offset + (Math.PI * 2.0 / n) * i + (rnd.nextDouble() - 0.5) * 0.4;
-            double hSpeed = 0.10 + rnd.nextDouble() * 0.10;   // дальность разлёта
-            double vSpeed = 0.20 + rnd.nextDouble() * 0.08;   // небольшой подброс
-
-            ItemEntity ie = new ItemEntity(sl, cx, y, cz, s.copy());
-            ie.setDeltaMovement(Math.cos(ang) * hSpeed, vSpeed, Math.sin(ang) * hSpeed);
-            ie.setPickUpDelay(20);
-            sl.addFreshEntity(ie);
-
             loot.set(k, ItemStack.EMPTY);
-            i++;
-        }
+            triggerAnim("main", "spit");
+            double cx = worldPosition.getX() + 0.5, cz = worldPosition.getZ() + 0.5;
+            double y = worldPosition.getY() + 0.4;
+            var rnd = sl.getRandom();
+            int count = s.getCount();
 
-        sl.playSound(null, worldPosition, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.9f, 1.2f);
-        sl.sendParticles(
-                new BlockParticleOption(ParticleTypes.BLOCK, getBlockState()),
-                cx, y, cz,
-                24,            // количество
-                0.15, 0.05, 0.15,  // разброс по X, Y, Z
-                0.15);         // скорость разлёта
+            if (count <= 1) {
+                // одиночный предмет — просто выплюнуть
+                double ang = rnd.nextDouble() * Math.PI * 2;
+                double hSpeed = 0.10 + rnd.nextDouble() * 0.06;
+                double vSpeed = 0.22 + rnd.nextDouble() * 0.06;
+
+                ItemEntity ie = new ItemEntity(sl, cx, y, cz, s.copy());
+                ie.setDeltaMovement(Math.cos(ang) * hSpeed, vSpeed, Math.sin(ang) * hSpeed);
+                ie.setPickUpDelay(20);
+                sl.addFreshEntity(ie);
+
+                sl.playSound(null, worldPosition, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.6f, 1.4f);
+                sl.sendParticles(ParticleTypes.POOF, cx, y, cz, 3, 0.1, 0.05, 0.1, 0.02);
+            } else {
+                // стак — салют: каждый предмет отдельной сущностью веером
+                double offset = rnd.nextDouble() * Math.PI * 2;
+                for (int j = 0; j < count; j++) {
+                    ItemStack one = s.copyWithCount(1);
+
+                    double ang = offset + (Math.PI * 2.0 / count) * j + (rnd.nextDouble() - 0.5) * 0.4;
+                    double hSpeed = 0.10 + rnd.nextDouble() * 0.10;
+                    double vSpeed = 0.20 + rnd.nextDouble() * 0.08;
+
+                    ItemEntity ie = new ItemEntity(sl, cx, y, cz, one);
+                    ie.setDeltaMovement(Math.cos(ang) * hSpeed, vSpeed, Math.sin(ang) * hSpeed);
+                    ie.setPickUpDelay(20);
+                    sl.addFreshEntity(ie);
+                }
+
+                sl.playSound(null, worldPosition, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.9f, 1.2f);
+            }
+            return; // только один тип за вызов
+        }
     }
 
-    // ── клиент: визуал ──
-    /** 0..1: сила лучей. После finished всегда 0. */
-// ── клиент: визуал ──
-    /** 0..1: сила лучей. До открытия крышки и после finished — 0. */
     public float getGlow() {
         if (!opened || finished || !lidOpened) return 0f;
         long now = System.currentTimeMillis();
@@ -311,17 +343,17 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "main", 0, state -> {
+        controllers.add(new AnimationController<ChestOfWildCurrentsEntity>(this, "main", 0, state -> {
 
             // Сундук ещё не открывали.
             if (!opened) return PlayState.STOP;
 
-            // Первоначальное открытие: first_open -> drop.
             if (!finished) {
+                if (spawned) lidWasOpen = true;   // крышка открыта, после лута её надо закрыть
                 return state.setAndContinue(spawned ? DROP : FIRST_OPEN);
             }
 
-            // GUI открыт — open.
+            // GUI открыт: open.
             if (guiOpen) {
                 lidWasOpen = true;
                 return state.setAndContinue(OPEN);
@@ -332,14 +364,14 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
                 return state.setAndContinue(DROP);
             }
 
-            // GUI только что закрыли — close.
+            // GUI только что закрыли: close.
             if (lidWasOpen) {
                 return state.setAndContinue(CLOSE);
             }
 
-            // Только что поставили или загрузили чанк — статичная закрытая поза, без анимаций.
+            // Только что поставили или загрузили чанк: статичная закрытая поза.
             return PlayState.STOP;
-        }));
+        }).triggerableAnim("spit", SPIT));
     }
 
 
@@ -391,6 +423,7 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
         tag.putBoolean("opened", opened);
         tag.putBoolean("dissolving", dissolving);
         tag.putBoolean("finished", finished);
+        tag.putInt("dissolveStartTick", dissolveStartTick);
         tag.putBoolean("spawned", spawned);
         tag.putBoolean("lidOpened", lidOpened);
         tag.putBoolean("lootClaimed", lootClaimed);
@@ -411,6 +444,7 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
         openTicks     = tag.getInt("openTicks");
         lidWaitTicks  = tag.getInt("lidWaitTicks");
         lootClaimed = tag.getBoolean("lootClaimed");
+        dissolveStartTick = tag.getInt("dissolveStartTick");
         loot.clear();
         ContainerHelper.loadAllItems(tag.getCompound("Loot"), loot, regs);
 
