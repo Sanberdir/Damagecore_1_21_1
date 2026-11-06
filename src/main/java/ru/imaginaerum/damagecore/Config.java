@@ -29,6 +29,7 @@ public class Config {
     public static boolean showStaminaHud;
     public static double thirstDrainMultiplier;
 
+
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         showStaminaHud = SHOW_STAMINA_HUD.get();
