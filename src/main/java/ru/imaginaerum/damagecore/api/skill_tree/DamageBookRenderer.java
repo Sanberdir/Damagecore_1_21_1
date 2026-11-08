@@ -163,7 +163,6 @@ public final class DamageBookRenderer {
     public static int getLevel(int treeId) {
         return TREE_LEVEL.getOrDefault(treeId, 0);
     }
-
     public static void clearXpData() {
         TREE_XP.clear();
         TREE_LEVEL.clear();
@@ -214,7 +213,7 @@ public final class DamageBookRenderer {
                     512,512);
         }
 
-        String levelText = String.valueOf(TREE_LEVEL.getOrDefault(treeId, 0));
+        String levelText = String.valueOf(getLevel(treeId));
         int textWidth = Minecraft.getInstance().font.width(levelText);
         int textX = tabX + (tabW - textWidth) / 2;
         int textY = topTab ? xpY - Minecraft.getInstance().font.lineHeight - 2 : xpY + XP_BAR_HEIGHT + 4;

@@ -11,12 +11,15 @@ import ru.imaginaerum.damagecore.Init.blocks.custom.BlockConfigNetwork;
 import ru.imaginaerum.damagecore.Init.blocks.screen.BlockConfigScreen;
 import ru.imaginaerum.damagecore.Init.fishing.client.ClientPayloadHandler;
 import ru.imaginaerum.damagecore.Init.fishing.fight.FightManager;
+import ru.imaginaerum.damagecore.Init.fishing.gui.OpenFishingRodMenuPacket;
+import ru.imaginaerum.damagecore.Init.fishing.gui.RodSlotClickPacket;
 import ru.imaginaerum.damagecore.Init.fishing.net.*;
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ChainLightningPacket;
 import ru.imaginaerum.damagecore.animation_attack.PacketBreakBlock;
 import ru.imaginaerum.damagecore.api.skill_tree.LearnNodePacket;
 import ru.imaginaerum.damagecore.api.skill_tree.RequestFullSyncPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.SyncNodeLevelsPacket;
+import ru.imaginaerum.damagecore.api.skill_tree.SyncTreeLevelPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.implementation_skills.shooting.HundredArmedSyncPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SelectNodeVariantPacket;
 import ru.imaginaerum.damagecore.api.skill_tree.node_variant.SyncNodeVariantsPacket;
@@ -64,6 +67,7 @@ public final class ModNetwork {
         registrar.playToClient(SyncEffectSourcePayload.TYPE, SyncEffectSourcePayload.STREAM_CODEC, SyncEffectSourcePayload::handle);
         registrar.playToClient(SyncCombatModePacket.TYPE, SyncCombatModePacket.STREAM_CODEC, SyncCombatModePacket::handle); // ДОБАВЛЕНО
 // В месте, где регистрируете play-пакеты клиент->сервер:
+        registrar.playToClient(SyncTreeLevelPacket.TYPE, SyncTreeLevelPacket.CODEC, SyncTreeLevelPacket::handle);
         registrar.playToServer(PacketBreakBlock.TYPE, PacketBreakBlock.STREAM_CODEC,
                 (packet, context) -> context.enqueueWork(() -> handleBreakBlock(packet, context.player())));
         // ─── Клиент → Сервер ───
@@ -78,6 +82,12 @@ public final class ModNetwork {
         registrar.playToServer(StatChangePacket.TYPE,       StatChangePacket.CODEC,         StatChangePacket::handle);
         registrar.playToServer(PacketTypedAttack.TYPE,      PacketTypedAttack.STREAM_CODEC, PacketTypedAttack::handle);
         registrar.playToServer(StatSessionPacket.TYPE, StatSessionPacket.CODEC, StatSessionPacket::handle);
+        registrar.playToServer(OpenFishingRodMenuPacket.TYPE,OpenFishingRodMenuPacket.STREAM_CODEC,OpenFishingRodMenuPacket::handle);
+        registrar.playToServer(
+                RodSlotClickPacket.TYPE,
+                RodSlotClickPacket.STREAM_CODEC,
+                RodSlotClickPacket::handle);
+
         // ─── Двунаправленные ───
         registrar.playBidirectional(NormalAttackPacket.TYPE, NormalAttackPacket.STREAM_CODEC, NormalAttackPacket::handle);
 // ─── Рыбалка ───

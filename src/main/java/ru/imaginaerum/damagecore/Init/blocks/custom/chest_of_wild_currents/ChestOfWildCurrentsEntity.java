@@ -5,8 +5,8 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -84,8 +84,11 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
     private boolean finished;     // теперь обычный сундук
     private boolean spawned;
     private int openTicks;
-    static final float BONUS_CHANCE = 0.6f;
+    static final float COIN_CHANCE    = 0.6f;    // монета: 60%
+    static final float EMERALD_CHANCE = 0.03f;   // изумруд: 3%
     static final int CONTAINER_SIZE = 45;
+    private static final ResourceLocation GOLD_COIN_ID =
+            ResourceLocation.fromNamespaceAndPath("economy_core", "gold_coin");
     private static final RawAnimation CLOSE = RawAnimation.begin().thenPlayAndHold("close");
     public boolean wasOpened() {
         return opened;
@@ -212,16 +215,17 @@ public class ChestOfWildCurrentsEntity extends RandomizableContainerBlockEntity 
         for (int i = 0; i < Math.min(MAX_ITEMS, rolled.size()); i++) loot.set(i, rolled.get(i));
         var rnd = sl.getRandom();
 
-// слоты MAX_ITEMS и MAX_ITEMS + 1 идут после основного лута
-        if (rnd.nextFloat() < BONUS_CHANCE) {
-            loot.set(MAX_ITEMS, new ItemStack(Items.GOLD_INGOT, 2 + rnd.nextInt(5)));      // 2–6
+        if (rnd.nextFloat() < COIN_CHANCE) {
+            BuiltInRegistries.ITEM.getOptional(GOLD_COIN_ID).ifPresent(coin ->
+                    loot.set(MAX_ITEMS, new ItemStack(coin, 2 + rnd.nextInt(5))));   // 2–6
         }
-        if (rnd.nextFloat() < BONUS_CHANCE) {
-            loot.set(MAX_ITEMS + 1, new ItemStack(Items.EMERALD, 1 + rnd.nextInt(5)));     // 1–5
+
+        float luck = opener != null ? opener.getLuck() : 0f;
+        if (rnd.nextFloat() < EMERALD_CHANCE + luck * 0.01f) {
+            loot.set(MAX_ITEMS + 1, new ItemStack(Items.EMERALD, 1 + rnd.nextInt(2)));   // 1–2
         }
     }
 
-    // ── сервер: таймлайн ──
     // ── сервер: таймлайн ──
     public static void serverTick(Level level, BlockPos pos, BlockState state, ChestOfWildCurrentsEntity be) {
         if (!(level instanceof ServerLevel sl)) return;

@@ -14,6 +14,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingConversionEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import ru.imaginaerum.damagecore.api.skill_tree.SkillTreeServerHandler;
+import ru.imaginaerum.damagecore.api.skill_tree.SkillTreeServerRegistry;
 
 @EventBusSubscriber(modid = "damagecore")
 public class TomeEvents {
@@ -69,7 +71,16 @@ public class TomeEvents {
         player.setData(ModAttachments.TOME_COMPASS_ON, false);
         player.setData(ModAttachments.TOME_TARGET, Long.MIN_VALUE);
     }
+    private static final String ALCHEMY_TREE = "enchantment.json";
 
+    public static void grantAlchemyLevels(ServerPlayer player, int levels) {
+        int treeId = SkillTreeServerRegistry.getTreeId(ALCHEMY_TREE); // "alchemy.json"
+        System.out.println("[Tome] grantAlchemyLevels treeId=" + treeId);
+        if (treeId < 0) return;
+        SkillTreeServerHandler.addTreeLevel(player, treeId, levels);
+        player.sendSystemMessage(Component.literal("+" + levels + " уровней дерева алхимии")
+                .withStyle(ChatFormatting.DARK_PURPLE));
+    }
     @SubscribeEvent
     public static void onRescuedVillagerDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
         var victim = event.getEntity();

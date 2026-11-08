@@ -23,6 +23,10 @@ public class DCTabs {
             event.accept(DCItems.CHEST_OF_WILD_CURRENTS.get());
             event.accept(DCItems.KEY_OF_WILD_CURRENTS.get());
             event.accept(DCItems.SUNKEN_BOTTLE.get());
+            event.accept(DCItems.REEL.get());
+            event.accept(DCItems.IRON_HOOK.get());
+            event.accept(DCItems.FISHING_LINE.get());
+            event.accept(DCItems.EARTH_WORM.get());
         }
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(BlocksDC.STRUCTURE_BLOCK_AND_ENTITY.get());

@@ -52,7 +52,29 @@ public final class SkillTreeServerHandler {
     // --------------------------------------------------
     // Основная логика изучения ноды
     // --------------------------------------------------
+    private static final String TREE_LEVEL_KEY = "tree_level";
 
+    public static int getTreeLevel(ServerPlayer player, int treeId) {
+        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag mod = persisted.getCompound(ROOT_KEY);
+        return mod.getCompound("tree_" + treeId).getInt(TREE_LEVEL_KEY);
+    }
+
+    public static void setTreeLevel(ServerPlayer player, int treeId, int level) {
+        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+        CompoundTag mod = persisted.getCompound(ROOT_KEY);
+        persisted.put(ROOT_KEY, mod);
+        CompoundTag treeTag = mod.getCompound("tree_" + treeId);
+        mod.put("tree_" + treeId, treeTag);
+
+        treeTag.putInt(TREE_LEVEL_KEY, Math.max(0, level));
+        PacketDistributor.sendToPlayer(player, new SyncTreeLevelPacket(treeId, Math.max(0, level)));
+    }
+
+    public static void addTreeLevel(ServerPlayer player, int treeId, int delta) {
+        setTreeLevel(player, treeId, getTreeLevel(player, treeId) + delta);
+    }
     public static void handleLearnRequest(ServerPlayer player, int treeId, String nodeId) {
         Map<String, SkillTreeNode> nodes = SkillTreeServerRegistry.getNodes(treeId);
         if (nodes == null) return;
@@ -149,7 +171,8 @@ public final class SkillTreeServerHandler {
             try {
                 int treeId = Integer.parseInt(key.substring(5));
                 CompoundTag treeTag = mod.getCompound(key);
-
+                PacketDistributor.sendToPlayer(player,
+                        new SyncTreeLevelPacket(treeId, treeTag.getInt(TREE_LEVEL_KEY)));
                 // Уровни нод
                 Map<String, Integer> levels = new HashMap<>();
                 for (String tk : treeTag.getAllKeys()) {

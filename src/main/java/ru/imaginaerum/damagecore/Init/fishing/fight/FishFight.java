@@ -33,6 +33,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.ItemFishedEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import ru.imaginaerum.damagecore.Init.fishing.food.FishFood;
+import ru.imaginaerum.damagecore.Init.fishing.gui.types.RodGear;
+import ru.imaginaerum.damagecore.Init.fishing.gui.types.RodStats;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightPosPayload;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
 import ru.imaginaerum.damagecore.Init.fishing.weight.FishWeight;
@@ -162,7 +164,7 @@ public final class FishFight {
     private double prevHx, prevHz;
     private double mvx, mvz;
     private boolean yawInit;
-
+    private final RodStats stats;
     public void setKeys(int side, boolean tighten, boolean slack, boolean reel, boolean attack) {
         this.keySide    = Mth.clamp(side, -1, 1);
         this.keyTighten = tighten;
@@ -173,7 +175,7 @@ public final class FishFight {
 
     private FishFight(ServerPlayer player, FishingHook hook, InteractionHand hand, List<ItemStack> loot,
                       @Nullable Entity visual, boolean real, float strength, Vec3 baseDir,
-                      double startDist, double endDist, FishWeight weight) {
+                      double startDist, double endDist, FishWeight weight, RodStats stats) {
         this.player    = player;
         this.level     = player.serverLevel();
         this.hook      = hook;
@@ -181,6 +183,7 @@ public final class FishFight {
         this.hand      = hand;
         this.loot      = loot;
         this.real      = real;
+
         this.visual    = visual;
         this.strength  = strength;
         this.baseDir   = baseDir;
@@ -192,10 +195,13 @@ public final class FishFight {
         this.dist      = startDist;
         this.phase     = PHASE_WARN;
         this.phaseTicks = WARN_TICKS;
+        this.stats = stats;
         this.unspoolTarget = Math.max(startDist + 3.0,
-                MIN_FIGHT_DIST + player.getRandom().nextDouble() * UNSPOOL_VAR);
+                (MIN_FIGHT_DIST + player.getRandom().nextDouble() * UNSPOOL_VAR) * stats.fightTime);
     }
-
+    private int dashesPerStruggle() {
+        return Math.max(MIN_DASHES, Math.round(DASHES_PER_STRUGGLE * stats.fightTime));
+    }
     @Nullable
     public static FishFight start(ServerPlayer player, FishingHook hook, @Nullable FightManager.Approach pre) {
         InteractionHand hand;
@@ -212,7 +218,8 @@ public final class FishFight {
         ItemStack rod = player.getItemInHand(hand);
         List<ItemStack> loot = pre != null ? pre.loot : rollLoot(player, hook, rod);
         if (loot.isEmpty()) return null;
-
+        RodStats stats = RodGear.read(rod);
+        FightManager.HOOK_WEAR.merge(player.getUUID(), stats.hookWear, Integer::sum);
         ItemStack first = loot.get(0);
         float strength = strengthFor(first);
         Entity visual = (pre != null && pre.fish != null) ? pre.fish : createVisual(level, hook, first);
@@ -225,7 +232,7 @@ public final class FishFight {
         if (pre == null && isMobFish(first)) FishFood.apply(first, weight.kg());
         if (pre == null) FishFood.apply(first, weight.kg());   // <- добавлено
         if (visual != null) weight.applyScale(visual);
-        FishFight fight = new FishFight(player, hook, hand, loot, visual, real, strength, baseDir, len, endDist, weight);
+        FishFight fight = new FishFight(player, hook, hand, loot, visual, real, strength, baseDir, len, endDist, weight, stats);
         fight.sendState(true);
         return fight;
     }
@@ -385,7 +392,7 @@ public final class FishFight {
         // ── strain (борьба) ──
         boolean straining = struggling && reeling && struggleTicks > REEL_GRACE;
         if (straining) {
-            strain += STRAIN_RISE * strength * wl;
+            strain += STRAIN_RISE * strength * wl / stats.lineStrength;   // было: STRAIN_RISE * strength * wl
         } else {
             strain -= STRAIN_FALL;
         }
@@ -419,10 +426,11 @@ public final class FishFight {
         float shownTarget = Math.max(tension, strain);
         shownTension += (shownTarget - shownTension) * (shownTarget > shownTension ? 0.45f : (window ? 0.35f : 0.10f));
 
-        // ── snap ──
+// ── snap ──
+        int snapTicks = Math.round(SNAP_TICKS * stats.lineStrength);
         boolean grace = struggling && runAge < SNAP_GRACE;
         over = (tension > SNAP_LEVEL && !grace) ? over + 1 : Math.max(0, over - 2);
-        if (strain >= 1f || over >= SNAP_TICKS) { snap(); return false; }
+        if (strain >= 1f || over >= snapTicks) { snap(); return false; }   // было: over >= SNAP_TICKS
 
         // ── скрип лески по ступеням ──
         float load = Math.max(tension, Math.max(strain, reelLoad));
@@ -447,7 +455,7 @@ public final class FishFight {
         }
 
 // ── последний сигнал прямо перед обрывом ──
-        boolean imminent = over >= SNAP_TICKS - FINAL_WARN_TICKS || strain >= 0.80f;
+        boolean imminent = over >= snapTicks - FINAL_WARN_TICKS || strain >= 0.80f;   // было: SNAP_TICKS - FINAL_WARN_TICKS
         if (imminent && !finalWarned) {
             playNear(DCSoundEvents.TENSION_3.get(), SoundSource.NEUTRAL, 1.0f * ROD_VOL, 1.0f);
             finalWarned = true;
@@ -476,7 +484,7 @@ public final class FishFight {
         // ПКМ: плавная подмотка
         if (reeling) {
             FightManager.reelSound(player, 0.9f + 0.3f * tension);
-            float rs = REEL_SPEED * weight.reelFactor();
+            float rs = REEL_SPEED * weight.reelFactor() * stats.reelSpeed / stats.fightTime;
             if (window || passive)      vOut -= rs;
             else if (warn)              vOut -= rs * 0.5f;
             else if (struggling)        vOut -= rs * 0.15f;
@@ -485,7 +493,7 @@ public final class FishFight {
         // ЛКМ: резкий рывок
         if (jerkTicks > 0) {
             jerkTicks--;
-            float js = JERK_SPEED * weight.reelFactor();
+            float js = JERK_SPEED * weight.reelFactor() * stats.reelSpeed / stats.fightTime;
             if (window || passive)  vOut -= js;
             else if (warn)          vOut -= js * 0.5f;
             else                    vOut -= js * 0.2f;
@@ -626,7 +634,7 @@ public final class FishFight {
             case PHASE_STRUGGLE -> {
                 dashIndex++;
                 boolean tired = stamina < TIRED_THRESHOLD && dashIndex >= MIN_DASHES;
-                if (tired || dashIndex >= DASHES_PER_STRUGGLE) {
+                if (tired || dashIndex >= dashesPerStruggle()) {
                     phase = PHASE_WINDOW;
                     // тяжёлая рыба отдыхает короче
                     phaseTicks = (int) ((60 + r.nextInt(30)) / Math.max(1f, weight.loadFactor() * 0.8f));

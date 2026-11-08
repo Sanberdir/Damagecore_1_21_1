@@ -1,8 +1,8 @@
 package ru.imaginaerum.damagecore;
 
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,16 +13,23 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent; // Импортируем тик сервера
 
 
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
 import ru.imaginaerum.damagecore.Init.blocks.entity.DCBlockEntities;
 import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.DCEntities;
 import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.item.ChainLightingArrowRenderer;
+import ru.imaginaerum.damagecore.Init.fishing.gui.FishingRodScreen;
+import ru.imaginaerum.damagecore.Init.fishing.gui.MenuTypes;
+import ru.imaginaerum.damagecore.Init.fishing.gui.OpenFishingRodMenuPacket;
 import ru.imaginaerum.damagecore.Init.items.DCItems;
 import ru.imaginaerum.damagecore.Init.items.chain_lighting_arrow.ArrowLightningStorm;
 import ru.imaginaerum.damagecore.Init.tab.DCTabs;
@@ -40,7 +47,6 @@ import ru.imaginaerum.damagecore.particle.DCParticles;
 import ru.imaginaerum.damagecore.sounds.DCSoundEvents;
 import ru.imaginaerum.damagecore.structure_processors.CastleGuardSpawner;
 import ru.imaginaerum.damagecore.structure_processors.ModProcessors;
-import ru.imaginaerum.damagecore.structure_processors.StructureBlockProcessor;
 
 @Mod(Damagecore_1_21_1_neo.MODID)
 public class Damagecore_1_21_1_neo {
@@ -49,6 +55,7 @@ public class Damagecore_1_21_1_neo {
     public Damagecore_1_21_1_neo(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::commonSetup);
         FoodProtectionAttachments.ATTACHMENT_TYPES.register(modEventBus);
+        MenuTypes.MENU_TYPES.register(modEventBus);
         // Регистрируем этот класс на глобальной шине событий NeoForge (для серверного тика)
         ModProcessors.PROCESSORS.register(modEventBus);
         NeoForge.EVENT_BUS.register(this);
@@ -102,6 +109,10 @@ public class Damagecore_1_21_1_neo {
         @SubscribeEvent
         public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
             event.register(ModKeyMappings.USE_ACCESSORY_SLOT);
+        }
+        @SubscribeEvent
+        public static void registerScreens(RegisterMenuScreensEvent event) {
+            event.register(MenuTypes.FISHING_ROD_MENU.get(), FishingRodScreen::new);
         }
 
         @SubscribeEvent

@@ -4,6 +4,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -59,16 +60,29 @@ public class DamageResistanceHandler {
         List<DamageResistance> allResistances = new ArrayList<>();
 
         for (ItemStack stack : entity.getArmorSlots()) {
+            if (stack.isEmpty()) continue;
+
+            ArmorMaterial material = null;
+            ArmorItem.Type armorType = null;
+
             if (stack.getItem() instanceof ArmorItem armorItem) {
-                // В 1.21.1 .getMaterial() возвращает Holder<ArmorMaterial>. Передаем чистый материал через .value()
-                DamageResistance resistance = DamageArmorModifier.getDamageResistance(
-                        armorItem.getMaterial().value(),
-                        armorItem.getType(),
-                        damageType
-                );
-                if (resistance.getFlat() > 0 || resistance.getPercent() > 0) {
-                    allResistances.add(resistance);
-                }
+                material = armorItem.getMaterial().value();
+                armorType = armorItem.getType();
+            } else if (stack.getItem() instanceof DamageArmorProvider provider) {
+                material = provider.getDamageArmorMaterial();
+                armorType = provider.getDamageArmorType();
+            }
+
+            if (material == null || armorType == null) continue;
+
+            DamageResistance resistance = DamageArmorModifier.getDamageResistance(
+                    material,
+                    armorType,
+                    damageType
+            );
+
+            if (resistance.getFlat() > 0 || resistance.getPercent() > 0) {
+                allResistances.add(resistance);
             }
         }
 

@@ -21,6 +21,10 @@ repositories {
         name = "RedlanceMinecraft"
         url = "https://repo.redlance.org/public"
     }
+    maven {
+        url = "https://cursemaven.com"
+        content { includeGroup "curse.maven" }
+    }
 }
 
 base {
@@ -111,6 +115,8 @@ dependencies {
     implementation("com.zigythebird.playeranim:PlayerAnimationLibNeo:1.1.5+mc.1.21.1") {
         transitive = false
     }
+    implementation "curse.maven:imaginaerum-economy-core-1747925:9205520"
+
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

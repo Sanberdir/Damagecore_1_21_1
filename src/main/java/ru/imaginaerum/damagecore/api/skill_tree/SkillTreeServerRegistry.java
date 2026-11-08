@@ -12,7 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class SkillTreeServerRegistry {
     private SkillTreeServerRegistry() {}
+    private static final Map<String, Integer> fileToId = new ConcurrentHashMap<>();
 
+    public static int getTreeId(String name) {
+        String n = name.toLowerCase(Locale.ROOT);
+        if (!n.endsWith(".json")) n += ".json";
+        return fileToId.getOrDefault(n, -1);
+    }
     // treeId -> (nodeId -> SkillTreeNode)
     private static final Map<Integer, Map<String, SkillTreeNode>> trees = new ConcurrentHashMap<>();
     private static boolean loaded = false;
@@ -23,7 +29,7 @@ public final class SkillTreeServerRegistry {
         if (loaded) return;
         loaded = true;
         trees.clear();
-
+        fileToId.clear();
         try {
             ResourceManager rm = server.getResourceManager();
             String folder = "skill_tree";
@@ -62,6 +68,8 @@ public final class SkillTreeServerRegistry {
                         if (o instanceof SkillTreeNode node) nodes.put(node.id, node);
                     }
                     trees.put(tabId, nodes);
+                    fileToId.put(fileName, tabId);                       // <-- добавить
+                    System.out.println("[DamageCore] tree " + fileName + " -> id " + tabId);
                     tabId++;
                 }
             }
@@ -75,6 +83,7 @@ public final class SkillTreeServerRegistry {
     public static void reset() {
         trees.clear();
         loaded = false;
+        fileToId.clear();
     }
 
     public static boolean hasTree(int treeId) {

@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -38,22 +39,38 @@ public class TooltipEventHandler {
         ItemStack stack = event.getItemStack();
         List<Component> tooltip = event.getToolTip();
 
-        if (stack.getItem() instanceof ArmorItem || stack.getItem() instanceof IDamageCoreWeapon) {
+        if (stack.getItem() instanceof ArmorItem
+                || stack.getItem() instanceof DamageArmorProvider
+                || stack.getItem() instanceof IDamageCoreWeapon) {
+
             stripAttributeLines(tooltip);
             stripLeftoverAttributeLines(tooltip);
         }
-        // 2. Дальше только броня
-        if (!(stack.getItem() instanceof ArmorItem armorItem)) return;
 
-        Map<DamageType, DamageResistance> resistances = DamageArmorModifier.getDamageResistances(
-                armorItem.getMaterial().value(),
-                armorItem.getType()
-        );
+        // Получаем материал и тип брони
+        ArmorMaterial material;
+        ArmorItem.Type armorType;
+
+        if (stack.getItem() instanceof ArmorItem armorItem) {
+            material = armorItem.getMaterial().value();
+            armorType = armorItem.getType();
+        } else if (stack.getItem() instanceof DamageArmorProvider provider) {
+            material = provider.getDamageArmorMaterial();
+            armorType = provider.getDamageArmorType();
+        } else {
+            return;
+        }
+
+        Map<DamageType, DamageResistance> resistances =
+                DamageArmorModifier.getDamageResistances(material, armorType);
 
         Map<DamageType, Float> enchantPercents = new EnumMap<>(DamageType.class);
+
         for (DamageType type : DamageType.values()) {
             float p = getItemEnchantProtection(stack, type);
-            if (p > 0) enchantPercents.put(type, p);
+            if (p > 0) {
+                enchantPercents.put(type, p);
+            }
         }
 
         Map<DamageType, DamageResistance> combined = new EnumMap<>(DamageType.class);

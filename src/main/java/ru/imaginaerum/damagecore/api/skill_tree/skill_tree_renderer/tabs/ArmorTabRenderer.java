@@ -6,9 +6,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import ru.imaginaerum.damagecore.api.skill_tree.protection_helpers.*;
 import ru.imaginaerum.damagecore.armor.DamageArmorModifier;
+import ru.imaginaerum.damagecore.armor.DamageArmorProvider;
 import ru.imaginaerum.damagecore.armor.DamageResistance;
 import ru.imaginaerum.damagecore.library_damage.DamageType;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
@@ -41,14 +43,15 @@ public final class ArmorTabRenderer {
         boolean hasAnyArmor = false;
 
         for (ItemStack stack : player.getArmorSlots()) {
-            if (!(stack.getItem() instanceof ArmorItem armorItem)) continue;
+            ArmorInfo armorInfo = getArmorInfo(stack);
+            if (armorInfo == null) continue;
+
             hasAnyArmor = true;
 
-            var resistances =
-                    DamageArmorModifier.getDamageResistances(
-                            armorItem.getMaterial().value(),
-                            armorItem.getType()
-                    );
+            var resistances = DamageArmorModifier.getDamageResistances(
+                    armorInfo.material(),
+                    armorInfo.type()
+            );
 
             for (var e : resistances.entrySet()) {
                 DamageType type = e.getKey();
@@ -90,8 +93,9 @@ public final class ArmorTabRenderer {
         }
 
         // ==== Превью: наведение на предмет брони в инвентаре ====
-        boolean previewing = previewStack != null && !previewStack.isEmpty()
-                && previewStack.getItem() instanceof ArmorItem;
+        boolean previewing = previewStack != null
+                && !previewStack.isEmpty()
+                && getArmorInfo(previewStack) != null;
         Map<DamageType, DamageResistance> previewTotals =
                 previewing ? computePreviewTotals(player, previewStack) : Collections.emptyMap();
 
@@ -249,23 +253,49 @@ public final class ArmorTabRenderer {
             }
         }
     }
+    private record ArmorInfo(ArmorMaterial material, ArmorItem.Type type) {}
 
+    private static ArmorInfo getArmorInfo(ItemStack stack) {
+        if (stack.isEmpty()) return null;
+
+        if (stack.getItem() instanceof ArmorItem armorItem) {
+            return new ArmorInfo(
+                    armorItem.getMaterial().value(),
+                    armorItem.getType()
+            );
+        }
+
+        if (stack.getItem() instanceof DamageArmorProvider provider) {
+            return new ArmorInfo(
+                    provider.getDamageArmorMaterial(),
+                    provider.getDamageArmorType()
+            );
+        }
+
+        return null;
+    }
     // ==== Пересчёт "как если бы" наведённая броня была надета вместо предмета того же слота ====
     private static Map<DamageType, DamageResistance> computePreviewTotals(
             Player player, ItemStack previewStack) {
 
-        if (!(previewStack.getItem() instanceof ArmorItem previewArmor)) return Collections.emptyMap();
+        ArmorInfo previewArmor = getArmorInfo(previewStack);
+        if (previewArmor == null) return Collections.emptyMap();
 
         Map<DamageType, Float> flat = new EnumMap<>(DamageType.class);
         Map<DamageType, Float> percent = new EnumMap<>(DamageType.class);
         Map<DamageType, Float> enchantMax = new EnumMap<>(DamageType.class);
 
         for (ItemStack stack : player.getArmorSlots()) {
-            if (!(stack.getItem() instanceof ArmorItem armorItem)) continue;
-            if (armorItem.getType() == previewArmor.getType()) continue;
+            ArmorInfo armorInfo = getArmorInfo(stack);
+            if (armorInfo == null) continue;
+
+            if (armorInfo.type() == previewArmor.type()) continue;
 
             var resistances = DamageArmorModifier.getDamageResistances(
-                    armorItem.getMaterial().value(), armorItem.getType());
+                    armorInfo.material(),
+                    armorInfo.type()
+            );
+
             for (var e : resistances.entrySet()) {
                 flat.merge(e.getKey(), e.getValue().getFlat(), Float::sum);
                 percent.merge(e.getKey(), e.getValue().getPercent(), Float::sum);
@@ -278,7 +308,10 @@ public final class ArmorTabRenderer {
         }
 
         var previewResistances = DamageArmorModifier.getDamageResistances(
-                previewArmor.getMaterial().value(), previewArmor.getType());
+                previewArmor.material(),
+                previewArmor.type()
+        );
+
         for (var e : previewResistances.entrySet()) {
             flat.merge(e.getKey(), e.getValue().getFlat(), Float::sum);
             percent.merge(e.getKey(), e.getValue().getPercent(), Float::sum);
@@ -289,11 +322,9 @@ public final class ArmorTabRenderer {
             if (p > 0) enchantMax.merge(type, p, Math::max);
         }
 
-        // ДОБАВЛЕНО: защита от еды не зависит от того, какая броня надета —
-        // она должна одинаково учитываться и в текущем состоянии, и в превью,
-        // иначе сравнение показывает ложное "уменьшение" защиты
         Map<DamageType, Float> foodMax = new EnumMap<>(DamageType.class);
         FoodProtectionManager foodManager = FoodProtectionCapability.get(player);
+
         if (foodManager != null) {
             for (DamageType type : DamageType.values()) {
                 float fp = foodManager.getTotalProtectionPercent(type);
@@ -302,17 +333,23 @@ public final class ArmorTabRenderer {
         }
 
         Map<DamageType, DamageResistance> result = new EnumMap<>(DamageType.class);
+
         for (DamageType type : DamageType.values()) {
             float f = flat.getOrDefault(type, 0f);
+
             float p = Math.min(1f,
                     percent.getOrDefault(type, 0f)
                             + enchantMax.getOrDefault(type, 0f)
-                            + foodMax.getOrDefault(type, 0f)); // ДОБАВЛЕНО
-            if (f > 0 || p > 0) result.put(type, new DamageResistance(f, p));
+                            + foodMax.getOrDefault(type, 0f)
+            );
+
+            if (f > 0 || p > 0) {
+                result.put(type, new DamageResistance(f, p));
+            }
         }
+
         return result;
     }
-
     // ==== Сравнение: сначала flat, при равенстве — percent ====
     private static int compareResistance(DamageResistance current, DamageResistance preview) {
         int cmp = Float.compare(preview.getFlat(), current.getFlat());

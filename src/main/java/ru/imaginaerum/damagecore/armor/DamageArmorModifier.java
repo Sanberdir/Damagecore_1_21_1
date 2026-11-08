@@ -30,7 +30,33 @@ public class DamageArmorModifier extends SimpleJsonResourceReloadListener {
         super(GSON, "damage_armor_modifiers");
         initializeDefaultModifiers(); // <- добавь это
     }
+    public static Map<DamageType, DamageResistance> getDamageResistances(
+            net.minecraft.world.item.ItemStack stack
+    ) {
+        if (stack.isEmpty()) {
+            return Map.of();
+        }
 
+        ArmorMaterial material = null;
+        ArmorItem.Type type = null;
+
+        if (stack.getItem() instanceof ArmorItem armorItem) {
+
+            material = armorItem.getMaterial().value();
+            type = armorItem.getType();
+
+        } else if (stack.getItem() instanceof DamageArmorProvider provider) {
+
+            material = provider.getDamageArmorMaterial();
+            type = provider.getDamageArmorType();
+        }
+
+        if (material == null || type == null) {
+            return Map.of();
+        }
+
+        return getDamageResistances(material, type);
+    }
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> resources, ResourceManager manager, ProfilerFiller profiler) {
 

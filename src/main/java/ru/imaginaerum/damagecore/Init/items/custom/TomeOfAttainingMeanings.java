@@ -134,6 +134,11 @@ public class TomeOfAttainingMeanings extends Item {
             } else if (step == 11) {
                 player.setData(ModAttachments.TOME_STEP, TomeLocator.SPHERE_STEP); // книга -> сфера
             }
+            else if (step == 13) {
+                if (player instanceof ServerPlayer sp) {
+                    TomeEvents.grantAlchemyLevels(sp, 5);
+                }
+            }
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }

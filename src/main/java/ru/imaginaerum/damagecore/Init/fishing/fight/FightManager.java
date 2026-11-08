@@ -32,6 +32,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.fishing.food.FishFood;
+import ru.imaginaerum.damagecore.Init.fishing.gui.types.RodGear;
+import ru.imaginaerum.damagecore.Init.fishing.gui.types.RodStats;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightPosPayload;
 import ru.imaginaerum.damagecore.Init.fishing.net.FightStatePayload;
 import ru.imaginaerum.damagecore.Init.fishing.weight.FishWeight;
@@ -85,6 +87,8 @@ public final class FightManager {
     static final float  CHEST_LOAD_FALL   = 0.020f; // за тик, когда отпустил
     static final float  CHEST_SNAP_LEVEL  = 0.92f;
     static final int    CHEST_SNAP_TICKS  = 15;     // тиков выше предела до обрыва
+    static final Set<UUID> BAIT_SPENT = new HashSet<>();
+    static final Map<UUID, Integer> HOOK_WEAR = new HashMap<>();
     private FightManager() {}
     static void reelSound(ServerPlayer p, float pitch) {
         long now = p.serverLevel().getGameTime();
@@ -94,7 +98,19 @@ public final class FightManager {
         p.serverLevel().playSound(null, p.getX(), p.getY(), p.getZ(),
                 DCSoundEvents.REEL.get(), SoundSource.PLAYERS, 0.6f * FishFight.ROD_VOL, pitch);
     }
+    private static void flushGear(ServerPlayer p) {
+        UUID id = p.getUUID();
+        if (p.fishing != null) return;
+        if (!BAIT_SPENT.contains(id) && !HOOK_WEAR.containsKey(id)) return;
 
+        InteractionHand h = rodHand(p);
+        if (h == null) return;
+        ItemStack rod = p.getItemInHand(h);
+
+        if (BAIT_SPENT.remove(id)) RodGear.consumeBait(rod);
+        Integer wear = HOOK_WEAR.remove(id);
+        if (wear != null) RodGear.wearHook(rod, wear);
+    }
     public static void lockCast(ServerPlayer p) {
         CAST_LOCK.put(p.getUUID(), p.serverLevel().getGameTime() + 8);
     }
@@ -438,7 +454,14 @@ public final class FightManager {
             }
 
             if (a == null) {
-                AbstractFish f = findFish(player, level, hook, 8.0);
+                InteractionHand rh = rodHand(player);
+                if (rh == null) return;
+                ItemStack rodStack = player.getItemInHand(rh);
+                RodStats st = RodGear.read(player.getItemInHand(rh), BAIT_SPENT.contains(id));
+
+                if (player.getRandom().nextFloat() > st.biteChance) return;
+
+                AbstractFish f = findFish(player, level, hook, 8.0 * st.biteRadius);
                 if (f == null) return;
 
                 f.setNoAi(true);
@@ -513,6 +536,10 @@ public final class FightManager {
 
                 if (a.biteAge == 0) {
                     a.window = BITE_WINDOW_MIN + player.getRandom().nextInt(BITE_WINDOW_VAR + 1);
+
+                    InteractionHand bh = rodHand(player);
+                    if (bh != null) BAIT_SPENT.add(id);  // червь исчезает при поклёвке
+
                     Vec3 dm = hook.getDeltaMovement();
                     hook.setDeltaMovement(dm.x, -0.25, dm.z);
                     lv.playSound(null, hook.getX(), hook.getY(), hook.getZ(),
@@ -803,6 +830,7 @@ public final class FightManager {
             tickApproach(p);
             tickReel(p);
             tickYank(p);
+            flushGear(p);
         }
 
         Iterator<FishFight> it = FIGHTS.values().iterator();
@@ -900,6 +928,8 @@ public final class FightManager {
         REELING.remove(pid);
         ATTACK_HELD.remove(pid);
         CHEST_ROLLED.remove(pid);
+        BAIT_SPENT.remove(pid);
+        HOOK_WEAR.remove(pid);
         CHEST_TRIES.remove(pid);
         YANK_TICKS.remove(pid);
         BITE_COOLDOWN.remove(pid);
