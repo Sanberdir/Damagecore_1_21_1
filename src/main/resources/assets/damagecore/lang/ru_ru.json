@@ -6,6 +6,33 @@
   "damagecore.damage.fire": "Огненный урон: %s",
   "damagecore.attack_speed": "Скорость атаки: %s",
 
+  "damagecore.element": "Стихия: %s",
+  "element.damagecore.earth": "Земля",
+  "element.damagecore.water": "Вода",
+  "element.damagecore.fire": "Огонь",
+  "element.damagecore.air": "Воздух",
+  "element.damagecore.light": "Свет",
+  "element.damagecore.dark": "Тьма",
+  "element.damagecore.aether": "Эфир",
+
+  "damagecore.impaling.damage": "+%s колющего урона в воде",
+  "damagecore.impaling.chance": "%s%% шанс замедлить",
+  "enchantment.damagecore.life_drain": "Вытягивание жизни",
+  "damagecore.life_drain.heal": "Лечит на %s%% от нанесённого урона",
+  "enchantment.damagecore.dark_inscription": "Начертание тьмы",
+  "damagecore.dark_inscription.damage": "+%s урона ночью, -%s днём",
+  "damagecore.dark_inscription.crit_chance": "+%s%% к шансу крита ночью",
+  "damagecore.dark_inscription.crit_mult": "+%s к множителю крита",
+
+  "enchantment.damagecore.wind_squall": "Ветряной шквал",
+  "damagecore.wind_squall.launch": "Подбрасывает вверх при ударе в падении",
+  "damagecore.wind_squall.crit": "+%s%% к шансу крита в падении",
+
+  "enchantment.damagecore.density": "Плотность",
+  "damagecore.density.height": "+%s%% дробящего урона за блок падения",
+  "damagecore.density.strength": "+%s к требованию силы",
+  "damagecore.breach.ignore": "Игнорирует %s%% брони против колющего и дробящего урона",
+
   "block.damagecore.chest_of_wild_currents": "Сундук вольных течений",
   "entity.damagecore.chest_of_wild_currents": "Сундук вольных течений",
   "block.damagecore.chest_of_wild_currents.tooltip": "Найден в океане",
@@ -21,6 +48,9 @@
   "damage_type.piercing": "Колющий урон",
   "damage_type.slashing": "Режущий урон",
   "damage_type.fire": "Огненный урон",
+  "damagecore.fire_aspect.chance": "%s%% шанс поджечь",
+  "damagecore.damage.luminous_radiant": "Лучистый урон %s",
+  "damagecore.damage.thunder": "Громовой урон %s",
 
   "damagecore.characteristics": "Характеристики: ",
   "damagecore.immunity_tab.header": "Иммунитет",

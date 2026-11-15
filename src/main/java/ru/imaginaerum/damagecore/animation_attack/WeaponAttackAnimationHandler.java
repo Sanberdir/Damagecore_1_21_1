@@ -12,10 +12,14 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.MovementInputUpdateEvent;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -23,6 +27,11 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.animation_attack.combat.CombatContext;
 import ru.imaginaerum.damagecore.animation_attack.combat.WeaponCombatController;
+import ru.imaginaerum.damagecore.api.ModNetwork;
+import ru.imaginaerum.damagecore.hud.elements.StaminaManager;
+import ru.imaginaerum.damagecore.key_bind.BackstepHandler;
+import ru.imaginaerum.damagecore.library_damage.DamageType;
+import ru.imaginaerum.damagecore.library_damage.PacketTypedAttack;
 import ru.imaginaerum.damagecore.library_weapon_types.WeaponTypeManager;
 
 import java.util.Map;
@@ -50,33 +59,107 @@ public class WeaponAttackAnimationHandler {
     public static boolean triggerSwing(AbstractClientPlayer player) {
         return controller(player).onPrimaryDown(null);
     }
+    @SubscribeEvent
+    public static void onAttackKey(InputEvent.InteractionKeyMappingTriggered event) {
+        if (!event.isAttack()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.player instanceof AbstractClientPlayer player)) return;
+        if (!holdsAnimatedWeapon(player)) return;
+        if (StaminaManager.isExhausted() && !player.isCreative() && !player.isSpectator()) {
+            event.setCanceled(true);
+            event.setSwingHand(false);
+            return;
+        }
+        // Твёрдый блок и боя нет: отдаём клик ваниле (копание)
+        if (!isBusy(player)
+                && mc.hitResult instanceof BlockHitResult bhr
+                && bhr.getType() == HitResult.Type.BLOCK) {
+            BlockState state = player.level().getBlockState(bhr.getBlockPos());
+            if (!state.isAir()
+                    && state.getDestroySpeed(player.level(), bhr.getBlockPos()) != 0.0F) return;
+        }
+        if (!isBusy(player) && isAirborne(player)) {
+            if (mc.hitResult instanceof EntityHitResult ehr
+                    && ehr.getEntity() instanceof LivingEntity victim && victim != player) {
 
+                ResourceLocation id = BuiltInRegistries.ITEM.getKey(player.getMainHandItem().getItem());
+                var swings = WeaponAnimationManager.INSTANCE.getRegularSwings(id);
+                var entry = swings.isEmpty() ? null : swings.get(0);
+
+                java.util.List<DamageType> types =
+                        entry != null && entry.damageTypes() != null && !entry.damageTypes().isEmpty()
+                                ? entry.damageTypes()
+                                : java.util.List.of(DamageType.PIERCING);
+                double mult = entry != null ? entry.damageMultiplier() : 1.0;
+
+                ModNetwork.sendToServer(new PacketTypedAttack(victim.getId(), types, mult));
+                StaminaManager.drainForAttack(player);
+            }
+            event.setCanceled(true);   // ванильный пакет не отправляем, иначе будет двойной урон
+            event.setSwingHand(true);  // ванильный взмах руки остаётся
+            return;
+        }
+        // Гасим ДО отправки пакета на сервер
+        event.setCanceled(true);
+        event.setSwingHand(false);
+
+        LivingEntity target = mc.hitResult instanceof EntityHitResult ehr
+                && ehr.getEntity() instanceof LivingEntity l ? l : null;
+        controller(player).onPrimaryDown(target);
+    }
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         if (!(event.getEntity() instanceof AbstractClientPlayer player)) return;
         if (!player.level().isClientSide()) return;
         if (!holdsAnimatedWeapon(player)) return; // рука/инструменты: ванильное поведение
+        if (!isBusy(player) && !player.onGround() && !player.isInWater()
+                && !player.onClimbable() && !player.getAbilities().flying) {
+            event.setCanceled(true);
+
+            return;
+        }
+        if (!isBusy(player) && isAirborne(player)) {
+            return; // ваниль: копание/удар по блоку в прыжке
+        }
+        // Твёрдый блок (hardness != 0) и мы не в бою — отдаём клик ваниле: копание/ломание.
+        // Если комбо/замах уже идёт (isBusy) — по-прежнему гасим, чтобы не копать посреди анимации.
+        if (!isBusy(player)) {
+            BlockState state = player.level().getBlockState(event.getPos());
+            float hardness = state.getDestroySpeed(player.level(), event.getPos());
+            boolean softOrAir = state.isAir() || hardness == 0.0F;
+            if (!softOrAir) return; // не отменяем событие, анимацию не запускаем
+        }
+
 
         event.setCanceled(true);
         triggerSwing(player);
     }
-
+    private static boolean isAirborne(AbstractClientPlayer player) {
+        return !player.onGround() && !player.isInWater()
+                && !player.onClimbable() && !player.getAbilities().flying;
+    }
     @SubscribeEvent
     public static void onAttackEntity(AttackEntityEvent event) {
         if (!event.getEntity().level().isClientSide()) return;
         if (!(event.getEntity() instanceof AbstractClientPlayer player)) return;
-        if (!holdsAnimatedWeapon(player)) return; // ванильная атака и анимация
+        if (!holdsAnimatedWeapon(player)) return;
+
+        // В прыжке ванильный удар проходит как есть, но стамину тратим
+        if (!isBusy(player) && isAirborne(player)) {
+            StaminaManager.drainForAttack(player);
+            return;
+        }
 
         LivingEntity target = event.getTarget() instanceof LivingEntity l ? l : null;
         if (controller(player).onPrimaryDown(target)) {
             event.setCanceled(true);
         }
     }
-
     @SubscribeEvent
     public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {
         if (!(event.getEntity() instanceof AbstractClientPlayer player)) return;
         if (!holdsAnimatedWeapon(player)) return;
+        if (!isBusy(player) && isAirborne(player)) return; // ванильный взмах
         controller(player).onPrimaryDown(null);
     }
 
@@ -88,7 +171,7 @@ public class WeaponAttackAnimationHandler {
         WeaponCombatController c = CONTROLLERS.get(player.getUUID());
         boolean combatBusy = c != null && c.isBusy();
 
-        if (!combatBusy && !ru.imaginaerum.damagecore.key_bind.BackstepHandler.isInputLocked()) return;
+        if (!combatBusy && !BackstepHandler.isInputLocked()) return;
 
         Input input = event.getInput();
         input.up = false;

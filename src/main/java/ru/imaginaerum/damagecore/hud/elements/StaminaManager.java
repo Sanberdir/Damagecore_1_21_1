@@ -26,7 +26,12 @@ import ru.imaginaerum.damagecore.library_stats.StatsType;
 public class StaminaManager {
 
     public static final float BASE_STAMINA = 40f;
+    private static final float DRAIN_ATTACK = 4.0f; // подбери под свой баланс
 
+    public static void drainForAttack(Player player) {
+        if (player.isCreative() || player.isSpectator()) return;
+        drainFromServer(DRAIN_ATTACK);
+    }
     public static float getMaxStamina() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return BASE_STAMINA;

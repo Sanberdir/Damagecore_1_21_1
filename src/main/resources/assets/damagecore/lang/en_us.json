@@ -10,6 +10,32 @@
   "message.damagecore.enchanting_locked": "You don't know how to use this",
   "block.damagecore.chest_of_wild_currents.locked": "You need a key",
 
+  "damagecore.element": "Element: %s",
+  "element.damagecore.earth": "Earth",
+  "element.damagecore.water": "Water",
+  "element.damagecore.fire": "Fire",
+  "element.damagecore.air": "Air",
+  "element.damagecore.light": "Light",
+  "element.damagecore.dark": "Darkness",
+  "element.damagecore.aether": "Aether",
+
+  "damagecore.impaling.damage": "+%s Piercing Damage in Water",
+  "damagecore.impaling.chance": "%s%% Chance to Slow",
+  "enchantment.damagecore.life_drain": "Life Drain",
+  "damagecore.life_drain.heal": "Heals %s%% of Damage Dealt",
+  "enchantment.damagecore.dark_inscription": "Inscription of Darkness",
+  "damagecore.dark_inscription.damage": "+%s Damage at Night, -%s by Day",
+  "damagecore.dark_inscription.crit_chance": "+%s%% Crit Chance at Night",
+  "damagecore.dark_inscription.crit_mult": "+%s Crit Damage Multiplier",
+
+  "enchantment.damagecore.wind_squall": "Wind Squall",
+  "damagecore.wind_squall.launch": "Launches You Upward on Hit While Falling",
+  "damagecore.wind_squall.crit": "+%s%% Crit Chance While Falling",
+
+  "enchantment.damagecore.density": "Density",
+  "damagecore.density.height": "+%s%% Bludgeoning Damage per Block Fallen",
+  "damagecore.density.strength": "+%s Strength Required",
+  "damagecore.breach.ignore": "Ignores %s%% of Armor vs Piercing and Bludgeoning Damage",
 
   "damagecore.characteristics": "Characteristics: ",
 
@@ -45,6 +71,8 @@
   "damagecore.damage_type.slashing": "Slashing",
   "damagecore.damage_type.suffocation": "Suffocation",
   "damagecore.damage_type.fire": "Fire",
+  "damagecore.fire_aspect.chance": "%s%% Chance to Ignite",
+
   "damagecore.damage_type.cold": "Cold",
   "damagecore.damage_type.luminous_radiant": "Radiant",
   "damagecore.damage_type.necrotic": "Necrotic",
@@ -54,11 +82,15 @@
   "damagecore.damage_type.psy": "Psychic",
   "damagecore.damage_type.bludgeoning": "Bludgeoning",
 
+  "damagecore.damage.luminous_radiant": "Radiant damage %s",
+  "damagecore.damage.thunder": "Thunder damage %s",
+
   "damagecore.tooltip.damage_type": "Type: %s",
   "damagecore.tooltip.armor": "Armor: %s",
   "damagecore.tooltip.enchant": "Enchantments: %s",
   "damagecore.tooltip.damage_line": "%s: %s",
   "damagecore.tooltip.food": "Eat: +%s",
+
 
   "damagecore.stat.live_forge": "Live Force",
   "damagecore.stat.endurance": "Endurance",

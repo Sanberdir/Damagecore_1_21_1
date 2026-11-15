@@ -57,13 +57,9 @@ public class RescuableVillager {
     @SubscribeEvent
     (priority = EventPriority.HIGHEST, receiveCanceled = true)
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
-        System.out.println("[Rescue] interact side=" + (event.getLevel().isClientSide() ? "CLIENT" : "SERVER")
-                + " target=" + event.getTarget() + " hand=" + event.getHand());
         if (!(event.getTarget() instanceof Villager v)) return;
         if (event.getLevel().isClientSide()) return;
         if (!v.getTags().contains(TAG)) return;
-        System.out.println("[Rescue] interact target=" + event.getTarget()
-                + " tags=" + event.getTarget().getTags() + " hand=" + event.getHand());
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
 
@@ -86,8 +82,6 @@ public class RescuableVillager {
     }
     @SubscribeEvent
     public static void onTick(EntityTickEvent.Post event) {
-       System.out.println("[Rescue] class loaded");
-
         if (!(event.getEntity() instanceof Villager v)) return;
         if (!(v.level() instanceof ServerLevel level)) return;
         if (!v.getTags().contains(TAG)) return;

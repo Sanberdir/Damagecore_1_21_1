@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:sensitive_to_smite",
+    "minecraft:blaze",
+    "minecraft:ghast",
+    "minecraft:magma_cube",
+    "minecraft:piglin",
+    "minecraft:piglin_brute",
+    "minecraft:zombified_piglin",
+    "minecraft:hoglin",
+    "minecraft:zoglin",
+    "minecraft:strider"
+  ]
+}

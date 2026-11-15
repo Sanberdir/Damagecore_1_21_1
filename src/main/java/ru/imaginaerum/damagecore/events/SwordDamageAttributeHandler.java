@@ -1,4 +1,4 @@
-package ru.imaginaerum.damagecore.library_damage;
+package ru.imaginaerum.damagecore.events;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlotGroup;
@@ -10,6 +10,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.library_damage.DamageType;
+import ru.imaginaerum.damagecore.library_damage.IDamageCoreWeapon;
+import ru.imaginaerum.damagecore.library_damage.WeaponDamageData;
 
 import java.util.HashMap;
 import java.util.Map;

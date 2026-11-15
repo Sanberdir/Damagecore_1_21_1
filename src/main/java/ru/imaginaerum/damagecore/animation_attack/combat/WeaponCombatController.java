@@ -5,6 +5,7 @@ import net.minecraft.world.entity.LivingEntity;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.AttackHitResolver;
 import ru.imaginaerum.damagecore.animation_attack.combat.resolvers.MovementDash;
 import ru.imaginaerum.damagecore.animation_attack.combat.states.IdleState;
+import ru.imaginaerum.damagecore.hud.elements.StaminaManager;
 
 public final class WeaponCombatController {
 
@@ -95,8 +96,10 @@ public final class WeaponCombatController {
 
         ctx.state.onTick(ctx, now);
         MovementDash.tick(ctx, now); // NEW
-
-        ctx.drainReady(now, hit -> AttackHitResolver.resolve(ctx.player, hit));
+        ctx.drainReady(now, hit -> {
+            AttackHitResolver.resolve(ctx.player, hit);
+            StaminaManager.drainForAttack(ctx.player);
+        });
         AttackCooldownBridge.tick(ctx.player, ctx, now);
     }
 }

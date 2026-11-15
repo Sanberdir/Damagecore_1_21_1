@@ -1,0 +1,27 @@
+{
+  "description": {
+    "translate": "enchantment.damagecore.density"
+  },
+  "supported_items": "#damagecore:enchantable/density",
+  "primary_items": "#damagecore:enchantable/density",
+  "weight": 2,
+  "max_level": 5,
+  "min_cost": { "base": 10, "per_level_above_first": 10 },
+  "max_cost": { "base": 40, "per_level_above_first": 10 },
+  "anvil_cost": 4,
+  "slots": ["mainhand"],
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "id": "damagecore:density_attack_speed",
+        "attribute": "minecraft:generic.attack_speed",
+        "amount": {
+          "type": "minecraft:linear",
+          "base": -0.1,
+          "per_level_above_first": -0.1
+        },
+        "operation": "add_value"
+      }
+    ]
+  }
+}
