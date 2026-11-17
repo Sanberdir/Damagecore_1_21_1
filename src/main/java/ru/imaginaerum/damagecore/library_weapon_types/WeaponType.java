@@ -4,13 +4,13 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
 public enum WeaponType {
-    SWORD       ("weapon.type.sword",    ChatFormatting.YELLOW),
-    AXE         ("weapon.type.axe",      ChatFormatting.YELLOW),
-    TRIDENT     ("weapon.type.trident",  ChatFormatting.YELLOW),
-    SPEAR       ("weapon.type.spear",    ChatFormatting.YELLOW),
-    BLUNT       ("weapon.type.blunt",    ChatFormatting.YELLOW), // Булава/Молот
-    BOW         ("weapon.type.bow",      ChatFormatting.YELLOW),
-    CROSSBOW    ("weapon.type.crossbow", ChatFormatting.YELLOW);
+    SWORD       ("weapon.type.sword",    ChatFormatting.DARK_GRAY),
+    AXE         ("weapon.type.axe",      ChatFormatting.DARK_GRAY),
+    TRIDENT     ("weapon.type.trident",  ChatFormatting.DARK_GRAY),
+    SPEAR       ("weapon.type.spear",    ChatFormatting.DARK_GRAY),
+    BLUNT       ("weapon.type.blunt",    ChatFormatting.DARK_GRAY), // Булава/Молот
+    BOW         ("weapon.type.bow",      ChatFormatting.DARK_GRAY),
+    CROSSBOW    ("weapon.type.crossbow", ChatFormatting.DARK_GRAY);
 
     private final String translationKey;
     private final ChatFormatting color;
