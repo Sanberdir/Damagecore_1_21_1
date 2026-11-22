@@ -27,4 +27,8 @@ public class DCBlockEntities {
             BLOCK_ENTITIES.register("sunken_bottle", () ->
                     BlockEntityType.Builder.of(SunkenBottleEntity::new,
                             BlocksDC.SUNKEN_BOTTLE.get()).build(null));
+    public static final Supplier<BlockEntityType<EmbodimentTableBlockEntity>> EMBODIMENT_TABLE =
+            BLOCK_ENTITIES.register("embodiment_table", () ->
+                    BlockEntityType.Builder.of(EmbodimentTableBlockEntity::new,
+                            BlocksDC.EMBODIMENT_TABLE.get()).build(null));
 }

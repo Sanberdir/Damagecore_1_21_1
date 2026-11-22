@@ -5,9 +5,12 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
+import ru.imaginaerum.damagecore.Init.blocks.custom.EmbodimentTableBlock;
 import ru.imaginaerum.damagecore.Init.blocks.custom.sunken_bottle.SunkenBottleBlock;
 import ru.imaginaerum.damagecore.Init.blocks.custom.chest_of_wild_currents.ChestOfWildCurrentsBlock;
 import ru.imaginaerum.damagecore.Init.blocks.custom.StructureBlocksAndEntity;
@@ -33,6 +36,13 @@ public class BlocksDC {
                     .strength(1.5F)
                     .sound(SoundType.DECORATED_POT)
                     .noOcclusion()));
+    public static final DeferredBlock<Block> EMBODIMENT_TABLE = registerBlock("embodiment_table",
+            () -> new EmbodimentTableBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .instrument(NoteBlockInstrument.BASEDRUM)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel(state -> 7)
+                    .strength(5.0F, 1200.0F)));
 
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> block) {
         DeferredBlock<T> toReturn = BLOCKS.register(name, block);

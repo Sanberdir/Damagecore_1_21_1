@@ -33,6 +33,15 @@
   "damagecore.density.strength": "+%s к требованию силы",
   "damagecore.breach.ignore": "Игнорирует %s%% брони против колющего и дробящего урона",
 
+  "gui.damagecore.embodiment_table.start": "Старт",
+  "gui.damagecore.embodiment_table.stop": "Стоп",
+  "block.damagecore.embodiment_table": "Стол воплощения",
+
+  "container.damagecore.embodiment_table": "Стол воплощения",
+  "gui.damagecore.embodiment_table.selected": "Бутылочек: %1$s",
+  "gui.damagecore.embodiment_table.cost": "Загружено: %1$s оп.",
+  "gui.damagecore.embodiment_table.unavailable": "Не хватает опыта или пустых бутылочек",
+
   "block.damagecore.chest_of_wild_currents": "Сундук вольных течений",
   "entity.damagecore.chest_of_wild_currents": "Сундук вольных течений",
   "block.damagecore.chest_of_wild_currents.tooltip": "Найден в океане",

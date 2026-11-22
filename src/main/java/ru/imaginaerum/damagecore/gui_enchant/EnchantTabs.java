@@ -35,7 +35,7 @@ public final class EnchantTabs {
     // Область на панели, куда кладём блок
     private static final int AREA_X = 7, AREA_Y = 95;
     private static final int AREA_W = 152, AREA_H = 76; // было 71
-    private static final int AREA_ROWS = 2;
+    private static final int AREA_ROWS = 1;
     // --- Размеры ванильного окна ---
     private static final int VANILLA_H = 166;
 

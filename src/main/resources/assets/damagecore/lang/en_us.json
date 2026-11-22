@@ -206,9 +206,17 @@
   "gui.damagecore.config.save": "Save",
   "gui.damagecore.config.reset_entities": "Clear Entities",
   "gui.damagecore.config.reset_blocks": "Clear Blocks",
-
+  "gui.damagecore.embodiment_table.start": "Start",
+  "gui.damagecore.embodiment_table.stop": "Stop",
 
   "block.damagecore.structure_block_and_entity": "Dc Block – creature and block spawner",
+  "block.damagecore.embodiment_table": "Table of Embodiment",
+
+  "container.damagecore.embodiment_table": "Embodiment Table",
+  "gui.damagecore.embodiment_table.selected": "Bottles: %1$s",
+  "gui.damagecore.embodiment_table.cost": "Loaded: %1$s XP",
+  "gui.damagecore.embodiment_table.unavailable": "Not enough XP or empty bottles",
+
   "item.damagecore.birch_leaf": "Birch Leaf",
   "item.damagecore.tome_of_attaining_meanings": "Tome of Attaining Meanings",
   "item.damagecore.heavy_belt": "Heavy Belt",

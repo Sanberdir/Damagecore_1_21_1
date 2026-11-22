@@ -29,26 +29,35 @@ import java.util.*;
 public final class FishSpawner {
 
     // ── Настройки популяции ──
+// ── Настройки популяции ──
+    static final int FISH_MIN = 6;   // ниже этого чанк пополняется
+    static final int FISH_MAX = 8;   // верхняя граница при пополнении
 
+    static final int REFILL_CHUNKS = 16;
+    static final int REFILL_PERIOD = 20;
+
+    // Дистанция от игроков (см. пункт 5)
+    static final double MIN_PLAYER_DISTANCE = 24.0;
+    static final double MAX_PLAYER_DISTANCE = 56.0;
+
+    static final int TRIES = 96;
+
+    static final int SCAN_DELAY = 40;
+    static final int SCAN_PER_TICK = 6;
     static final int INIT_FILL = 8;
     static final int CHUNK_CAP = 16;
     static final int REFILL_THRESHOLD = 4;
 
     // Постепенное восстановление популяции
-    static final int REFILL_CHUNKS = 16;
     static final int REFILL_MAX = 2;
-    static final int REFILL_PERIOD = 20;
 
     // Минимальная дистанция от игрока
-    static final double MIN_PLAYER_DISTANCE = 24.0;
 
     // Попытки поиска подходящего места
-    static final int TRIES = 96;
     static final int MIN_DEPTH = 1;
 
     // Сканирование новых чанков
-    static final int SCAN_DELAY = 40;
-    static final int SCAN_PER_TICK = 6;
+
 
     private record Pending(
             ResourceKey<Level> dim,
@@ -181,7 +190,7 @@ public final class FishSpawner {
             w.put(p.chunk(), cols);
 
             // Первоначальное заселение.
-            populate(level, cp, cols, INIT_FILL);
+            populate(level, cp, cols);
         }
 
         // Восстановление популяции.
@@ -231,26 +240,7 @@ public final class FishSpawner {
                     continue;
                 }
 
-                int have = countFishInChunk(level, cp);
-
-                // Начинаем восстановление при 4 рыбах или меньше.
-                if (!w.refilling.contains(key)
-                        && have <= REFILL_THRESHOLD) {
-
-                    w.refilling.add(key);
-                }
-
-                if (!w.refilling.contains(key)) {
-                    continue;
-                }
-
-                // Восстановление закончено.
-                if (have >= CHUNK_CAP) {
-                    w.refilling.remove(key);
-                    continue;
-                }
-
-                populate(level, cp, cols, REFILL_MAX);
+                populate(level, cp, cols);
             }
         }
     }
@@ -268,13 +258,32 @@ public final class FishSpawner {
                 int x = cp.getMinBlockX() + lx;
                 int z = cp.getMinBlockZ() + lz;
 
-                if (validWater(level, x, z)) {
+                if (plantAt(level, x, z)) {
                     tmp[count++] = (lx << 4) | lz;
                 }
             }
         }
 
         return Arrays.copyOf(tmp, count);
+    }
+
+    /** Колонка подходит, если на дне морская трава или ламинария, а над ней вода. */
+    private static boolean plantAt(ServerLevel level, int x, int z) {
+
+        BlockPos floor = new BlockPos(
+                x,
+                level.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z),
+                z
+        );
+
+        BlockState st = level.getBlockState(floor);
+
+        return (isKelp(st) || isGrass(st))
+                && level.getFluidState(floor.above()).is(FluidTags.WATER);
+    }
+
+    private static boolean isGrass(BlockState state) {
+        return state.is(Blocks.SEAGRASS) || state.is(Blocks.TALL_SEAGRASS);
     }
 
     private static boolean validWater(
@@ -368,98 +377,82 @@ public final class FishSpawner {
     }
 
     // ── Заселение ──
+    private static boolean playerDistanceOk(ServerLevel level, ChunkPos cp) {
 
-    private static void populate(
-            ServerLevel level,
-            ChunkPos cp,
-            int[] cols,
-            int max
-    ) {
+        double minX = cp.getMinBlockX();
+        double maxX = cp.getMaxBlockX() + 1.0;
+        double minZ = cp.getMinBlockZ();
+        double maxZ = cp.getMaxBlockZ() + 1.0;
 
-        if (cols.length == 0 || max <= 0) return;
+        double nearest = Double.MAX_VALUE;
 
-        // Не создаём рыб рядом с игроком.
-        if (!isFarFromPlayers(level, cp)) return;
+        for (var player : level.players()) {
+
+            double dx = Math.max(0.0, Math.max(minX - player.getX(), player.getX() - maxX));
+            double dz = Math.max(0.0, Math.max(minZ - player.getZ(), player.getZ() - maxZ));
+
+            nearest = Math.min(nearest, dx * dx + dz * dz);
+        }
+
+        return nearest >= MIN_PLAYER_DISTANCE * MIN_PLAYER_DISTANCE
+                && nearest <= MAX_PLAYER_DISTANCE * MAX_PLAYER_DISTANCE;
+    }
+    private static void populate(ServerLevel level, ChunkPos cp, int[] cols) {
+
+        if (cols.length == 0) return;
+
+        // Сущности чанка ещё не загружены: подсчёт был бы неверным. Пополнение повторит позже.
+        if (!level.areEntitiesLoaded(cp.toLong())) return;
+
+        if (!playerDistanceOk(level, cp)) return;
 
         int have = countFishInChunk(level, cp);
 
-        int room = CHUNK_CAP - have;
-
-        if (room <= 0) return;
+        if (have >= FISH_MIN) return;
 
         RandomSource random = level.getRandom();
 
-        int limit = Math.min(max, room);
+        int target = FISH_MIN + random.nextInt(FISH_MAX - FISH_MIN + 1);   // 6..8
         int spawned = 0;
 
-        for (int i = 0; i < TRIES && spawned < limit; i++) {
+        for (int i = 0; i < TRIES && have + spawned < target; i++) {
 
             int column = cols[random.nextInt(cols.length)];
 
             int x = cp.getMinBlockX() + (column >> 4);
             int z = cp.getMinBlockZ() + (column & 15);
 
-            if (!validWater(level, x, z)) continue;
-
             BlockPos waterFloor = new BlockPos(
                     x,
-                    level.getHeight(
-                            Heightmap.Types.OCEAN_FLOOR,
-                            x,
-                            z
-                    ),
+                    level.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z),
                     z
             );
 
-            boolean kelp = false;
-            boolean grass = false;
+            BlockState state = level.getBlockState(waterFloor);
 
-            for (int y = 0; y < 3; y++) {
+            boolean kelp = isKelp(state);
+            boolean grass = isGrass(state);
 
-                BlockState state = level.getBlockState(
-                        waterFloor.above(y)
-                );
+            // Растение пропало: рыбу не создаём.
+            if (!kelp && !grass) continue;
+            if (!level.getFluidState(waterFloor.above()).is(FluidTags.WATER)) continue;
 
-                if (isKelp(state)) {
-                    kelp = true;
-                }
-
-                if (state.is(Blocks.SEAGRASS)
-                        || state.is(Blocks.TALL_SEAGRASS)) {
-                    grass = true;
-                }
-            }
-
-            boolean river = level.getBiome(waterFloor)
-                    .is(BiomeTags.IS_RIVER);
-
-            boolean ocean = level.getBiome(waterFloor)
-                    .is(BiomeTags.IS_OCEAN);
+            boolean river = level.getBiome(waterFloor).is(BiomeTags.IS_RIVER);
+            boolean ocean = level.getBiome(waterFloor).is(BiomeTags.IS_OCEAN);
 
             EntityType<? extends AbstractFish> type =
                     pickFish(kelp, grass, river, ocean, random);
 
-            // Выбираем случайную высоту в водной колонке.
             BlockPos spawnPos = waterFloor;
-
             int lift = 1 + random.nextInt(3);
 
             for (int k = 0; k < lift; k++) {
-
                 BlockPos above = spawnPos.above();
-
-                if (!level.getFluidState(above).is(FluidTags.WATER)) {
-                    break;
-                }
-
+                if (!level.getFluidState(above).is(FluidTags.WATER)) break;
                 spawnPos = above;
             }
 
-            AbstractFish fish = type.spawn(
-                    level,
-                    spawnPos,
-                    MobSpawnType.EVENT
-            );
+            AbstractFish fish = type.spawn(level, spawnPos, MobSpawnType.EVENT);
 
             if (fish != null) {
                 spawned++;

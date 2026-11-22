@@ -12,6 +12,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
@@ -25,6 +26,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
 import ru.imaginaerum.damagecore.Init.blocks.entity.DCBlockEntities;
+import ru.imaginaerum.damagecore.Init.blocks.entity.EmbodimentTableRenderer;
+import ru.imaginaerum.damagecore.Init.blocks.screen.DCMenus;
+import ru.imaginaerum.damagecore.Init.blocks.screen.EmbodimentTableScreen;
 import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.DCEntities;
 import ru.imaginaerum.damagecore.Init.entity.DCEntities.custom.item.ChainLightingArrowRenderer;
 import ru.imaginaerum.damagecore.Init.fishing.gui.FishingRodScreen;
@@ -64,6 +68,7 @@ public class Damagecore_1_21_1_neo {
         BlocksDC.BLOCKS.register(modEventBus);
         DCBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         DCItems.ITEMS.register(modEventBus);
+        DCMenus.MENUS.register(modEventBus);
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
         DCSoundEvents.SOUND_EVENTS.register(modEventBus);
@@ -113,6 +118,11 @@ public class Damagecore_1_21_1_neo {
         @SubscribeEvent
         public static void registerScreens(RegisterMenuScreensEvent event) {
             event.register(MenuTypes.FISHING_ROD_MENU.get(), FishingRodScreen::new);
+            event.register(DCMenus.EMBODIMENT_TABLE.get(), EmbodimentTableScreen::new);
+        }
+        @SubscribeEvent
+        public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+            event.registerBlockEntityRenderer(DCBlockEntities.EMBODIMENT_TABLE.get(), EmbodimentTableRenderer::new);
         }
 
         @SubscribeEvent

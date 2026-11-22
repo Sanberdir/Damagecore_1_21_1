@@ -30,6 +30,7 @@ public class DCTabs {
         }
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(BlocksDC.STRUCTURE_BLOCK_AND_ENTITY.get());
+            event.accept(BlocksDC.EMBODIMENT_TABLE.get());
         }
     }
 }
