@@ -44,6 +44,7 @@ import ru.imaginaerum.damagecore.entity.ModEntities;
 import ru.imaginaerum.damagecore.hud.heat.ModAttachmentsHeat;
 import ru.imaginaerum.damagecore.library_damage.WeaponDamageManager;
 import ru.imaginaerum.damagecore.library_damage.arrow_data.ArrowDamageManager;
+import ru.imaginaerum.damagecore.library_enchantments.DCDataComponents;
 import ru.imaginaerum.damagecore.library_extra_slots.ModKeyMappings;
 import ru.imaginaerum.damagecore.library_stats.PlayerStatsCapability;
 import ru.imaginaerum.damagecore.libraty_effects.FoodProtectionAttachments;
@@ -69,6 +70,7 @@ public class Damagecore_1_21_1_neo {
         DCBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         DCItems.ITEMS.register(modEventBus);
         DCMenus.MENUS.register(modEventBus);
+        DCDataComponents.COMPONENTS.register(modEventBus);
         DCEntities.ENTITIES.register(modEventBus);
         DCTabs.CREATIVE_MODE_TAB.register(modEventBus);
         DCSoundEvents.SOUND_EVENTS.register(modEventBus);

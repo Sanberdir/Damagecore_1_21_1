@@ -28,7 +28,8 @@ public abstract class EnchantmentScreenTabsMixin {
                                    CallbackInfo ci) {
         if (!EnchantTabs.isStarTab()) return;
         EnchantmentScreen s = (EnchantmentScreen) (Object) this;
-        EnchantTabs.renderStarPanel(gui, s.getGuiLeft(), s.getGuiTop());
+        EnchantTabs.renderStarPanel(gui, s.getGuiLeft(), s.getGuiTop(),
+                s.getMenu().getSlot(0).getItem(), mouseX, mouseY);
         ci.cancel();
     }@WrapOperation(
             method = "render",
@@ -45,6 +46,7 @@ public abstract class EnchantmentScreenTabsMixin {
                                        float partialTick, CallbackInfo ci) {
         EnchantmentScreen s = (EnchantmentScreen) (Object) this;
         EnchantTabs.renderTabs(gui, s.getGuiLeft(), s.getGuiTop());
+        EnchantTabs.renderHover(gui, s, mouseX, mouseY);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)

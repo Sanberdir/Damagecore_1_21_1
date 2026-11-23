@@ -10,6 +10,15 @@
   "message.damagecore.enchanting_locked": "You don't know how to use this",
   "block.damagecore.chest_of_wild_currents.locked": "You need a key",
 
+
+  "higher_enchant.damagecore.fire_dash": "Fire Dash",
+  "higher_enchant.damagecore.fire_dash.desc": "A dash forward wreathed in flame.",
+  "gui.damagecore.higher.empty": "Needs an item with elemental enchantments",
+  "gui.damagecore.higher.cost": "Cost: %s levels",
+  "gui.damagecore.higher.cost_short": "%s lvl",
+  "gui.damagecore.higher.applied": "Already applied",
+  "gui.damagecore.higher.applied_short": "Done",
+
   "damagecore.element": "Element: %s",
   "element.damagecore.earth": "Earth",
   "element.damagecore.water": "Water",

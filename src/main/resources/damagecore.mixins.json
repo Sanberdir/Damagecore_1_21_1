@@ -22,6 +22,7 @@
     "damage_fire_mixins.FireDamageSmallFireballMixin",
     "damage_poison_mixins.PoisonEffectsMixin",
     "damage_poison_mixins.PoisonTickMixin",
+    "enchant_table.EnchantmentMenuHigherMixin",
     "enchant_table.SlotAccessor",
     "enchantment.EnchantmentMixin",
     "fishing.AbstractCookingRecipeMixin",

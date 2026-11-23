@@ -1,22 +1,44 @@
 package ru.imaginaerum.damagecore.gui_enchant;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import ru.imaginaerum.damagecore.library_enchantments.HigherEnchant;
+import ru.imaginaerum.damagecore.library_enchantments.HigherEnchants;
 import ru.imaginaerum.damagecore.mixin.enchant_table.AbstractContainerScreenLayoutAccessor;
 import ru.imaginaerum.damagecore.mixin.enchant_table.SlotAccessor;
 
-public final class EnchantTabs {
+import java.util.ArrayList;
+import java.util.List;
 
+public final class EnchantTabs {
+    // Область на панели, куда кладём блок
+    private static final int AREA_X = 7, AREA_Y = 95;
+    private static final int AREA_W = 152, AREA_H = 76;
+
+    // плитки: натуральный размер блоков из png (38x38), 4 колонки x 2 ряда в поле 152x76
+    private static final int TILE = 38;
+    private static final int TILE_COLS = AREA_W / TILE;   // 4
+    private static final int TILE_ROWS = AREA_H / TILE;   // 2
+    private static final int TILE_V_EMPTY = 0;       // тёмно-коричневый
+    private static final int TILE_V_AVAILABLE = 38;  // бежевый
+    private static final int TILE_V_HOVER = 76;      // розовый (под курсором)
+
+    // --- Размеры ванильного окна ---
+    private static final int VANILLA_H = 166;
     public static final int TAB_ENCHANT = 0;
     public static final int TAB_STAR    = 1;
-
+    // плитки: натуральный размер блоков из png (38x38), 4 колонки x 2 ряда в поле 152x76
     // --- Текстура второй вкладки ---
     private static final ResourceLocation STAR_TEX = ResourceLocation.fromNamespaceAndPath(
             "damagecore", "textures/gui/container/enchanting_table_2.png");
@@ -33,12 +55,9 @@ public final class EnchantTabs {
     private static final int BLOCK_BORDER = 1; // рамка по краям, середина однородная
 
     // Область на панели, куда кладём блок
-    private static final int AREA_X = 7, AREA_Y = 95;
-    private static final int AREA_W = 152, AREA_H = 76; // было 71
-    private static final int AREA_ROWS = 1;
-    // --- Размеры ванильного окна ---
-    private static final int VANILLA_H = 166;
-
+    private static final int ROW_INSET = 2, ROW_H = 17, ROW_PITCH = 18, VISIBLE_ROWS = 4;
+    private static final int ROW_V_AVAILABLE = 38;   // бежевый блок
+    private static final int ROW_V_APPLIED   = 76;   // розовый блок
     // --- Позиции слотов на второй вкладке (координаты ПРЕДМЕТА, не рамки) ---
     private static final int STAR_INV_X     = 8;
     private static final int STAR_INV_Y    = 175; // было 174
@@ -117,33 +136,106 @@ public final class EnchantTabs {
             ((SlotAccessor) slot).damagecore$setY(y);
         }
     }
+    private static int tileAt(int guiLeft, int guiTop, double mx, double my, int count) {
+        double dx = mx - guiLeft - AREA_X;
+        double dy = my - guiTop - AREA_Y;
+        if (dx < 0 || dy < 0 || dx >= TILE_COLS * TILE || dy >= TILE_ROWS * TILE) return -1;
 
-    public static void renderStarPanel(GuiGraphics gui, int x, int y) {
+        int i = ((int) dy / TILE) * TILE_COLS + (int) dx / TILE;
+        return i < count ? i : -1;
+    }
+    public static void renderStarPanel(GuiGraphics gui, int x, int y, ItemStack stack,
+                                       int mouseX, int mouseY) {
         gui.blit(STAR_TEX, x, y, 0, 0, PANEL_W, PANEL_H, TEX_W, TEX_H);
 
-        // 2 горизонтальных ряда, высота делится поровну (остаток уходит в последний ряд)
-        int rowH = AREA_H / AREA_ROWS;
-        for (int r = 0; r < AREA_ROWS; r++) {
-            int ry = AREA_Y + r * rowH;
-            int h = (r == AREA_ROWS - 1) ? AREA_H - rowH * r : rowH;
-            drawNineSlice(gui, x + AREA_X, y + ry, AREA_W, h);
+        // Сплошной фон поля: одна рамка по краю, без перегородок между ячейками
+        drawNineSlice(gui, x + AREA_X, y + AREA_Y, AREA_W, AREA_H, BLOCK_V);
+
+        Font font = Minecraft.getInstance().font;
+        var player = Minecraft.getInstance().player;
+        List<HigherEnchant> list = HigherEnchants.shownFor(stack);
+        int hovered = tileAt(x, y, mouseX, mouseY, list.size());
+
+        // Плитки только там, где есть чары
+        for (int c = 0; c < list.size() && c < TILE_COLS * TILE_ROWS; c++) {
+            int tx = x + AREA_X + (c % TILE_COLS) * TILE;
+            int ty = y + AREA_Y + (c / TILE_COLS) * TILE;
+
+            HigherEnchant he = list.get(c);
+            boolean applied = HigherEnchants.has(stack, he);
+
+            int v = (c == hovered && !applied) ? TILE_V_HOVER : TILE_V_AVAILABLE;
+            gui.blit(STAR_TEX, tx, ty, BLOCK_U, v, TILE, TILE, TEX_W, TEX_H);
+
+            gui.renderItem(new ItemStack(he.getIconItem()), tx + (TILE - 16) / 2, ty + 5);
+
+            Component label;
+            int color;
+            if (applied) {
+                label = Component.translatable("gui.damagecore.higher.applied_short");
+                color = 0x55FF55;
+            } else {
+                boolean enough = player != null
+                        && (player.hasInfiniteMaterials() || player.experienceLevel >= he.getLevelCost());
+                label = Component.translatable("gui.damagecore.higher.cost_short", he.getLevelCost());
+                color = enough ? 0x55FF55 : 0xFF5555;
+            }
+            gui.drawString(font, label, tx + (TILE - font.width(label)) / 2, ty + 26, color, true);
         }
 
-        // Статичный ползунок
+        if (list.isEmpty()) {
+            Component hint = Component.translatable("gui.damagecore.higher.empty");
+            List<FormattedCharSequence> lines = font.split(hint, AREA_W - 16);
+            int ty = y + AREA_Y + (AREA_H - lines.size() * font.lineHeight) / 2;
+            for (FormattedCharSequence line : lines) {
+                gui.drawString(font, line, x + AREA_X + (AREA_W - font.width(line)) / 2, ty, 0xC0C0C0, true);
+                ty += font.lineHeight;
+            }
+        }
+
         gui.blit(STAR_TEX, x + SCROLL_X, y + SCROLL_Y,
                 SCROLL_U, SCROLL_V, SCROLL_W, SCROLL_H, TEX_W, TEX_H);
     }
+    private static int rowAt(AbstractContainerScreen<?> screen, double mx, double my, int count) {
+        int left = screen.getGuiLeft() + AREA_X + ROW_INSET;
+        int top = screen.getGuiTop() + AREA_Y + ROW_INSET;
+        int w = AREA_W - 2 * ROW_INSET;
+        if (mx < left || mx >= left + w || my < top) return -1;
+
+        int i = (int) ((my - top) / ROW_PITCH);
+        if (i < 0 || i >= Math.min(count, VISIBLE_ROWS)) return -1;
+        if ((my - top) - i * ROW_PITCH >= ROW_H) return -1;
+        return i;
+    }
+
+    /** Вызывать в конце render экрана, после renderTabs. */
+    public static void renderHover(GuiGraphics gui, AbstractContainerScreen<?> screen, int mx, int my) {
+        if (!isStarTab()) return;
+        ItemStack stack = screen.getMenu().getSlot(0).getItem();
+        List<HigherEnchant> list = HigherEnchants.shownFor(stack);
+        int i = tileAt(screen.getGuiLeft(), screen.getGuiTop(), mx, my, list.size());
+        if (i < 0) return;
+
+        HigherEnchant he = list.get(i);
+        List<Component> lines = new ArrayList<>();
+        lines.add(he.getDisplayName());
+        lines.add(he.getDescription().withStyle(ChatFormatting.GRAY));
+        lines.add(HigherEnchants.has(stack, he)
+                ? Component.translatable("gui.damagecore.higher.applied").withStyle(ChatFormatting.GREEN)
+                : Component.translatable("gui.damagecore.higher.cost", he.getLevelCost())
+                .withStyle(ChatFormatting.YELLOW));
+        gui.renderComponentTooltip(Minecraft.getInstance().font, lines, mx, my);
+    }
     /** Растягивает блок BLOCK_* на w*h: углы и рамка 1 px не масштабируются, середина тянется. */
-    private static void drawNineSlice(GuiGraphics gui, int x, int y, int w, int h) {
+    private static void drawNineSlice(GuiGraphics gui, int x, int y, int w, int h, int blockV) {
         int b = BLOCK_BORDER;
-        int cw = BLOCK_W - 2 * b; // ширина центральной части в png
+        int cw = BLOCK_W - 2 * b;
         int ch = BLOCK_H - 2 * b;
-        int mw = w - 2 * b;       // ширина центра на экране
+        int mw = w - 2 * b;
         int mh = h - 2 * b;
 
         int u0 = BLOCK_U, u1 = BLOCK_U + b, u2 = BLOCK_U + BLOCK_W - b;
-        int v0 = BLOCK_V, v1 = BLOCK_V + b, v2 = BLOCK_V + BLOCK_H - b;
-
+        int v0 = blockV, v1 = blockV + b, v2 = blockV + BLOCK_H - b;
         // Углы
         gui.blit(STAR_TEX, x,         y,         b, b, u0, v0, b, b, TEX_W, TEX_H);
         gui.blit(STAR_TEX, x + w - b, y,         b, b, u2, v0, b, b, TEX_W, TEX_H);
@@ -196,7 +288,21 @@ public final class EnchantTabs {
                 return true;
             }
         }
-
+        if (isStarTab()) {
+            ItemStack stack = screen.getMenu().getSlot(0).getItem();
+            List<HigherEnchant> list = HigherEnchants.shownFor(stack);
+            int i = tileAt(guiLeft, guiTop, mx, my, list.size());
+            if (i >= 0) {
+                HigherEnchant he = list.get(i);
+                var mc = Minecraft.getInstance();
+                if (HigherEnchants.canApply(mc.player, stack, he)) {
+                    mc.gameMode.handleInventoryButtonClick(
+                            screen.getMenu().containerId, HigherEnchants.BUTTON_BASE + he.ordinal());
+                    mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                }
+                return true;
+            }
+        }
         return false;
     }
 }

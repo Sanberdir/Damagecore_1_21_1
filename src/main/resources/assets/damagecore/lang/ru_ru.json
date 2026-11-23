@@ -6,6 +6,15 @@
   "damagecore.damage.fire": "Огненный урон: %s",
   "damagecore.attack_speed": "Скорость атаки: %s",
 
+
+  "higher_enchant.damagecore.fire_dash": "Огненный рывок",
+  "higher_enchant.damagecore.fire_dash.desc": "Рывок вперёд, окутанный пламенем.",
+  "gui.damagecore.higher.empty": "Нужен предмет с чарами стихий",
+  "gui.damagecore.higher.cost": "Цена: %s ур.",
+  "gui.damagecore.higher.cost_short": "%s ур.",
+  "gui.damagecore.higher.applied": "Уже наложено",
+  "gui.damagecore.higher.applied_short": "Есть",
+
   "damagecore.element": "Стихия: %s",
   "element.damagecore.earth": "Земля",
   "element.damagecore.water": "Вода",
