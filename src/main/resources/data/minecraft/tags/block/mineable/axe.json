@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "damagecore:chest_of_wild_currents"
+    "damagecore:chest_of_wild_currents",
+    "damagecore:sunken_planks"
   ]
 }

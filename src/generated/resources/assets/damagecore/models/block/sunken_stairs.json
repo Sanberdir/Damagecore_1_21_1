@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "damagecore:block/sunken_planks",
+    "side": "damagecore:block/sunken_planks",
+    "top": "damagecore:block/sunken_planks"
+  }
+}

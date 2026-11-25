@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "damagecore:block/sunken_barrel_top",
+    "bottom": "damagecore:block/sunken_barrel_bottom",
+    "side": "damagecore:block/sunken_barrel_side",
+    "particle": "damagecore:block/sunken_barrel_side"
+  }
+}

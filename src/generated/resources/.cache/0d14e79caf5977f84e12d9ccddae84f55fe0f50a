@@ -1,0 +1,8 @@
+// 1.21.1	2026-11-25T10:07:53.3083674	Tags for minecraft:item mod id damagecore
+a58ff9a1b1ae6dc1703df35e343f56c2c40f8b70 data/c/tags/item/fence_gates/wooden.json
+a58ff9a1b1ae6dc1703df35e343f56c2c40f8b70 data/minecraft/tags/item/fence_gates.json
+dbee84990a362877a9baf3d49567aeb7de87d722 data/minecraft/tags/item/planks.json
+f6363f31b5c0b3a436dd68071711b6795edc1e97 data/minecraft/tags/item/wooden_buttons.json
+0ba60ba1bf41b4c101df37631735b408a375623c data/minecraft/tags/item/wooden_fences.json
+0b0a5d46103053f4b648d7daa4b4305ccc04aec4 data/minecraft/tags/item/wooden_pressure_plates.json
+71347957a03268fa1f6c6270d62442027de7bb3b data/minecraft/tags/item/wooden_stairs.json

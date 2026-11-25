@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_sunken_planks": {
+      "conditions": {
+        "items": [
+          {
+            "items": "damagecore:sunken_planks"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "damagecore:sunken_fence"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_sunken_planks"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "damagecore:sunken_fence"
+    ]
+  }
+}

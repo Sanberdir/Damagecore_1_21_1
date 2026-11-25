@@ -31,6 +31,14 @@ public class DCTabs {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(BlocksDC.STRUCTURE_BLOCK_AND_ENTITY.get());
             event.accept(BlocksDC.EMBODIMENT_TABLE.get());
+            event.accept(BlocksDC.SUNKEN_BARREL.get());
+            event.accept(BlocksDC.SUNKEN_PLANKS.get());
+            event.accept(BlocksDC.SUNKEN_SLAB.get());
+            event.accept(BlocksDC.SUNKEN_STAIRS.get());
+            event.accept(BlocksDC.SUNKEN_BUTTON.get());
+            event.accept(BlocksDC.SUNKEN_PRESSURE_PLATE.get());
+            event.accept(BlocksDC.SUNKEN_FENCE.get());
+            event.accept(BlocksDC.SUNKEN_FENCE_GATE.get());
         }
     }
 }

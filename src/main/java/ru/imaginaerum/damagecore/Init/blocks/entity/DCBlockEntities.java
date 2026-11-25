@@ -2,6 +2,7 @@ package ru.imaginaerum.damagecore.Init.blocks.entity;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import ru.imaginaerum.damagecore.Damagecore_1_21_1_neo;
 import ru.imaginaerum.damagecore.Init.blocks.BlocksDC;
@@ -31,4 +32,8 @@ public class DCBlockEntities {
             BLOCK_ENTITIES.register("embodiment_table", () ->
                     BlockEntityType.Builder.of(EmbodimentTableBlockEntity::new,
                             BlocksDC.EMBODIMENT_TABLE.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SunkenBarrelBlockEntity>> SUNKEN_BARREL =
+            BLOCK_ENTITIES.register("sunken_barrel", () ->
+                    BlockEntityType.Builder.of(SunkenBarrelBlockEntity::new, BlocksDC.SUNKEN_BARREL.get())
+                            .build(null));
 }

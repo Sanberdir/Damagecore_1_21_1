@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "damagecore:block/sunken_pressure_plate"
+    },
+    "powered=true": {
+      "model": "damagecore:block/sunken_pressure_plate_down"
+    }
+  }
+}

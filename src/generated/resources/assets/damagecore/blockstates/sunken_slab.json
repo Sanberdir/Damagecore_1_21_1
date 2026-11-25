@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "damagecore:block/sunken_slab"
+    },
+    "type=double": {
+      "model": "damagecore:block/sunken_planks"
+    },
+    "type=top": {
+      "model": "damagecore:block/sunken_slab_top"
+    }
+  }
+}

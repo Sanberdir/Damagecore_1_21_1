@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "group": "wooden_button",
+  "ingredients": [
+    {
+      "item": "damagecore:sunken_planks"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "damagecore:sunken_button"
+  }
+}

@@ -3,6 +3,8 @@ package ru.imaginaerum.damagecore;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FireBlock;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -88,7 +90,14 @@ public class Damagecore_1_21_1_neo {
     public static final DamageArmorModifier ARMOR_MODIFIER = new DamageArmorModifier(); // только здесь, final
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-
+        event.enqueueWork(() -> {
+            FireBlock fire = (FireBlock) Blocks.FIRE;
+            fire.setFlammable(BlocksDC.SUNKEN_PLANKS.get(), 5, 20);
+            fire.setFlammable(BlocksDC.SUNKEN_STAIRS.get(), 5, 20);
+            fire.setFlammable(BlocksDC.SUNKEN_SLAB.get(), 5, 20);
+            fire.setFlammable(BlocksDC.SUNKEN_FENCE.get(), 5, 20);
+            fire.setFlammable(BlocksDC.SUNKEN_FENCE_GATE.get(), 5, 20);
+        });
     }
 
     private void onAddReloadListeners(AddReloadListenerEvent event) {

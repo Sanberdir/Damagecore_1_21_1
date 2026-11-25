@@ -5,6 +5,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import ru.imaginaerum.damagecore.entity.chest_of_wild_currents.SunkenBarrelEntity;
 import ru.imaginaerum.damagecore.entity.chest_of_wild_currents.SunkenBottleEntity;
 import ru.imaginaerum.damagecore.entity.chest_of_wild_currents.ChestOfWildCurrentsEntity;
 
@@ -28,4 +29,11 @@ public class ModEntities {
                             .clientTrackingRange(10)
                             .updateInterval(1)
                             .build("sunken_bottle"));
+    public static final DeferredHolder<EntityType<?>, EntityType<SunkenBarrelEntity>> SUNKEN_BARREL =
+            ENTITY_TYPES.register("sunken_barrel", () ->
+                    EntityType.Builder.<SunkenBarrelEntity>of(SunkenBarrelEntity::new, MobCategory.MISC)
+                            .sized(0.9f, 0.9f)
+                            .clientTrackingRange(10)
+                            .updateInterval(2)
+                            .build("sunken_barrel"));
 }

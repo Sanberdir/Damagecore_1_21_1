@@ -1,0 +1,7 @@
+// 1.21.1	2026-11-25T09:47:23.934085	Loot Tables
+8ef06e4046b469d783db36498c77020328733bcb data/damagecore/loot_table/blocks/sunken_button.json
+bfba04b38621d2444011e6ec2459074b0b459038 data/damagecore/loot_table/blocks/sunken_fence.json
+f5faba4a675d31014b227427b35598f79e2a3b6c data/damagecore/loot_table/blocks/sunken_fence_gate.json
+0442d5c58b7d50dcdc1a035aba021208c754e911 data/damagecore/loot_table/blocks/sunken_pressure_plate.json
+78f8ff7b6deb17d40b3c2b9265b6728fcabb9861 data/damagecore/loot_table/blocks/sunken_slab.json
+f02e99581161bcaaaf24bff521ffcdd29797a747 data/damagecore/loot_table/blocks/sunken_stairs.json

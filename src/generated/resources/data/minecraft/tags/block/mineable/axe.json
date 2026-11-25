@@ -1,0 +1,11 @@
+{
+  "values": [
+    "damagecore:sunken_stairs",
+    "damagecore:sunken_slab",
+    "damagecore:sunken_fence",
+    "damagecore:sunken_barrel",
+    "damagecore:sunken_fence_gate",
+    "damagecore:sunken_button",
+    "damagecore:sunken_pressure_plate"
+  ]
+}
