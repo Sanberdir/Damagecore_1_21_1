@@ -31,6 +31,7 @@ public enum HigherEnchant implements StringRepresentable {
 
     private final Supplier<Item> icon;
 
+
     HigherEnchant(String name, Element element, int levelCost, Supplier<Item> icon) {
         this.name = name;
         this.element = element;
