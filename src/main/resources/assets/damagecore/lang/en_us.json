@@ -18,7 +18,9 @@
   "gui.damagecore.higher.cost_short": "%s lvl",
   "gui.damagecore.higher.applied": "Already applied",
   "gui.damagecore.higher.applied_short": "Done",
+  "key.damagecore.higher_enchant": "Higher Enchantment",
 
+  "entity.damagecore.sunken_barrel": "Sunken Barrel",
   "block.damagecore.sunken_barrel": "Sunken Barrel",
   "block.damagecore.sunken_planks": "Sunken Planks",
   "block.damagecore.sunken_stairs": "Sunken Stairs",

@@ -47,4 +47,15 @@ public class SunkenBarrelRenderer extends GeoEntityRenderer<SunkenBarrelEntity> 
         super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
         poseStack.popPose();
     }
+    @Override
+    protected void applyRotations(SunkenBarrelEntity entity, PoseStack poseStack,
+                                  float ageInTicks, float rotationYaw, float partialTick) {
+        super.applyRotations(entity, poseStack, ageInTicks, rotationYaw, partialTick);
+
+        float cy = entity.getBbHeight() / 2f;
+        poseStack.translate(0, cy, 0);
+        poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(entity.getTiltX(partialTick)));
+        poseStack.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(entity.getTiltZ(partialTick)));
+        poseStack.translate(0, -cy, 0);
+    }
 }

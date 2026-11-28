@@ -1,7 +1,6 @@
 package ru.imaginaerum.damagecore.entity.chest_of_wild_currents;
 
 import net.minecraft.advancements.CriteriaTriggers;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -25,9 +24,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.inventory.ChestMenu;
@@ -49,21 +46,37 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import static ru.imaginaerum.damagecore.Damagecore_1_21_1_neo.MODID;
 
 public class SunkenBarrelEntity extends Entity implements GeoEntity {
-    public static final int LIFETIME_TICKS = 20 * 60 * 10;   // 10 минут
-    private static final float DRIFT_SPEED = 0.025f;          // блоков/тик
-    private static final double FLOAT_DEPTH = 0.45;           // на сколько бочка сидит в воде
-    private static final int SINK_TICKS = 50;   // длительность погружения (2.5 сек)
+    public static final int LIFETIME_TICKS = 20 * 60 * 10;
+    private static final float DRIFT_SPEED = 0.025f;
+    private static final double FLOAT_DEPTH = 0.45;
+    private static final int SINK_TICKS = 50;      // обычное погружение
+    private static final int FAST_SINK_TICKS = 20; // от лодки
+    private static final EntityDataAccessor<Integer> SINK_DURATION =
+            SynchedEntityData.defineId(SunkenBarrelEntity.class, EntityDataSerializers.INT);
+
+    private boolean dropOnBreak; // выпадет лут, если бочку ударил игрок
     // TODO: подставьте ID таблицы, которую использует сундук
     public static final ResourceKey<LootTable> DEFAULT_LOOT = ResourceKey.create(
             Registries.LOOT_TABLE, ResourceLocation.fromNamespaceAndPath(MODID, "chests/sunken_barrel"));
-    private static final int EXPLODE_ONE_IN = 500;        // 1 к 2
+    private static final int EXPLODE_ONE_IN = 5000;
     private static final float EXPLOSION_POWER = 10f;
+    public float getTiltX(float partialTick) { return Mth.lerp(partialTick, prevTiltX, tiltX); }
+    public float getTiltZ(float partialTick) { return Mth.lerp(partialTick, prevTiltZ, tiltZ); }
+    private static final int CRITTER_ONE_IN = 1000;
+    private static final EntityDataAccessor<Float> TILT_X =
+            SynchedEntityData.defineId(SunkenBarrelEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> TILT_Z =
+            SynchedEntityData.defineId(SunkenBarrelEntity.class, EntityDataSerializers.FLOAT);
+
+    // текущие углы (плавно догоняют целевые), считаются на клиенте и на сервере
+    private float tiltX, tiltZ, prevTiltX, prevTiltZ;
     @Nullable
     private ResourceKey<LootTable> lootTable;
     private long lootTableSeed;
     private static final EntityDataAccessor<Boolean> SINKING =
             SynchedEntityData.defineId(SunkenBarrelEntity.class, EntityDataSerializers.BOOLEAN);
-
+    private int dryTicks;
+    private boolean inspected; // игрок уже заглядывал внутрь
     private int sinkTicks; // считается и на клиенте, и на сервере
     private static final EntityDataAccessor<Boolean> OPEN =
             SynchedEntityData.defineId(SunkenBarrelEntity.class, EntityDataSerializers.BOOLEAN);
@@ -73,16 +86,44 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     private final BarrelContainer container = new BarrelContainer();
     private int age;
-    private int dryTicks;
 
     public SunkenBarrelEntity(EntityType<? extends SunkenBarrelEntity> type, Level level) {
         super(type, level);
         this.setNoGravity(true);
         if (!level.isClientSide) {
             this.entityData.set(DRIFT_YAW, this.random.nextFloat() * 360f);
+            randomizeTilt(30f);
             this.lootTable = DEFAULT_LOOT;
             this.lootTableSeed = this.random.nextLong();
         }
+    }
+    private void randomizeTilt(float max) {
+        entityData.set(TILT_X, (random.nextFloat() * 2f - 1f) * max);
+        entityData.set(TILT_Z, (random.nextFloat() * 2f - 1f) * max);
+    }
+    /** Из бочки выскакивает курица или кролик. */
+    private void releaseCritter() {
+        if (!(level() instanceof ServerLevel sl)) return;
+
+        Mob critter;
+        if (random.nextBoolean()) {
+            critter = EntityType.CHICKEN.create(sl);
+        } else {
+            critter = EntityType.RABBIT.create(sl);
+        }
+        if (critter == null) return;
+
+        critter.moveTo(getX(), getY() + 0.8, getZ(), random.nextFloat() * 360f, 0f);
+        critter.finalizeSpawn(sl, sl.getCurrentDifficultyAt(blockPosition()), MobSpawnType.TRIGGERED, null);
+        critter.setDeltaMovement(
+                (random.nextDouble() - 0.5) * 0.4,
+                0.5,
+                (random.nextDouble() - 0.5) * 0.4);
+        sl.addFreshEntity(critter);
+
+        sl.sendParticles(ParticleTypes.POOF, getX(), getY() + 0.8, getZ(), 8, 0.2, 0.2, 0.2, 0.02);
+        playSound(critter instanceof net.minecraft.world.entity.animal.Chicken
+                ? SoundEvents.CHICKEN_AMBIENT : SoundEvents.RABBIT_JUMP, 1f, 1f);
     }
     /** Заполняет контейнер из лут-таблицы, один раз. */
     private void unpackLootTable(@Nullable Player player) {
@@ -117,6 +158,9 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
         builder.define(OPEN, false);
         builder.define(DRIFT_YAW, 0f);
         builder.define(SINKING, false);
+        builder.define(SINK_DURATION, SINK_TICKS);
+        builder.define(TILT_X, 0f);
+        builder.define(TILT_Z, 0f);
     }
 
     public boolean isOpen() {
@@ -126,9 +170,10 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
         return this.entityData.get(SINKING);
     }
 
-    /** 0..1, для рендерера. */
     public float getSinkProgress(float partialTick) {
-        return isSinking() ? Mth.clamp((sinkTicks + partialTick) / SINK_TICKS, 0f, 1f) : 0f;
+        return isSinking()
+                ? Mth.clamp((sinkTicks + partialTick) / entityData.get(SINK_DURATION), 0f, 1f)
+                : 0f;
     }
     // ------------------------------------------------------------ tick
 
@@ -136,7 +181,29 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
     public void tick() {
         super.tick();
 
-        if (isSinking()) {
+        prevTiltX = tiltX;
+        prevTiltZ = tiltZ;
+
+        boolean sinking = isSinking();
+        float t = tickCount;
+        float phase = (getUUID().hashCode() & 0xFFFF) * 0.001f;
+
+        float targetX, targetZ, speed;
+        if (sinking) {
+            targetX = entityData.get(TILT_X);
+            targetZ = entityData.get(TILT_Z);
+            speed = 0.08f;
+        } else {
+            // у каждой бочки своё медленно меняющееся положение, до ~35°
+            targetX = Mth.sin(t * 0.011f + phase) * 28f + Mth.sin(t * 0.031f + phase * 2f) * 7f;
+            targetZ = Mth.cos(t * 0.009f + phase * 1.7f) * 28f + Mth.cos(t * 0.027f + phase) * 7f;
+            speed = 0.05f;
+        }
+
+        tiltX += (targetX - tiltX) * speed;
+        tiltZ += (targetZ - tiltZ) * speed;
+
+        if (sinking) {
             sinkTick();
             return;
         }
@@ -151,6 +218,9 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
                 vanish();
                 return;
             }
+            if (age % 300 == 0) {
+                randomizeTilt(random.nextInt(5) == 0 ? 60f : 30f); // раз в 15 сек бочка медленно переваливается
+            }
             if (age % 200 == 0) {
                 entityData.set(DRIFT_YAW, entityData.get(DRIFT_YAW) + (random.nextFloat() - 0.5f) * 30f);
             }
@@ -158,10 +228,10 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
                 entityData.set(OPEN, false);
             }
             if (hitByBoatWithPlayer()) {
-                if (random.nextInt(EXPLODE_ONE_IN) == 0) {
+                if (!inspected && random.nextInt(EXPLODE_ONE_IN) == 0) {
                     explode();
                 } else {
-                    startSinking();
+                    startSinking(true, true); // быстрое погружение от лодки
                 }
                 return;
             }
@@ -199,20 +269,24 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
         discard();
     }
     /** Начало погружения (только сервер). */
-    private void startSinking() {
+    private void startSinking(boolean fast, boolean closeViewers) {
+        if (isSinking()) return;
+        entityData.set(SINK_DURATION, fast ? FAST_SINK_TICKS : SINK_TICKS);
         entityData.set(SINKING, true);
+        randomizeTilt(random.nextInt(4) == 0 ? 85f : 45f);
         entityData.set(OPEN, false);
         sinkTicks = 0;
 
-        // закрываем меню у всех, кто его смотрит
-        for (Player p : level().players()) {
-            if (p.containerMenu instanceof ChestMenu menu && menu.getContainer() == this.container) {
-                p.closeContainer();
+        if (closeViewers) {
+            for (Player p : level().players()) {
+                if (p.containerMenu instanceof ChestMenu menu && menu.getContainer() == this.container) {
+                    p.closeContainer();
+                }
             }
         }
 
         if (level() instanceof ServerLevel sl) {
-            sl.playSound(null, blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.NEUTRAL, 0.6f, 0.7f);
+            sl.playSound(null, blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.NEUTRAL, 0.6f, fast ? 0.9f : 0.7f);
             sl.playSound(null, blockPosition(), SoundEvents.GENERIC_SPLASH, SoundSource.NEUTRAL, 0.8f, 0.9f);
         }
     }
@@ -221,12 +295,12 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
     private void sinkTick() {
         sinkTicks++;
 
-        // тяжелеет и уходит вниз, горизонтальный дрейф затухает
+        boolean fast = entityData.get(SINK_DURATION) == FAST_SINK_TICKS;
         Vec3 m = getDeltaMovement();
-        double down = Math.max(m.y - 0.004, -0.05);
+        double down = Math.max(m.y - (fast ? 0.012 : 0.004), fast ? -0.12 : -0.05);
         setDeltaMovement(m.x * 0.85, down, m.z * 0.85);
         move(MoverType.SELF, getDeltaMovement());
-        setYRot(getYRot() + 1.5f); // немного закручивает
+        setYRot(getYRot() + (fast ? 3f : 1.5f));
 
         // пузырьки вдоль всего погружения
         if (sinkTicks % 2 == 0) {
@@ -240,17 +314,17 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
             level().addParticle(ParticleTypes.SPLASH, getX(), getY() + 0.8, getZ(), 0, 0.05, 0);
         }
 
-        if (!level().isClientSide && sinkTicks >= SINK_TICKS) {
+        if (!level().isClientSide && sinkTicks >= entityData.get(SINK_DURATION)) {
             finishSinking();
         }
     }
 
-    /** Конец погружения: бочка исчезла под водой. */
     private void finishSinking() {
         if (level() instanceof ServerLevel sl) {
             sl.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.BARREL.defaultBlockState()),
-                    getX(), getY() + 0.3, getZ(), 20, 0.3, 0.2, 0.3, 0.05);
+                    getX(), getY() + 0.3, getZ(), 30, 0.3, 0.3, 0.3, 0.05);
             sl.sendParticles(ParticleTypes.BUBBLE_COLUMN_UP, getX(), getY() + 0.3, getZ(), 15, 0.2, 0.2, 0.2, 0.1);
+            sl.playSound(null, blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.NEUTRAL, 1f, 0.9f);
             sl.playSound(null, blockPosition(), SoundEvents.BUBBLE_COLUMN_UPWARDS_AMBIENT, SoundSource.NEUTRAL, 0.8f, 1f);
         }
         discard();
@@ -297,6 +371,10 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
             playSound(SoundEvents.BARREL_OPEN, 0.5f, level().random.nextFloat() * 0.1f + 0.9f);
         }
         unpackLootTable(player);
+        if (!inspected && random.nextInt(CRITTER_ONE_IN) == 0) {
+            releaseCritter();
+        }
+        inspected = true;
         player.openMenu(new SimpleMenuProvider(
                 (id, inv, p) -> ChestMenu.threeRows(id, inv, container),
                 Component.translatable("container.barrel")));
@@ -307,17 +385,17 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (isInvulnerableTo(source)) return false;
-        if (isSinking() || isInvulnerableTo(source)) return false;
+        if (isSinking()) return false;
         if (level().isClientSide || isRemoved()) return true;
 
         boolean creative = source.getEntity() instanceof Player p && p.getAbilities().instabuild;
-        if (!creative) {
-            unpackLootTable(source.getEntity() instanceof Player p ? p : null);
-            Containers.dropContents(level(), blockPosition(), container);
-            spawnAtLocation(BlocksDC.SUNKEN_BARREL.get());
+        if (creative) {
+            playSound(SoundEvents.WOOD_BREAK, 1f, 1f);
+            discard();
+            return true;
         }
-        playSound(SoundEvents.WOOD_BREAK, 1f, 1f);
-        discard();
+
+        startSinking(false, true);
         return true;
     }
 
@@ -331,7 +409,9 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
         entityData.set(OPEN, false);
         if (tag.contains("DriftYaw")) entityData.set(DRIFT_YAW, tag.getFloat("DriftYaw"));
         age = tag.getInt("Age");
-
+        if (tag.contains("TiltX")) entityData.set(TILT_X, tag.getFloat("TiltX"));
+        if (tag.contains("TiltZ")) entityData.set(TILT_Z, tag.getFloat("TiltZ"));
+        inspected = tag.getBoolean("Inspected");
         if (tag.contains("LootTable", Tag.TAG_STRING)) {
             lootTable = ResourceKey.create(Registries.LOOT_TABLE,
                     ResourceLocation.parse(tag.getString("LootTable")));
@@ -346,7 +426,9 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putFloat("DriftYaw", entityData.get(DRIFT_YAW));
         tag.putInt("Age", age);
-
+        tag.putFloat("TiltX", entityData.get(TILT_X));
+        tag.putFloat("TiltZ", entityData.get(TILT_Z));
+        tag.putBoolean("Inspected", inspected);
         if (lootTable != null) {
             tag.putString("LootTable", lootTable.location().toString());
             if (lootTableSeed != 0L) tag.putLong("LootTableSeed", lootTableSeed);
@@ -386,6 +468,7 @@ public class SunkenBarrelEntity extends Entity implements GeoEntity {
             if (!barrel.hasOtherViewers(player)) {
                 barrel.entityData.set(OPEN, false);
                 barrel.playSound(SoundEvents.BARREL_CLOSE, 0.5f, 1f);
+                barrel.startSinking(false, false);
             }
         }
 

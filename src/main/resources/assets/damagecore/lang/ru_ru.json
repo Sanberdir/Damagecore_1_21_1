@@ -14,6 +14,7 @@
   "gui.damagecore.higher.cost_short": "%s ур.",
   "gui.damagecore.higher.applied": "Уже наложено",
   "gui.damagecore.higher.applied_short": "Есть",
+  "entity.damagecore.sunken_barrel": "Затонувшая бочка",
   "block.damagecore.sunken_barrel": "Затонувшая бочка",
   "block.damagecore.sunken_planks": "Затонувшие доски",
   "block.damagecore.sunken_stairs": "Затонувшие ступеньки",
@@ -22,6 +23,7 @@
   "block.damagecore.sunken_fence_gate": "Затонувшая калитка",
   "block.damagecore.sunken_button": "Затонувшая кнопка",
   "block.damagecore.sunken_pressure_plate": "Затонувшая нажимная плита",
+  "key.damagecore.higher_enchant": "Высшее чарование",
 
   "damagecore.element": "Стихия: %s",
   "element.damagecore.earth": "Земля",
