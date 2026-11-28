@@ -858,6 +858,7 @@
 				}
 			}
 		},
+
 		"sword_swing": {
 			"animation_length": 0.5,
 			"bones": {
